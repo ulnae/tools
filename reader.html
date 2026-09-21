@@ -15,6 +15,8 @@
             --hover-bg: #f0f0f0;
             --safe-area-top: env(safe-area-inset-top);
             --safe-area-bottom: env(safe-area-inset-bottom);
+            --reader-font-size: 18px;
+            --reader-line-height: 1.9;
         }
 
         .dark-mode {
@@ -161,6 +163,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 8px;
             flex-shrink: 0;
         }
 
@@ -168,6 +171,14 @@
             display: flex;
             align-items: center;
             gap: 10px;
+            min-width: 0;
+        }
+
+        .toolbar-right {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
         }
 
         .menu-btn {
@@ -178,7 +189,6 @@
             font-size: 20px;
             cursor: pointer;
             color: var(--text-color);
-            display: flex;
             align-items: center;
             justify-content: center;
             border-radius: 4px;
@@ -189,7 +199,7 @@
             background-color: var(--hover-bg);
         }
 
-        .back-btn, .catalog-btn, .mode-btn {
+        .back-btn, .catalog-btn, .mode-btn, .font-btn {
             background: none;
             border: 1px solid var(--border-color);
             color: var(--text-color);
@@ -197,11 +207,23 @@
             border-radius: 4px;
             cursor: pointer;
             font-size: 14px;
+            line-height: 1;
             transition: all 0.3s;
         }
 
-        .back-btn:hover, .catalog-btn:hover, .mode-btn:hover {
+        .font-btn {
+            font-weight: 600;
+            min-width: 38px;
+            text-align: center;
+        }
+
+        .back-btn:hover, .catalog-btn:hover, .mode-btn:hover, .font-btn:hover:not(:disabled) {
             background-color: var(--hover-bg);
+        }
+
+        .font-btn:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
         }
 
         .current-novel-title {
@@ -225,7 +247,7 @@
         }
 
         .chapter-title {
-            font-size: 24px;
+            font-size: calc(var(--reader-font-size) * 1.33);
             font-weight: 700;
             text-align: center;
             margin-bottom: 30px;
@@ -234,8 +256,8 @@
         }
 
         .chapter-content {
-            font-size: 18px;
-            line-height: 2;
+            font-size: var(--reader-font-size);
+            line-height: var(--reader-line-height);
             text-indent: 2em;
             white-space: pre-wrap;
         }
@@ -247,6 +269,7 @@
         .pagination {
             display: flex;
             justify-content: space-between;
+            align-items: center;
             padding: 12px;
             border-top: 1px solid var(--border-color);
             flex-shrink: 0;
@@ -271,37 +294,6 @@
         .page-btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
-        }
-
-        .bottom-nav {
-            display: none;
-            justify-content: space-around;
-            padding: 10px;
-            padding-bottom: calc(10px + var(--safe-area-bottom));
-            border-top: 1px solid var(--border-color);
-            background-color: var(--bg-color);
-            flex-shrink: 0;
-        }
-
-        .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-            font-size: 12px;
-            color: var(--text-color);
-            cursor: pointer;
-            padding: 8px 16px;
-            border-radius: 8px;
-            transition: background-color 0.3s;
-        }
-
-        .nav-item:hover {
-            background-color: var(--hover-bg);
-        }
-
-        .nav-item span {
-            font-size: 20px;
         }
 
         .catalog-overlay {
@@ -416,6 +408,7 @@
             z-index: 2000;
             max-width: 90%;
             text-align: center;
+            pointer-events: none;
         }
 
         .toast.show {
@@ -459,13 +452,7 @@
                 padding: 12px;
             }
 
-            .chapter-content {
-                font-size: 16px;
-                line-height: 1.8;
-            }
-
             .chapter-title {
-                font-size: 20px;
                 margin-bottom: 20px;
                 padding-bottom: 15px;
             }
@@ -497,6 +484,16 @@
                 font-size: 12px;
             }
 
+            .font-btn {
+                padding: 5px 8px;
+                font-size: 12px;
+                min-width: 32px;
+            }
+
+            .toolbar-right {
+                gap: 4px;
+            }
+
             .pagination {
                 padding: 10px;
             }
@@ -505,10 +502,6 @@
                 padding: 6px 14px;
                 font-size: 13px;
                 min-width: 70px;
-            }
-
-            .bottom-nav {
-                display: flex;
             }
 
             .novel-item {
@@ -525,24 +518,8 @@
                 padding: 10px;
             }
 
-            .chapter-content {
-                font-size: 15px;
-            }
-
             .current-novel-title {
-                max-width: 120px;
-            }
-
-            .nav-item {
-                padding: 6px 10px;
-            }
-
-            .nav-item span {
-                font-size: 18px;
-            }
-
-            .nav-item label {
-                font-size: 11px;
+                max-width: 110px;
             }
         }
     </style>
@@ -550,7 +527,7 @@
 <body>
     <div class="container">
         <div class="sidebar-overlay" id="sidebarOverlay"></div>
-        
+
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <h1>我的书架</h1>
@@ -570,11 +547,13 @@
                     <span class="current-novel-title" id="currentNovelTitle"></span>
                 </div>
                 <div class="toolbar-right">
+                    <button class="font-btn" id="fontDecrease" title="减小字号">A-</button>
+                    <button class="font-btn" id="fontIncrease" title="增大字号">A+</button>
                     <button class="catalog-btn" id="catalogBtn" style="display: none;">目录</button>
                     <button class="mode-btn" id="modeBtn">🌙</button>
                 </div>
             </div>
-            
+
             <div class="reader-area" id="readerArea">
                 <div class="empty-state">
                     <div class="empty-state-icon">📚</div>
@@ -587,29 +566,6 @@
                 <button class="page-btn" id="prevBtn" disabled>上一章</button>
                 <span id="chapterIndicator"></span>
                 <button class="page-btn" id="nextBtn" disabled>下一章</button>
-            </div>
-
-            <div class="bottom-nav" id="bottomNav" style="display: none;">
-                <div class="nav-item" id="navBooks">
-                    <span>📚</span>
-                    <label>书架</label>
-                </div>
-                <div class="nav-item" id="navPrev">
-                    <span>⏮</span>
-                    <label>上一章</label>
-                </div>
-                <div class="nav-item" id="navCatalog">
-                    <span>📖</span>
-                    <label>目录</label>
-                </div>
-                <div class="nav-item" id="navNext">
-                    <span>⏭</span>
-                    <label>下一章</label>
-                </div>
-                <div class="nav-item" id="navMode">
-                    <span>🌙</span>
-                    <label>夜间</label>
-                </div>
             </div>
         </main>
     </div>
@@ -636,42 +592,48 @@
             PROGRESS: 'progress'
         };
 
+        const FONT_MIN = 12;
+        const FONT_MAX = 36;
+        const FONT_STEP = 2;
+
         let db = null;
         let currentNovel = null;
         let currentChapter = null;
         let chapters = [];
         let isDarkMode = false;
+        let readerFontSize = 18;
         let touchStartX = 0;
         let touchStartY = 0;
+        let toastTimer = null;
 
         function openDB() {
             return new Promise((resolve, reject) => {
                 const request = indexedDB.open(DB_NAME, DB_VERSION);
-                
+
                 request.onerror = () => reject(request.error);
-                
+
                 request.onsuccess = () => {
                     db = request.result;
                     resolve(db);
                 };
-                
+
                 request.onupgradeneeded = (event) => {
                     const database = event.target.result;
-                    
+
                     if (!database.objectStoreNames.contains(stores.NOVELS)) {
                         const novelStore = database.createObjectStore(stores.NOVELS, { keyPath: 'id' });
                         novelStore.createIndex('title', 'title', { unique: false });
                         novelStore.createIndex('createdAt', 'createdAt', { unique: false });
                     }
-                    
+
                     if (!database.objectStoreNames.contains(stores.CHAPTERS)) {
                         const chapterStore = database.createObjectStore(stores.CHAPTERS, { keyPath: 'id' });
                         chapterStore.createIndex('novelId', 'novelId', { unique: false });
                         chapterStore.createIndex('order', 'order', { unique: false });
                     }
-                    
+
                     if (!database.objectStoreNames.contains(stores.PROGRESS)) {
-                        const progressStore = database.createObjectStore(stores.PROGRESS, { keyPath: 'novelId' });
+                        database.createObjectStore(stores.PROGRESS, { keyPath: 'novelId' });
                     }
                 };
             });
@@ -689,10 +651,14 @@
 
         function addChapters(chapterList) {
             return new Promise((resolve, reject) => {
+                if (!chapterList || chapterList.length === 0) {
+                    resolve(0);
+                    return;
+                }
                 const transaction = db.transaction([stores.CHAPTERS], 'readwrite');
                 const store = transaction.objectStore(stores.CHAPTERS);
                 let count = 0;
-                
+
                 chapterList.forEach(chapter => {
                     const request = store.add(chapter);
                     request.onsuccess = () => {
@@ -748,39 +714,39 @@
             });
         }
 
-        function parseNovel(content, fileName) {
-            const title = fileName.replace(/\.[^/.]+$/, '');
+        const chapterPatterns = [
+            /^第[零一二两三四五六七八九十百千万\d]+[章回部卷节]/,
+            /^[第]?[零一二两三四五六七八九十百千万\d]+[、.．]\s*/,
+            /^【.*】/,
+            /^──.*──$/,
+            /^===.*===/,
+            /^---.*---$/
+        ];
+
+        function isChapterTitle(line) {
+            const trimmed = line.trim();
+            if (!trimmed || trimmed.length > 50) return false;
+            return chapterPatterns.some(pattern => pattern.test(trimmed));
+        }
+
+        function parseNovelContent(content, novelId) {
             const chapters = [];
             const lines = content.split(/\r?\n/);
-            
+
             let currentChapterTitle = '';
             let currentChapterContent = [];
             let chapterOrder = 0;
-            
-            const chapterPatterns = [
-                /^第[零一二两三四五六七八九十百千万\d]+[章回部卷节]/,
-                /^[第]?[零一二两三四五六七八九十百千万\d]+[、.．]\s*/,
-                /^【.*】/,
-                /^──.*──$/,
-                /^===.*===/,
-                /^---.*---$/
-            ];
-            
-            function isChapterTitle(line) {
-                const trimmed = line.trim();
-                if (!trimmed || trimmed.length > 50) return false;
-                return chapterPatterns.some(pattern => pattern.test(trimmed));
-            }
-            
+
             function finalizeChapter() {
                 if (currentChapterContent.length > 0) {
-                    const content = currentChapterContent.join('\n').trim();
-                    if (content) {
+                    const chapterText = currentChapterContent.join('\n').trim();
+                    if (chapterText) {
+                        chapterOrder++;
                         chapters.push({
-                            id: `${title}_${chapterOrder}`,
-                            novelId: title,
+                            id: `${novelId}_${chapterOrder}`,
+                            novelId: novelId,
                             title: currentChapterTitle || `第${chapterOrder}章`,
-                            content: content,
+                            content: chapterText,
                             order: chapterOrder
                         });
                     }
@@ -788,129 +754,76 @@
                 currentChapterTitle = '';
                 currentChapterContent = [];
             }
-            
+
             lines.forEach(line => {
                 const trimmed = line.trim();
-                
+
                 if (isChapterTitle(trimmed)) {
                     finalizeChapter();
-                    chapterOrder++;
-                    currentChapterTitle = trimmed.replace(/^──|──$/g, '').replace(/^===|===/g, '').replace(/^---|---$/g, '').trim();
+                    currentChapterTitle = trimmed
+                        .replace(/^──|──$/g, '')
+                        .replace(/^===|===$/g, '')
+                        .replace(/^---|----$/g, '')
+                        .trim();
                 } else {
                     currentChapterContent.push(line);
                 }
             });
-            
+
             finalizeChapter();
-            
+
             if (chapters.length === 0) {
                 chapters.push({
-                    id: `${title}_1`,
-                    novelId: title,
-                    title: title,
+                    id: `${novelId}_1`,
+                    novelId: novelId,
+                    title: novelId,
                     content: content.trim(),
                     order: 1
                 });
             }
-            
-            return {
-                id: title,
-                title: title,
-                author: '',
-                cover: '',
-                totalChapters: chapters.length,
-                createdAt: Date.now()
-            };
+
+            return chapters;
         }
 
         async function handleFileUpload(event) {
             const files = event.target.files;
             if (!files || files.length === 0) return;
-            
+
             showToast('开始导入小说...');
-            
+
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
                 try {
                     const content = await readFileContent(file);
-                    const novel = parseNovel(content, file.name);
-                    
+                    const title = file.name.replace(/\.[^/.]+$/, '');
+
                     const existingNovels = await getAllNovels();
-                    const exists = existingNovels.some(n => n.id === novel.id);
-                    
-                    if (exists) {
-                        showToast(`${novel.title} 已存在，跳过`);
+                    if (existingNovels.some(n => n.id === title)) {
+                        showToast(`${title} 已存在，跳过`);
                         continue;
                     }
-                    
+
+                    const chapterList = parseNovelContent(content, title);
+                    const novel = {
+                        id: title,
+                        title: title,
+                        author: '',
+                        cover: '',
+                        totalChapters: chapterList.length,
+                        createdAt: Date.now()
+                    };
+
                     await addNovel(novel);
-                    await addChapters(novel.totalChapters ? await getChaptersFromParsed(novel, content) : []);
-                    
-                    showToast(`成功导入 ${novel.title}，共 ${novel.totalChapters} 章`);
+                    await addChapters(chapterList);
+
+                    showToast(`成功导入 ${title}，共 ${chapterList.length} 章`);
                 } catch (error) {
                     showToast(`导入 ${file.name} 失败: ${error.message}`);
                 }
             }
-            
+
             event.target.value = '';
             await renderNovelList();
-        }
-
-        async function getChaptersFromParsed(novel, content) {
-            const chapters = [];
-            const lines = content.split(/\r?\n/);
-            
-            let currentChapterTitle = '';
-            let currentChapterContent = [];
-            let chapterOrder = 0;
-            
-            const chapterPatterns = [
-                /^第[零一二两三四五六七八九十百千万\d]+[章回部卷节]/,
-                /^[第]?[零一二两三四五六七八九十百千万\d]+[、.．]\s*/,
-                /^【.*】/,
-                /^──.*──$/,
-                /^===.*===/,
-                /^---.*---$/
-            ];
-            
-            function isChapterTitle(line) {
-                const trimmed = line.trim();
-                if (!trimmed || trimmed.length > 50) return false;
-                return chapterPatterns.some(pattern => pattern.test(trimmed));
-            }
-            
-            function finalizeChapter() {
-                if (currentChapterContent.length > 0) {
-                    const content = currentChapterContent.join('\n').trim();
-                    if (content) {
-                        chapters.push({
-                            id: `${novel.id}_${chapterOrder}`,
-                            novelId: novel.id,
-                            title: currentChapterTitle || `第${chapterOrder}章`,
-                            content: content,
-                            order: chapterOrder
-                        });
-                    }
-                }
-                currentChapterTitle = '';
-                currentChapterContent = [];
-            }
-            
-            lines.forEach(line => {
-                const trimmed = line.trim();
-                
-                if (isChapterTitle(trimmed)) {
-                    finalizeChapter();
-                    chapterOrder++;
-                    currentChapterTitle = trimmed.replace(/^──|──$/g, '').replace(/^===|===/g, '').replace(/^---|---$/g, '').trim();
-                } else {
-                    currentChapterContent.push(line);
-                }
-            });
-            
-            finalizeChapter();
-            
-            return chapters;
         }
 
         function readFileContent(file) {
@@ -925,14 +838,14 @@
         async function renderNovelList() {
             const novels = await getAllNovels();
             const list = document.getElementById('novelList');
-            
+
             list.innerHTML = '';
-            
+
             if (novels.length === 0) {
                 list.innerHTML = '<div class="empty-state" style="height: auto; padding: 20px;">暂无小说，请导入</div>';
                 return;
             }
-            
+
             novels.forEach(novel => {
                 const item = document.createElement('div');
                 item.className = 'novel-item';
@@ -941,7 +854,7 @@
                     openNovel(novel);
                     closeSidebar();
                 };
-                
+
                 item.innerHTML = `
                     <div class="novel-title">${novel.title}</div>
                     <div class="novel-info">
@@ -949,7 +862,7 @@
                         <span>${formatDate(novel.createdAt)}</span>
                     </div>
                 `;
-                
+
                 list.appendChild(item);
             });
         }
@@ -962,40 +875,56 @@
         async function openNovel(novel) {
             currentNovel = novel;
             chapters = await getChaptersByNovelId(novel.id);
-            
+
             const progress = await getProgress(novel.id);
             let startChapterIndex = 0;
-            
+
             if (progress && progress.chapterId) {
                 const idx = chapters.findIndex(c => c.id === progress.chapterId);
                 if (idx !== -1) startChapterIndex = idx;
             }
-            
+
             document.querySelectorAll('.novel-item').forEach(el => el.classList.remove('active'));
-            document.querySelector(`.novel-item[data-id="${novel.id}"]`)?.classList.add('active');
-            
+            document.querySelector(`.novel-item[data-id="${CSS.escape(novel.id)}"]`)?.classList.add('active');
+
             document.getElementById('backBtn').style.display = 'inline-block';
             document.getElementById('catalogBtn').style.display = 'inline-block';
             document.getElementById('pagination').style.display = 'flex';
-            document.getElementById('bottomNav').style.display = 'flex';
             document.getElementById('currentNovelTitle').textContent = novel.title;
-            
+
             await renderChapter(startChapterIndex);
+        }
+
+        function goHome() {
+            document.getElementById('readerArea').innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">📚</div>
+                    <div class="empty-state-text">选择一本小说开始阅读</div>
+                </div>
+            `;
+            document.getElementById('backBtn').style.display = 'none';
+            document.getElementById('catalogBtn').style.display = 'none';
+            document.getElementById('pagination').style.display = 'none';
+            document.getElementById('currentNovelTitle').textContent = '';
+            document.querySelectorAll('.novel-item').forEach(el => el.classList.remove('active'));
+            currentNovel = null;
+            currentChapter = null;
+            chapters = [];
         }
 
         async function renderChapter(index) {
             if (index < 0 || index >= chapters.length) return;
-            
+
             currentChapter = chapters[index];
-            
+
             const readerArea = document.getElementById('readerArea');
             readerArea.innerHTML = `
                 <div class="chapter-title">${currentChapter.title}</div>
                 <div class="chapter-content">${formatContent(currentChapter.content)}</div>
             `;
-            
+
             readerArea.scrollTop = 0;
-            
+
             updatePagination(index);
             await saveProgress({
                 novelId: currentNovel.id,
@@ -1004,7 +933,7 @@
                 scrollPosition: 0,
                 updatedAt: Date.now()
             });
-            
+
             readerArea.onscroll = debounce(async () => {
                 await saveProgress({
                     novelId: currentNovel.id,
@@ -1025,11 +954,11 @@
             const prevBtn = document.getElementById('prevBtn');
             const nextBtn = document.getElementById('nextBtn');
             const indicator = document.getElementById('chapterIndicator');
-            
+
             prevBtn.disabled = index === 0;
             nextBtn.disabled = index === chapters.length - 1;
             indicator.textContent = `${index + 1} / ${chapters.length}`;
-            
+
             prevBtn.onclick = () => renderChapter(index - 1);
             nextBtn.onclick = () => renderChapter(index + 1);
         }
@@ -1037,7 +966,7 @@
         function renderCatalog() {
             const chapterList = document.getElementById('chapterList');
             chapterList.innerHTML = '';
-            
+
             chapters.forEach((chapter, index) => {
                 const item = document.createElement('div');
                 item.className = `chapter-item ${currentChapter?.id === chapter.id ? 'current' : ''}`;
@@ -1073,15 +1002,45 @@
             isDarkMode = !isDarkMode;
             document.body.classList.toggle('dark-mode', isDarkMode);
             document.getElementById('modeBtn').textContent = isDarkMode ? '☀️' : '🌙';
-            document.getElementById('navMode').innerHTML = isDarkMode ? '<span>☀️</span><label>日间</label>' : '<span>🌙</span><label>夜间</label>';
             localStorage.setItem('darkMode', isDarkMode);
+        }
+
+        /* ============ 字号调节 ============ */
+        function getDefaultFontSize() {
+            const w = window.innerWidth;
+            if (w <= 480) return 16;
+            if (w <= 768) return 17;
+            return 18;
+        }
+
+        function applyFontSize(size) {
+            readerFontSize = Math.min(FONT_MAX, Math.max(FONT_MIN, size));
+            document.documentElement.style.setProperty('--reader-font-size', readerFontSize + 'px');
+            localStorage.setItem('readerFontSize', String(readerFontSize));
+            updateFontButtons();
+        }
+
+        function updateFontButtons() {
+            document.getElementById('fontDecrease').disabled = readerFontSize <= FONT_MIN;
+            document.getElementById('fontIncrease').disabled = readerFontSize >= FONT_MAX;
+        }
+
+        function changeFontSize(delta) {
+            const next = Math.min(FONT_MAX, Math.max(FONT_MIN, readerFontSize + delta));
+            if (next === readerFontSize) {
+                showToast(delta > 0 ? '已是最大字号' : '已是最小字号');
+                return;
+            }
+            applyFontSize(next);
+            showToast(`字号：${readerFontSize}px`);
         }
 
         function showToast(message) {
             const toast = document.getElementById('toast');
             toast.textContent = message;
             toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 3000);
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => toast.classList.remove('show'), 2000);
         }
 
         function debounce(func, wait) {
@@ -1100,21 +1059,19 @@
         function handleTouchEnd(e) {
             const touchEndX = e.changedTouches[0].clientX;
             const touchEndY = e.changedTouches[0].clientY;
-            
+
             const diffX = touchEndX - touchStartX;
             const diffY = touchEndY - touchStartY;
-            
+
             if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50) {
+                if (!currentChapter) return;
+                const currentIndex = chapters.findIndex(c => c.id === currentChapter.id);
+                if (currentIndex === -1) return;
+
                 if (diffX > 0) {
-                    const currentIndex = chapters.findIndex(c => c.id === currentChapter?.id);
-                    if (currentIndex > 0) {
-                        renderChapter(currentIndex - 1);
-                    }
+                    if (currentIndex > 0) renderChapter(currentIndex - 1);
                 } else {
-                    const currentIndex = chapters.findIndex(c => c.id === currentChapter?.id);
-                    if (currentIndex < chapters.length - 1) {
-                        renderChapter(currentIndex + 1);
-                    }
+                    if (currentIndex < chapters.length - 1) renderChapter(currentIndex + 1);
                 }
             }
         }
@@ -1122,36 +1079,24 @@
         async function init() {
             try {
                 await openDB();
-                
+
+                // 夜间模式
                 isDarkMode = localStorage.getItem('darkMode') === 'true';
                 if (isDarkMode) {
                     document.body.classList.add('dark-mode');
                     document.getElementById('modeBtn').textContent = '☀️';
-                    document.getElementById('navMode').innerHTML = '<span>☀️</span><label>日间</label>';
                 }
-                
+
+                // 字号
+                const savedFontSize = parseInt(localStorage.getItem('readerFontSize'), 10);
+                applyFontSize(Number.isFinite(savedFontSize) ? savedFontSize : getDefaultFontSize());
+
                 await renderNovelList();
-                
+
                 document.getElementById('fileInput').addEventListener('change', handleFileUpload);
                 document.getElementById('menuBtn').addEventListener('click', openSidebar);
                 document.getElementById('sidebarOverlay').addEventListener('click', closeSidebar);
-                document.getElementById('backBtn').addEventListener('click', () => {
-                    document.getElementById('readerArea').innerHTML = `
-                        <div class="empty-state">
-                            <div class="empty-state-icon">📚</div>
-                            <div class="empty-state-text">选择一本小说开始阅读</div>
-                        </div>
-                    `;
-                    document.getElementById('backBtn').style.display = 'none';
-                    document.getElementById('catalogBtn').style.display = 'none';
-                    document.getElementById('pagination').style.display = 'none';
-                    document.getElementById('bottomNav').style.display = 'none';
-                    document.getElementById('currentNovelTitle').textContent = '';
-                    document.querySelectorAll('.novel-item').forEach(el => el.classList.remove('active'));
-                    currentNovel = null;
-                    currentChapter = null;
-                    chapters = [];
-                });
+                document.getElementById('backBtn').addEventListener('click', goHome);
                 document.getElementById('catalogBtn').addEventListener('click', openCatalog);
                 document.getElementById('closeCatalogBtn').addEventListener('click', closeCatalog);
                 document.getElementById('modeBtn').addEventListener('click', toggleDarkMode);
@@ -1160,49 +1105,14 @@
                         closeCatalog();
                     }
                 });
-                
-                document.getElementById('navBooks').addEventListener('click', () => {
-                    document.getElementById('readerArea').innerHTML = `
-                        <div class="empty-state">
-                            <div class="empty-state-icon">📚</div>
-                            <div class="empty-state-text">选择一本小说开始阅读</div>
-                        </div>
-                    `;
-                    document.getElementById('backBtn').style.display = 'none';
-                    document.getElementById('catalogBtn').style.display = 'none';
-                    document.getElementById('pagination').style.display = 'none';
-                    document.getElementById('bottomNav').style.display = 'none';
-                    document.getElementById('currentNovelTitle').textContent = '';
-                    document.querySelectorAll('.novel-item').forEach(el => el.classList.remove('active'));
-                    currentNovel = null;
-                    currentChapter = null;
-                    chapters = [];
-                });
-                
-                document.getElementById('navPrev').addEventListener('click', () => {
-                    if (currentChapter) {
-                        const currentIndex = chapters.findIndex(c => c.id === currentChapter.id);
-                        if (currentIndex > 0) {
-                            renderChapter(currentIndex - 1);
-                        }
-                    }
-                });
-                
-                document.getElementById('navNext').addEventListener('click', () => {
-                    if (currentChapter) {
-                        const currentIndex = chapters.findIndex(c => c.id === currentChapter.id);
-                        if (currentIndex < chapters.length - 1) {
-                            renderChapter(currentIndex + 1);
-                        }
-                    }
-                });
-                
-                document.getElementById('navCatalog').addEventListener('click', openCatalog);
-                document.getElementById('navMode').addEventListener('click', toggleDarkMode);
-                
+
+                // 字号按钮
+                document.getElementById('fontDecrease').addEventListener('click', () => changeFontSize(-FONT_STEP));
+                document.getElementById('fontIncrease').addEventListener('click', () => changeFontSize(FONT_STEP));
+
                 document.getElementById('readerArea').addEventListener('touchstart', handleTouchStart, { passive: true });
                 document.getElementById('readerArea').addEventListener('touchend', handleTouchEnd, { passive: true });
-                
+
             } catch (error) {
                 console.error('初始化失败:', error);
                 showToast('初始化失败，请刷新页面重试');
