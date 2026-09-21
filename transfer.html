@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>隔空传文件 · 电脑 ↔ 手机</title>
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  :root{
+    --bg:#0d1016; --card:#161a22; --card2:#1b2029;
+    --border:#262d3a; --text:#e7ebf3; --muted:#8992a5;
+    --accent:#4f8cff; --ok:#2ecc71; --warn:#f5a623; --err:#ff5c5c;
+  }
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0; padding:26px 16px 60px;
+    font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    color:var(--text);
+    background:radial-gradient(900px 480px at 50% -180px,#1e2942 0%,transparent 70%),var(--bg);
+    min-height:100vh;
+  }
+  .wrap{max-width:660px;margin:0 auto}
+  header{text-align:center;margin-bottom:24px}
+  h1{margin:0 0 8px;font-size:22px;letter-spacing:.5px}
+  .sub{margin:0;color:var(--muted);font-size:13px}
+  .card{
+    background:linear-gradient(180deg,var(--card2),var(--card));
+    border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:16px;
+    box-shadow:0 12px 32px rgba(0,0,0,.28);
+  }
+  .card-title{margin:0 0 14px;font-size:15px;font-weight:600;color:#cfd6e6;text-align:center}
+  .qr{
+    width:210px;max-width:66vw;margin:0 auto 16px;background:#fff;border-radius:14px;
+    padding:10px;min-height:120px;display:flex;align-items:center;justify-content:center;
+  }
+  .qr svg{display:block;width:100%;height:auto}
+  .qr-loading{color:#888;font-size:13px;padding:40px 0}
+  .idrow{
+    display:flex;align-items:center;gap:8px;justify-content:center;flex-wrap:wrap;
+    background:#11151d;border:1px solid var(--border);border-radius:10px;padding:9px 12px;
+  }
+  .idrow .k{color:var(--muted);font-size:12px}
+  .idrow code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;color:var(--accent);word-break:break-all}
+  .btn,.btn-mini{
+    border:0;border-radius:9px;cursor:pointer;font-family:inherit;
+    background:var(--accent);color:#fff;font-weight:600;
+    transition:filter .15s,transform .05s;
+  }
+  .btn{padding:10px 18px;font-size:14px}
+  .btn-mini{padding:5px 10px;font-size:12px;background:#2b3445;color:#c8d2e6}
+  .btn:hover,.btn-mini:hover{filter:brightness(1.12)}
+  .btn:active,.btn-mini:active{transform:scale(.97)}
+  .hint{color:var(--muted);font-size:12.5px;line-height:1.7;margin:14px 0 0;text-align:center}
+  .manual{margin-top:16px;border-top:1px solid var(--border);padding-top:12px}
+  .manual summary{cursor:pointer;color:var(--muted);font-size:13px;list-style:none;text-align:center}
+  .manual summary::-webkit-details-marker{display:none}
+  .row{display:flex;gap:8px;margin-top:12px}
+  .row input{
+    flex:1;min-width:0;background:#11151d;border:1px solid var(--border);border-radius:9px;
+    padding:10px 12px;color:var(--text);font-family:inherit;font-size:14px;outline:none;
+  }
+  .row input:focus{border-color:var(--accent)}
+  .statusbar{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);margin-bottom:14px}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 4px rgba(46,204,113,.15)}
+  .dropzone{
+    border:1.5px dashed #333d50;border-radius:14px;padding:26px 16px;text-align:center;
+    cursor:pointer;transition:.18s;background:#12161e;
+  }
+  .dropzone.over{border-color:var(--accent);background:rgba(79,140,255,.08)}
+  .dz-ico{font-size:26px;margin-bottom:6px}
+  .dz-title{font-weight:600;font-size:15px}
+  .dz-sub{color:var(--muted);font-size:12.5px;margin-top:3px}
+  .list{margin-top:16px;display:flex;flex-direction:column;gap:10px}
+  .list:empty{margin-top:0}
+  .item{
+    display:flex;gap:12px;align-items:center;background:#12161e;border:1px solid var(--border);
+    border-radius:12px;padding:12px;
+  }
+  .item .ico{
+    width:32px;height:32px;flex:0 0 32px;border-radius:9px;display:grid;place-items:center;
+    font-size:15px;font-weight:700;
+  }
+  .item.send .ico{background:rgba(79,140,255,.15);color:#7aa9ff}
+  .item.recv .ico{background:rgba(46,204,113,.14);color:#5fe0a0}
+  .item .body{flex:1;min-width:0}
+  .item .name{font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:6px}
+  .bar{height:5px;border-radius:3px;background:#232a37;overflow:hidden}
+  .bar>i{display:block;height:100%;width:0;border-radius:3px;background:linear-gradient(90deg,#4f8cff,#6ee7ff);transition:width .12s linear}
+  .item.recv .bar>i{background:linear-gradient(90deg,#2ecc71,#6ee7a5)}
+  .item.done .bar>i{background:#2ecc71}
+  .item.failed .bar>i{background:var(--err)}
+  .meta{display:flex;gap:8px;font-size:11.5px;color:var(--muted);margin-top:5px}
+  .item .act{flex:0 0 auto}
+  .tag{font-size:11.5px;padding:3px 8px;border-radius:6px;white-space:nowrap;display:inline-block}
+  .tag.ok{background:rgba(46,204,113,.14);color:#5fe0a0}
+  .tag.warn{background:rgba(245,166,35,.15);color:#f5c26b}
+  .tag.err{background:rgba(255,92,92,.15);color:#ff8a8a}
+  .foot{text-align:center;color:#5b6478;font-size:12px;margin-top:26px}
+  .toast{
+    position:fixed;left:50%;bottom:28px;transform:translate(-50%,20px);
+    background:#222a38;border:1px solid var(--border);color:var(--text);
+    padding:10px 18px;border-radius:10px;font-size:13.5px;
+    opacity:0;pointer-events:none;transition:.22s;z-index:99;max-width:86vw;text-align:center;
+    box-shadow:0 10px 28px rgba(0,0,0,.45);
+  }
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <h1>📡 隔空传文件</h1>
+    <p class="sub">电脑 ↔ 手机 · 点对点直连 · 文件不经过服务器</p>
+  </header>
+
+  <!-- 连接面板 -->
+  <section class="card" id="panelConnect">
+    <div id="hostBox">
+      <h2 class="card-title">用手机扫码连接</h2>
+      <div class="qr" id="qr"><div class="qr-loading">二维码生成中…</div></div>
+      <div class="idrow">
+        <span class="k">本机 ID</span>
+        <code id="myId">—</code>
+        <button class="btn-mini" id="copyId">复制</button>
+      </div>
+      <p class="hint">手机扫描二维码打开同一页面即会自动连接。<br>若无法扫码，可在手机上打开本页并手动输入上方 ID。</p>
+    </div>
+
+    <div id="guestBox" hidden>
+      <h2 class="card-title">正在连接电脑…</h2>
+      <p class="hint" id="guestMsg">正在建立 P2P 连接，请稍候…</p>
+      <div style="text-align:center;margin-top:14px">
+        <button class="btn" id="retry" hidden>重新连接</button>
+      </div>
+    </div>
+
+    <details class="manual">
+      <summary>手动输入对方 ID 连接</summary>
+      <div class="row">
+        <input id="targetId" type="text" placeholder="例如 xfer-a1b2c3d4" autocomplete="off" spellcheck="false">
+        <button class="btn" id="btnConnect">连接</button>
+      </div>
+    </details>
+  </section>
+
+  <!-- 传输面板 -->
+  <section class="card" id="panelTransfer" hidden>
+    <div class="statusbar">
+      <span class="dot"></span>
+      <span id="peerLabel">已连接</span>
+    </div>
+
+    <div class="dropzone" id="dropzone">
+      <input type="file" id="fileInput" multiple hidden>
+      <div class="dz-ico">📎</div>
+      <div class="dz-title">点击选择文件</div>
+      <div class="dz-sub">或把文件拖到这里 · 支持多选、任意格式</div>
+    </div>
+
+    <div class="list" id="list"></div>
+  </section>
+
+  <p class="foot">基于 WebRTC 点对点传输，文件不经过任何服务器中转</p>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  /* ============ 配置 ============ */
+  const CHUNK_SIZE   = 32 * 1024;        // 每片 32KB
+  const BUFFER_HIGH  = 4 * 1024 * 1024;  // 发送缓冲上限 4MB
+  const ALPHA = 'abcdefghijklmnopqrstuvwxyz0123456789';
+
+  /* ============ 状态 ============ */
+  const state = {
+    peer: null,
+    conn: null,
+    role: null,      // 'host' | 'guest'
+    myId: '',
+    recv: null,
+    queue: [],
+    sending: false,
+    connected: false,
+  };
+
+  const $ = (id) => document.getElementById(id);
+  const el = {
+    qr: $('qr'), myId: $('myId'), copyId: $('copyId'),
+    hostBox: $('hostBox'), guestBox: $('guestBox'),
+    guestMsg: $('guestMsg'), retry: $('retry'),
+    targetId: $('targetId'), btnConnect: $('btnConnect'),
+    panelConnect: $('panelConnect'), panelTransfer: $('panelTransfer'),
+    peerLabel: $('peerLabel'), dropzone: $('dropzone'),
+    fileInput: $('fileInput'), list: $('list'), toast: $('toast'),
+  };
+
+  /* ============ 工具 ============ */
+  function rand(n) {
+    try {
+      const a = crypto.getRandomValues(new Uint8Array(n));
+      return Array.from(a).map(b => ALPHA[b % 36]).join('');
+    } catch (e) {
+      let s = '';
+      for (let i = 0; i < n; i++) s += ALPHA[Math.floor(Math.random() * 36)];
+      return s;
+    }
+  }
+
+  let _uid = 0;
+  const uid = () => 'f' + Date.now().toString(36) + (_uid++).toString(36);
+
+  function fmtSize(b) {
+    if (!b) return '0 B';
+    if (b < 1024) return b + ' B';
+    if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+    if (b < 1073741824) return (b / 1048576).toFixed(1) + ' MB';
+    return (b / 1073741824).toFixed(2) + ' GB';
+  }
+
+  const byteLen = (d) => (d && (d.byteLength != null ? d.byteLength : d.size)) || 0;
+
+  function toast(msg, ms) {
+    el.toast.textContent = msg;
+    el.toast.classList.add('show');
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => el.toast.classList.remove('show'), ms || 2200);
+  }
+
+  /* ============ 启动 ============ */
+  function boot() {
+    bindUI();
+    const m = /[#&]r=([^&]*)/.exec(location.hash);
+    if (m && m[1]) {
+      state.role = 'guest';
+      el.hostBox.hidden = true;
+      el.guestBox.hidden = false;
+      startGuest(decodeURIComponent(m[1]));
+    } else {
+      state.role = 'host';
+      startHost();
+    }
+  }
+
+  /* ============ 主机（电脑端） ============ */
+  function startHost() {
+    const id = 'xfer-' + rand(8);
+    const peer = new Peer(id, { debug: 1 });
+    state.peer = peer;
+
+    peer.on('open', (pid) => {
+      state.myId = pid;
+      el.myId.textContent = pid;
+      renderQR(pid);
+    });
+
+    peer.on('connection', (conn) => {
+      if (state.conn && state.conn.open) { try { conn.close(); } catch (e) {} return; }
+      attach(conn);
+    });
+
+    peer.on('error', (err) => {
+      console.warn('[peer]', err.type, err.message);
+      if (err.type === 'unavailable-id') {
+        try { peer.destroy(); } catch (e) {}
+        setTimeout(startHost, 300);
+      }
+    });
+
+    peer.on('disconnected', () => {
+      if (!state.connected) { try { peer.reconnect(); } catch (e) {} }
+    });
+  }
+
+  function renderQR(pid) {
+    const url = location.origin + location.pathname + location.search + '#r=' + encodeURIComponent(pid);
+    try {
+      const qr = qrcode(0, 'M');
+      qr.addData(url);
+      qr.make();
+      el.qr.innerHTML = qr.createSvgTag({ cellSize: 4, margin: 2, scalable: true });
+      const svg = el.qr.querySelector('svg');
+      if (svg) { svg.style.width = '100%'; svg.style.height = 'auto'; svg.style.display = 'block'; }
+    } catch (e) {
+      el.qr.innerHTML = '<div class="qr-loading">二维码生成失败<br>请手动输入 ID 连接</div>';
+    }
+  }
+
+  /* ============ 访客（手机端） ============ */
+  function startGuest(hostId) {
+    const peer = new Peer({ debug: 1 });
+    state.peer = peer;
+
+    peer.on('open', () => {
+      const conn = peer.connect(hostId, { reliable: true });
+      attach(conn);
+      setTimeout(() => {
+        if (!state.connected) {
+          el.guestMsg.textContent = '连接超时，请确认电脑端页面仍然打开着，然后重试。';
+          el.retry.hidden = false;
+        }
+      }, 12000);
+    });
+
+    peer.on('error', (err) => {
+      console.warn('[peer]', err.type, err.message);
+      let msg = '连接失败：' + (err.type || err.message);
+      if (err.type === 'peer-unavailable') msg = '找不到对方（ID 可能已失效），请重新扫码。';
+      if (err.type === 'network' || err.type === 'server-error') msg = '无法连接信令服务器，请检查网络后重试。';
+      el.guestMsg.textContent = msg;
+      el.retry.hidden = false;
+    });
+
+    peer.on('disconnected', () => {
+      if (!state.connected) { try { peer.reconnect(); } catch (e) {} }
+    });
+  }
+
+  /* ============ 连接建立 ============ */
+  function attach(conn) {
+    if (state.conn && state.conn !== conn) { try { state.conn.close(); } catch (e) {} }
+    state.conn = conn;
+
+    conn.on('open', () => {
+      state.connected = true;
+      onConnected();
+    });
+    conn.on('data', onData);
+    conn.on('close', () => {
+      state.connected = false;
+      el.peerLabel.textContent = '连接已断开';
+      toast('连接已断开');
+    });
+    conn.on('error', (e) => console.warn('[conn]', e));
+  }
+
+  function onConnected() {
+    el.panelConnect.hidden = true;
+    el.panelTransfer.hidden = false;
+    el.peerLabel.textContent = '已连接 · ' + (state.conn.peer || '');
+    toast('连接成功，可以开始传文件了');
+    if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+  }
+
+  /* ============ 数据接收 ============ */
+  function onData(data) {
+    // 字符串 = 控制消息；二进制 = 文件分片
+    if (typeof data === 'string') {
+      let msg;
+      try { msg = JSON.parse(data); } catch (e) { return; }
+      if (msg.t === 'meta') startRecv(msg);
+      else if (msg.t === 'end') endRecv();
+      return;
+    }
+    const r = state.recv;
+    if (!r) return;
+    r.chunks.push(data);
+    r.got += byteLen(data);
+    r.item.setProgress(r.size ? r.got / r.size : 1);
+  }
+
+  function startRecv(meta) {
+    const item = createItem('recv', meta.name, meta.size);
+    state.recv = {
+      name: meta.name, size: meta.size, mime: meta.mime,
+      chunks: [], got: 0, item: item,
+    };
+  }
+
+  function endRecv() {
+    const r = state.recv;
+    if (!r) return;
+    state.recv = null;
+    const blob = new Blob(r.chunks, { type: r.mime || 'application/octet-stream' });
+    const url = URL.createObjectURL(blob);
+    r.item.done(url, r.name);
+    if (blob.size !== r.size) r.item.warn('大小不符');
+    toast('已收到：' + r.name);
+  }
+
+  /* ============ 发送 ============ */
+  function sendFiles(files) {
+    if (!files || !files.length) return;
+    if (!state.conn || !state.conn.open) { toast('尚未连接'); return; }
+    for (let i = 0; i < files.length; i++) state.queue.push(files[i]);
+    if (!state.sending) pump();
+  }
+
+  async function pump() {
+    state.sending = true;
+    while (state.queue.length) {
+      const file = state.queue.shift();
+      try { await sendOne(file); }
+      catch (e) { console.error(e); toast('发送失败：' + file.name); }
+    }
+    state.sending = false;
+  }
+
+  async function sendOne(file) {
+    const conn = state.conn;
+    const item = createItem('send', file.name, file.size);
+
+    conn.send(JSON.stringify({
+      t: 'meta',
+      name: file.name,
+      size: file.size,
+      mime: file.type || 'application/octet-stream'
+    }));
+
+    if (file.size === 0) {
+      conn.send(JSON.stringify({ t: 'end' }));
+      item.done();
+      return;
+    }
+
+    let offset = 0, tick = 0;
+    while (offset < file.size) {
+      if (!conn.open) throw new Error('连接已断开');
+      const buf = await file.slice(offset, offset + CHUNK_SIZE).arrayBuffer();
+      await drain();
+      conn.send(buf);
+      offset += buf.byteLength;
+      item.setProgress(offset / file.size);
+      if (++tick >= 16) { tick = 0; await new Promise(r => setTimeout(r, 0)); }
+    }
+    conn.send(JSON.stringify({ t: 'end' }));
+    item.done();
+  }
+
+  // 背压控制：缓冲过大时等待
+  function drain() {
+    return new Promise((resolve) => {
+      const dc = state.conn && state.conn.dataChannel;
+      if (!dc) return resolve();
+      const check = () => {
+        if (!dc || dc.readyState !== 'open' || dc.bufferedAmount < BUFFER_HIGH) resolve();
+        else setTimeout(check, 15);
+      };
+      check();
+    });
+  }
+
+  /* ============ 列表项 ============ */
+  function createItem(kind, name, size) {
+    const row = document.createElement('div');
+    row.className = 'item ' + kind;
+    row.innerHTML =
+      '<div class="ico">' + (kind === 'send' ? '↑' : '↓') + '</div>' +
+      '<div class="body">' +
+        '<div class="name"></div>' +
+        '<div class="bar"><i></i></div>' +
+        '<div class="meta"><span class="pct">0%</span><span class="sz"></span></div>' +
+      '</div>' +
+      '<div class="act"></div>';
+
+    row.querySelector('.name').textContent = name;
+    row.querySelector('.sz').textContent = fmtSize(size);
+
+    const bar = row.querySelector('.bar > i');
+    const pct = row.querySelector('.pct');
+    const act = row.querySelector('.act');
+    el.list.prepend(row);
+
+    return {
+      setProgress(p) {
+        p = Math.max(0, Math.min(1, p || 0));
+        bar.style.width = (p * 100).toFixed(1) + '%';
+        pct.textContent = Math.floor(p * 100) + '%';
+      },
+      done(url, filename) {
+        row.classList.add('done');
+        bar.style.width = '100%';
+        pct.textContent = '100%';
+        act.innerHTML = '';
+        if (url) {
+          const a = document.createElement('a');
+          a.className = 'btn-mini';
+          a.href = url;
+          a.download = filename || name;
+          a.textContent = '保存';
+          act.appendChild(a);
+        } else {
+          const s = document.createElement('span');
+          s.className = 'tag ok';
+          s.textContent = '完成';
+          act.appendChild(s);
+        }
+      },
+      warn(text) {
+        const s = document.createElement('span');
+        s.className = 'tag warn';
+        s.textContent = text;
+        act.appendChild(s);
+      },
+      fail(text) {
+        row.classList.add('failed');
+        act.innerHTML = '';
+        const s = document.createElement('span');
+        s.className = 'tag err';
+        s.textContent = text || '失败';
+        act.appendChild(s);
+      }
+    };
+  }
+
+  /* ============ 交互绑定 ============ */
+  function bindUI() {
+    // 选择文件
+    el.dropzone.addEventListener('click', () => el.fileInput.click());
+    el.fileInput.addEventListener('change', (e) => {
+      const files = Array.prototype.slice.call(e.target.files);
+      e.target.value = '';
+      sendFiles(files);
+    });
+
+    // 拖拽
+    ['dragenter', 'dragover'].forEach((t) =>
+      el.dropzone.addEventListener(t, (e) => {
+        e.preventDefault(); e.stopPropagation();
+        el.dropzone.classList.add('over');
+      })
+    );
+    ['dragleave', 'drop'].forEach((t) =>
+      el.dropzone.addEventListener(t, (e) => {
+        e.preventDefault(); e.stopPropagation();
+        el.dropzone.classList.remove('over');
+      })
+    );
+    el.dropzone.addEventListener('drop', (e) => {
+      const files = e.dataTransfer ? Array.prototype.slice.call(e.dataTransfer.files) : [];
+      sendFiles(files);
+    });
+    window.addEventListener('dragover', (e) => e.preventDefault());
+    window.addEventListener('drop', (e) => e.preventDefault());
+
+    // 复制 ID
+    el.copyId.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(state.myId);
+        el.copyId.textContent = '已复制';
+        setTimeout(() => { el.copyId.textContent = '复制'; }, 1200);
+      } catch (e) {
+        toast('复制失败，请手动选择文本');
+      }
+    });
+
+    // 手动连接
+    el.btnConnect.addEventListener('click', () => {
+      const id = el.targetId.value.trim();
+      if (!id) { toast('请输入对方 ID'); return; }
+      if (!state.peer) { toast('尚未就绪，请稍候'); return; }
+      const go = () => attach(state.peer.connect(id, { reliable: true }));
+      if (state.peer.open) go();
+      else state.peer.once('open', go);
+      toast('正在连接…');
+    });
+
+    el.retry.addEventListener('click', () => location.reload());
+  }
+
+  boot();
+})();
+</script>
+</body>
+</html>
