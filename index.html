@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>导航中心</title>
+<style>
+  /* ---------- 基础重置 ---------- */
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  :root {
+    --card-bg: #ffffff;
+    --text-main: #1a202c;
+    --text-sub: #64748b;
+    --accent: #6366f1;
+    --accent-2: #8b5cf6;
+    --radius: 18px;
+    --shadow-sm: 0 2px 8px rgba(15, 23, 42, .06);
+    --shadow-lg: 0 18px 40px -12px rgba(79, 70, 229, .35);
+  }
+
+  body {
+    min-height: 100vh;
+    font-family: "PingFang SC", "Microsoft YaHei", -apple-system,
+                 BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: var(--text-main);
+    background:
+      radial-gradient(1200px 600px at 10% -10%, #e0e7ff 0%, transparent 60%),
+      radial-gradient(1000px 500px at 100% 0%, #fae8ff 0%, transparent 55%),
+      #f7f8fc;
+    padding: 64px 24px 96px;
+    -webkit-font-smoothing: antialiased;
+
+    /* 让内容在垂直方向更好看 */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  /* ---------- 页头 ---------- */
+  .page-header {
+    max-width: 900px;
+    width: 100%;
+    margin: 0 auto 48px;
+    text-align: center;
+  }
+
+  .page-header h1 {
+    font-size: clamp(28px, 4vw, 44px);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    background: linear-gradient(120deg, #4f46e5, #9333ea 55%, #ec4899);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    margin-bottom: 14px;
+  }
+
+  .page-header p {
+    font-size: 16px;
+    color: var(--text-sub);
+    line-height: 1.7;
+  }
+
+  /* ---------- 卡片网格：自动换行 ---------- */
+  .card-grid {
+    max-width: 900px;
+    width: 100%;
+    margin: 0 auto;
+    display: grid;
+    /* 空间不足时自动换行 */
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 28px;
+  }
+
+  /* ---------- 卡片本体 ---------- */
+  .card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 34px 28px 28px;
+    background: var(--card-bg);
+    border: 1px solid rgba(148, 163, 184, .22);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    text-decoration: none;
+    color: inherit;
+    overflow: hidden;
+    isolation: isolate;
+    transition: transform .32s cubic-bezier(.22, .8, .3, 1),
+                box-shadow .32s cubic-bezier(.22, .8, .3, 1),
+                border-color .32s ease;
+  }
+
+  /* 顶部渐变条（hover 时展开） */
+  .card::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2), #ec4899);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform .38s cubic-bezier(.22, .8, .3, 1);
+    z-index: 2;
+  }
+
+  /* 柔和光晕背景 */
+  .card::after {
+    content: "";
+    position: absolute;
+    width: 240px;
+    height: 240px;
+    right: -90px;
+    bottom: -120px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(99, 102, 241, .18), transparent 70%);
+    opacity: 0;
+    transition: opacity .38s ease;
+    z-index: -1;
+  }
+
+  .card:hover {
+    transform: translateY(-6px);
+    border-color: rgba(99, 102, 241, .45);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .card:hover::before { transform: scaleX(1); }
+  .card:hover::after  { opacity: 1; }
+
+  .card:focus-visible {
+    outline: 3px solid rgba(99, 102, 241, .45);
+    outline-offset: 3px;
+  }
+
+  /* ---------- 卡片内部元素 ---------- */
+  .card-icon {
+    width: 54px;
+    height: 54px;
+    display: grid;
+    place-items: center;
+    border-radius: 15px;
+    font-size: 26px;
+    background: linear-gradient(135deg, #eef2ff, #f5f3ff);
+    border: 1px solid rgba(99, 102, 241, .16);
+    transition: transform .32s cubic-bezier(.22, .8, .3, 1);
+  }
+
+  .card:hover .card-icon { transform: scale(1.08) rotate(-4deg); }
+
+  .card-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+
+  .card-title .arrow {
+    font-size: 16px;
+    color: var(--accent);
+    opacity: 0;
+    transform: translateX(-6px);
+    transition: opacity .3s ease, transform .3s ease;
+  }
+
+  .card:hover .card-title .arrow {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  .card-desc {
+    font-size: 14.5px;
+    line-height: 1.8;
+    color: var(--text-sub);
+    flex: 1;
+  }
+
+  .card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    margin-top: 8px;
+    padding-top: 16px;
+    border-top: 1px dashed rgba(148, 163, 184, .32);
+  }
+
+  .card-go {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--accent);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: gap .25s ease;
+  }
+
+  .card:hover .card-go { gap: 10px; }
+
+  /* ---------- 页脚 ---------- */
+  .page-footer {
+    max-width: 900px;
+    width: 100%;
+    margin: 72px auto 0;
+    text-align: center;
+    font-size: 13px;
+    color: #94a3b8;
+  }
+
+  /* ---------- 入场动画 ---------- */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .card {
+    animation: fadeUp .55s cubic-bezier(.22, .8, .3, 1) backwards;
+  }
+
+  .card:nth-child(1) { animation-delay: .06s; }
+  .card:nth-child(2) { animation-delay: .16s; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+
+  /* ---------- 小屏适配 ---------- */
+  @media (max-width: 640px) {
+    body { padding: 40px 16px 64px; }
+    .card-grid { gap: 18px; grid-template-columns: 1fr; }
+    .card { padding: 26px 22px 22px; }
+  }
+</style>
+</head>
+<body>
+
+  <header class="page-header">
+    <h1>导航中心</h1>
+    <p>选择一个功能，立即开始使用</p>
+  </header>
+
+  <main class="card-grid">
+
+    <a class="card" href="./transfer.html">
+      <div class="card-icon">📤</div>
+      <h2 class="card-title">文件传输助手 <span class="arrow">→</span></h2>
+      <p class="card-desc">
+        在设备之间快速互传文件，支持拖拽上传、链接分享与历史记录查看，
+        让跨端传递资料变得简单高效。
+      </p>
+      <div class="card-footer">
+        <span class="card-go">进入 <span>→</span></span>
+      </div>
+    </a>
+
+    <a class="card" href="./reader.html">
+      <div class="card-icon">📖</div>
+      <h2 class="card-title">小说阅读器 <span class="arrow">→</span></h2>
+      <p class="card-desc">
+        沉浸式阅读体验，支持书架管理、章节跳转、字号与背景调节，
+        并自动记录阅读进度，随时续读。
+      </p>
+      <div class="card-footer">
+        <span class="card-go">进入 <span>→</span></span>
+      </div>
+    </a>
+  </main>
+
+  <footer class="page-footer">
+    © 2025 导航中心
+  </footer>
+
+</body>
+</html>
