@@ -15,6 +15,21 @@
         "description": "有点热",
         "created_at": "2026-09-22T02:49:45.903Z"
       }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.43161392211915,
+          36.05465038150424
+        ]
+      },
+      "properties": {
+        "title": "旅游",
+        "description": "风景不错",
+        "created_at": "2026-09-22T03:27:13.334Z"
+      }
     }
   ]
 }
