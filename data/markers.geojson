@@ -105,6 +105,21 @@
         "description": "和珅家挺豪横的",
         "created_at": "2026-09-22T05:39:12.883Z"
       }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          116.41083240509033,
+          39.88184860939737
+        ]
+      },
+      "properties": {
+        "title": "天坛公园",
+        "description": "好看好看，就是人有点儿多",
+        "created_at": "2026-09-22T05:40:21.627Z"
+      }
     }
   ]
 }
