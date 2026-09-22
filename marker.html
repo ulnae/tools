@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>共享标点</title>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+        #map { width: 100%; height: 100%; }
+
+        .toolbar {
+            position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+            z-index: 1000; display: flex; gap: 8px; align-items: center;
+            background: #fff; padding: 8px 14px; border-radius: 10px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15); font-size: 14px;
+        }
+        .toolbar button {
+            padding: 6px 14px; border: none; border-radius: 6px;
+            cursor: pointer; font-size: 13px; font-weight: 500; transition: background 0.2s;
+        }
+        .btn-primary { background: #2563eb; color: #fff; }
+        .btn-primary:hover { background: #1d4ed8; }
+        .btn-primary.active { background: #dc2626; }
+        .btn-secondary { background: #f3f4f6; color: #374151; }
+        .btn-secondary:hover { background: #e5e7eb; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+        .status-dot.ok { background: #22c55e; }
+        .status-dot.err { background: #ef4444; }
+        .status-dot.loading { background: #f59e0b; animation: pulse 1s infinite; }
+        @keyframes pulse { 50% { opacity: 0.3; } }
+
+        .leaflet-popup-content { margin: 0; min-width: 260px; }
+
+        .popup-form { padding: 16px; }
+        .popup-form h3 {
+            font-size: 15px; margin-bottom: 12px; color: #111827;
+            padding-bottom: 8px; border-bottom: 1px solid #e5e7eb;
+        }
+        .popup-form label {
+            display: block; font-size: 12px; font-weight: 600;
+            color: #6b7280; margin-bottom: 4px; margin-top: 10px;
+        }
+        .popup-form label:first-of-type { margin-top: 0; }
+        .popup-form input, .popup-form textarea {
+            width: 100%; padding: 7px 10px; border: 1px solid #d1d5db;
+            border-radius: 6px; font-size: 13px; font-family: inherit;
+            outline: none; transition: border-color 0.2s;
+        }
+        .popup-form input:focus, .popup-form textarea:focus {
+            border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+        }
+        .popup-form textarea { resize: vertical; min-height: 60px; }
+        .popup-form .form-actions {
+            display: flex; gap: 8px; margin-top: 14px;
+            padding-top: 12px; border-top: 1px solid #e5e7eb;
+        }
+        .popup-form .form-actions button {
+            flex: 1; padding: 8px; border: none; border-radius: 6px;
+            font-size: 13px; font-weight: 500; cursor: pointer;
+        }
+
+        .marker-detail { padding: 16px; }
+        .marker-detail h3 { font-size: 16px; color: #111827; margin-bottom: 8px; line-height: 1.3; }
+        .marker-detail .desc {
+            font-size: 13px; color: #4b5563; line-height: 1.6;
+            margin-bottom: 10px; white-space: pre-wrap;
+        }
+        .marker-detail .coords { font-size: 11px; color: #9ca3af; margin-bottom: 12px; }
+        .marker-detail .nav-btn {
+            display: block; width: 100%; padding: 10px;
+            background: #2563eb; color: #fff; border: none; border-radius: 8px;
+            font-size: 14px; font-weight: 600; cursor: pointer;
+            text-align: center; text-decoration: none;
+        }
+        .marker-detail .nav-btn:hover { background: #1d4ed8; }
+
+        @media (max-width: 600px) {
+            .toolbar { width: calc(100% - 24px); justify-content: center; }
+            .leaflet-popup-content { min-width: 220px; }
+        }
+
+        .toast {
+            position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+            z-index: 9999; padding: 10px 20px; border-radius: 8px;
+            font-size: 13px; color: #fff; opacity: 0; transition: opacity 0.3s;
+            pointer-events: none;
+        }
+        .toast.show { opacity: 1; }
+        .toast.success { background: #16a34a; }
+        .toast.error { background: #dc2626; }
+        .toast.info { background: #2563eb; }
+    </style>
+</head>
+
+<body>
+
+    <div id="map"></div>
+
+    <div class="toolbar">
+        <span class="status-dot loading" id="statusDot"></span>
+        <span id="statusText" style="color:#6b7280;">加载中...</span>
+        <button class="btn-primary" id="btnAddMode">添加标点</button>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        /* ============================================================
+           配置区
+           ============================================================ */
+        const CONFIG = {
+            GITHUB_OWNER: 'ulnae',
+            GITHUB_REPO: 'tools',
+            GITHUB_BRANCH: 'master',
+            DATA_FILE: 'data/markers.geojson',
+
+            // ⚠️ 强烈建议不要把真实 Token 直接写进公开页面
+            // 已被泄露的 Token 请立即到 GitHub 撤销
+            GITHUB_TOKEN: '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',
+
+            // 地图初始视图（IP 定位失败时的兜底中心点）
+            MAP_CENTER: [34.75, 113.62],
+            MAP_ZOOM: 12,
+            IP_ZOOM: 11,
+            USE_IP_LOCATION: true
+        };
+
+        /* ============================================================
+           工具函数
+           ============================================================ */
+        const $ = id => document.getElementById(id);
+        let toastTimer;
+        function showToast(msg, type = 'info') {
+            const t = $('toast');
+            t.textContent = msg;
+            t.className = `toast show ${type}`;
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => t.className = 'toast', 3000);
+        }
+
+        function setStatus(state, text) {
+            $('statusDot').className = `status-dot ${state}`;
+            $('statusText').textContent = text;
+        }
+
+        /** WGS-84 → GCJ-02 坐标转换 */
+        function wgs84ToGcj02(lng, lat) {
+            const PI = 3.1415926535897932384626;
+            const a = 6378245.0;
+            const ee = 0.00669342162296594323;
+            function outOfChina(lng, lat) {
+                return lng < 72.004 || lng > 137.8347 || lat < 0.8293 || lat > 55.8271;
+            }
+            function transformLat(x, y) {
+                let ret = -100 + 2 * x + 3 * y + 0.2 * y * y + 0.1 * x * y + 0.2 * Math.sqrt(Math.abs(x));
+                ret += (20 * Math.sin(6 * x * PI) + 20 * Math.sin(2 * x * PI)) * 2 / 3;
+                ret += (20 * Math.sin(y * PI) + 40 * Math.sin(y / 3 * PI)) * 2 / 3;
+                ret += (160 * Math.sin(y / 12 * PI) + 320 * Math.sin(y * PI / 30)) * 2 / 3;
+                return ret;
+            }
+            function transformLng(x, y) {
+                let ret = 300 + x + 2 * y + 0.1 * x * x + 0.1 * x * y + 0.1 * Math.sqrt(Math.abs(x));
+                ret += (20 * Math.sin(6 * x * PI) + 20 * Math.sin(2 * x * PI)) * 2 / 3;
+                ret += (20 * Math.sin(x * PI) + 40 * Math.sin(x / 3 * PI)) * 2 / 3;
+                ret += (150 * Math.sin(x / 12 * PI) + 300 * Math.sin(x / 30 * PI)) * 2 / 3;
+                return ret;
+            }
+            if (outOfChina(lng, lat)) return [lng, lat];
+            let dLat = transformLat(lng - 105, lat - 35);
+            let dLng = transformLng(lng - 105, lat - 35);
+            const radLat = lat / 180 * PI;
+            let magic = Math.sin(radLat);
+            magic = 1 - ee * magic * magic;
+            const sqrtMagic = Math.sqrt(magic);
+            dLat = (dLat * 180) / ((a * (1 - ee)) / (magic * sqrtMagic) * PI);
+            dLng = (dLng * 180) / (a / sqrtMagic * Math.cos(radLat) * PI);
+            return [lng + dLng, lat + dLat];
+        }
+
+        /**
+         * 生成导航链接。
+         * 由于我们已统一使用 GCJ-02（高德瓦片坐标系），这里直接传入即可。
+         */
+        function buildNavigationUrl(lat, lng) {
+            return `https://uri.amap.com/navigation?to=${lng.toFixed(6)},${lat.toFixed(6)},标点&mode=car&policy=1`;
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        /* ============================================================
+           IP 地理定位（国内服务优先，返回 GCJ-02 坐标）
+           ============================================================ */
+        async function fetchIpLocation() {
+            // 每个服务返回 [lat, lng]（GCJ-02），失败抛错
+            const services = [
+                // api.vore.top —— 国内服务，返回 WGS-84
+                async () => {
+                    const res = await fetch('https://api.vore.top/api/IPdata');
+                    const d = await res.json();
+                    const lat = parseFloat(d?.ipdata?.lat);
+                    const lng = parseFloat(d?.ipdata?.lng);
+                    if (!isFinite(lat) || !isFinite(lng)) throw new Error('vore.top no coords');
+                    return wgs84ToGcj02(lng, lat).reverse(); // 转 GCJ-02 后返回 [lat, lng]
+                },
+                // ip.useragentinfo.com —— 国内服务，返回 WGS-84
+                async () => {
+                    const res = await fetch('https://ip.useragentinfo.com/json');
+                    const d = await res.json();
+                    const lat = parseFloat(d.latitude);
+                    const lng = parseFloat(d.longitude);
+                    if (!isFinite(lat) || !isFinite(lng)) throw new Error('useragentinfo no coords');
+                    return wgs84ToGcj02(lng, lat).reverse();
+                },
+                // ipwho.is —— 国外服务（可能被墙）
+                async () => {
+                    const res = await fetch('https://ipwho.is/');
+                    const d = await res.json();
+                    if (d.success === false) throw new Error(d.message || 'ipwho.is failed');
+                    if (typeof d.latitude !== 'number' || typeof d.longitude !== 'number') {
+                        throw new Error('ipwho.is no coords');
+                    }
+                    return wgs84ToGcj02(d.longitude, d.latitude).reverse();
+                }
+            ];
+
+            for (const fn of services) {
+                try {
+                    const loc = await fn();
+                    return loc;
+                } catch (e) {
+                    console.warn('IP 定位服务失败:', e.message);
+                }
+            }
+            return null;
+        }
+
+        /* ============================================================
+           GitHub API 操作
+           ============================================================ */
+        async function ghApi(path, options = {}) {
+            const url = `https://api.github.com/repos/${CONFIG.GITHUB_OWNER}/${CONFIG.GITHUB_REPO}/contents/${path}`;
+            const res = await fetch(url, {
+                ...options,
+                headers: {
+                    'Accept': 'application/vnd.github+json',
+                    'Authorization': `Bearer ${CONFIG.GITHUB_TOKEN}`,
+                    'Content-Type': 'application/json',
+                    ...(options.headers || {})
+                }
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.message || `GitHub API 错误 (${res.status})`);
+            }
+            return res.json();
+        }
+
+        async function loadMarkers() {
+            setStatus('loading', '加载中...');
+            const data = await ghApi(CONFIG.DATA_FILE);
+            const content = JSON.parse(decodeURIComponent(escape(atob(data.content))));
+            window._fileSha = data.sha;
+            return content;
+        }
+
+        async function saveMarkers(geojson) {
+            const jsonStr = JSON.stringify(geojson, null, 2);
+            const content = btoa(unescape(encodeURIComponent(jsonStr)));
+            const body = {
+                message: `更新标点数据 - ${new Date().toLocaleString('zh-CN')}`,
+                content: content,
+                branch: CONFIG.GITHUB_BRANCH
+            };
+            if (window._fileSha) body.sha = window._fileSha;
+            const result = await ghApi(CONFIG.DATA_FILE, {
+                method: 'PUT',
+                body: JSON.stringify(body)
+            });
+            window._fileSha = result.content.sha;
+            return result;
+        }
+
+        /* ============================================================
+           地图初始化
+           ============================================================ */
+        const map = L.map('map', { zoomControl: false })
+            .setView(CONFIG.MAP_CENTER, CONFIG.MAP_ZOOM);
+        L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+        // 高德瓦片（GCJ-02 坐标系，国内访问稳定）
+        // style=7 普通矢量图；style=8 矢量路网（带路名，适合导航场景）
+        L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', {
+            subdomains: ['1', '2', '3', '4'],
+            maxZoom: 18,
+            minZoom: 3,
+            attribution: '&copy; 高德地图'
+        }).addTo(map);
+
+        let geojsonData = { type: 'FeatureCollection', features: [] };
+        let geoLayer = null;
+        let addMode = false;
+        let tempMarker = null;
+        let currentPopup = null;
+
+        function renderMarkers() {
+            if (geoLayer) map.removeLayer(geoLayer);
+            geoLayer = L.geoJSON(geojsonData, {
+                pointToLayer: (feature, latlng) => L.marker(latlng),
+                onEachFeature: (feature, layer) => {
+                    const p = feature.properties;
+                    layer.bindPopup(buildDetailHtml(p, feature.geometry.coordinates), {
+                        maxWidth: 320, minWidth: 260
+                    });
+                }
+            }).addTo(map);
+        }
+
+        function buildDetailHtml(props, coords) {
+            const [lng, lat] = coords;
+            const navUrl = buildNavigationUrl(lat, lng);
+            return `
+    <div class="marker-detail">
+      <h3>${escapeHtml(props.title || '未命名标点')}</h3>
+      <div class="desc">${escapeHtml(props.description || '暂无详情')}</div>
+      <div class="coords">📍 ${lat.toFixed(6)}, ${lng.toFixed(6)}</div>
+      <a class="nav-btn" href="${navUrl}" target="_blank" rel="noopener">🧭 导航到此位置</a>
+    </div>`;
+        }
+
+        /* ============================================================
+           添加标点交互
+           ============================================================ */
+        $('btnAddMode').addEventListener('click', () => {
+            addMode = !addMode;
+            const btn = $('btnAddMode');
+            btn.textContent = addMode ? '取消添加' : '添加标点';
+            btn.className = addMode ? 'btn-primary active' : 'btn-primary';
+            if (addMode) {
+                map.getContainer().style.cursor = 'crosshair';
+                showToast('点击地图上的位置来添加标点', 'info');
+            } else {
+                map.getContainer().style.cursor = '';
+                if (tempMarker) { map.removeLayer(tempMarker); tempMarker = null; }
+            }
+        });
+
+        map.on('click', (e) => {
+            if (!addMode) return;
+            const { lat, lng } = e.latlng; // 高德瓦片下即为 GCJ-02，直接使用
+
+            if (tempMarker) map.removeLayer(tempMarker);
+            tempMarker = L.marker([lat, lng]).addTo(map);
+
+            const formHtml = `
+    <div class="popup-form">
+      <h3>📍 新增标点</h3>
+      <label>标题 *</label>
+      <input id="f-title" type="text" placeholder="给这个位置起个名字" maxlength="50">
+      <label>详情描述</label>
+      <textarea id="f-desc" placeholder="补充一些说明..." maxlength="500"></textarea>
+      <div class="form-actions">
+        <button class="btn-secondary" id="f-cancel">取消</button>
+        <button class="btn-primary" id="f-save">保存</button>
+      </div>
+    </div>`;
+
+            if (currentPopup) map.closePopup(currentPopup);
+            currentPopup = L.popup({ maxWidth: 320, minWidth: 260, closeOnClick: false })
+                .setLatLng([lat, lng])
+                .setContent(formHtml)
+                .openOn(map);
+
+            setTimeout(() => {
+                const titleInput = document.getElementById('f-title');
+                if (titleInput) titleInput.focus();
+
+                document.getElementById('f-cancel')?.addEventListener('click', () => {
+                    map.closePopup(currentPopup);
+                    if (tempMarker) { map.removeLayer(tempMarker); tempMarker = null; }
+                });
+
+                document.getElementById('f-save')?.addEventListener('click', async () => {
+                    const title = document.getElementById('f-title').value.trim();
+                    const desc = document.getElementById('f-desc').value.trim();
+                    if (!title) { showToast('请填写标题', 'error'); return; }
+
+                    const saveBtn = document.getElementById('f-save');
+                    saveBtn.textContent = '保存中...';
+                    saveBtn.disabled = true;
+
+                    const newFeature = {
+                        type: 'Feature',
+                        geometry: { type: 'Point', coordinates: [lng, lat] },
+                        properties: {
+                            title,
+                            description: desc,
+                            created_at: new Date().toISOString()
+                        }
+                    };
+
+                    geojsonData.features.push(newFeature);
+                    try {
+                        await saveMarkers(geojsonData);
+                        renderMarkers();
+                        map.closePopup(currentPopup);
+                        if (tempMarker) { map.removeLayer(tempMarker); tempMarker = null; }
+                        addMode = false;
+                        $('btnAddMode').textContent = '添加标点';
+                        $('btnAddMode').className = 'btn-primary';
+                        map.getContainer().style.cursor = '';
+                        setStatus('ok', `已加载 ${geojsonData.features.length} 个标点`);
+                        showToast('标点已保存 ✓', 'success');
+                    } catch (err) {
+                        geojsonData.features.pop();
+                        showToast('保存失败: ' + err.message, 'error');
+                        saveBtn.textContent = '保存';
+                        saveBtn.disabled = false;
+                    }
+                });
+            }, 50);
+        });
+
+        /* ============================================================
+           启动
+           ============================================================ */
+        (async function init() {
+            if (CONFIG.USE_IP_LOCATION) {
+                setStatus('loading', '正在定位...');
+                const ipLoc = await fetchIpLocation();
+                if (ipLoc) {
+                    map.flyTo(ipLoc, CONFIG.IP_ZOOM, { duration: 1.5 });
+                } else {
+                    console.warn('IP 定位失败，使用默认中心点');
+                }
+            }
+
+            try {
+                const data = await loadMarkers();
+                geojsonData = data;
+                renderMarkers();
+                setStatus('ok', `已加载 ${geojsonData.features.length} 个标点`);
+            } catch (err) {
+                setStatus('err', '加载失败: ' + err.message);
+                showToast('数据加载失败：' + err.message, 'error');
+            }
+        })();
+    </script>
+</body>
+
+</html>
