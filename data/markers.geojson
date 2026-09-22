@@ -1,5 +1,21 @@
 {
   "type": "FeatureCollection",
   "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          113.77752006053926,
+          34.843808410099896
+        ]
+      },
+      "properties": {
+        "title": "大柳树下",
+        "description": "出鲤鱼、鲫鱼、翘嘴、黄辣丁、白条、鳑鲏",
+        "type": "t_muca0y5e3au6",
+        "created_at": "2026-09-22T09:38:36.641Z"
+      }
+    }
   ]
 }
