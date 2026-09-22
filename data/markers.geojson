@@ -120,6 +120,21 @@
         "description": "好看好看，就是人有点儿多",
         "created_at": "2026-09-22T05:40:21.627Z"
       }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.12794494628908,
+          31.186958816798732
+        ]
+      },
+      "properties": {
+        "title": "练习游泳",
+        "description": "",
+        "created_at": "2026-09-22T06:09:15.727Z"
+      }
     }
   ]
 }
