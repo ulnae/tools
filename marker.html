@@ -26,11 +26,11 @@
             height: 100%;
         }
 
+        /* ================= 工具栏 ================= */
         .toolbar {
             position: absolute;
             top: 12px;
-            left: 50%;
-            transform: translateX(-50%);
+            right: 12px;
             z-index: 1000;
             display: flex;
             gap: 8px;
@@ -65,6 +65,11 @@
             background: #dc2626;
         }
 
+        .btn-primary:disabled {
+            opacity: .6;
+            cursor: not-allowed;
+        }
+
         .btn-secondary {
             background: #f3f4f6;
             color: #374151;
@@ -79,6 +84,7 @@
             height: 8px;
             border-radius: 50%;
             display: inline-block;
+            flex: none;
         }
 
         .status-dot.ok {
@@ -100,9 +106,154 @@
             }
         }
 
+        /* ================= 左侧面板 ================= */
+        .panel {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            z-index: 1000;
+            width: 246px;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+            font-size: 13px;
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .panel-header h2 {
+            font-size: 13px;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .panel-header .chev {
+            color: #9ca3af;
+            font-size: 12px;
+            transition: transform .2s;
+        }
+
+        .panel.collapsed .panel-header .chev {
+            transform: rotate(-90deg);
+        }
+
+        .panel-body {
+            padding: 0 12px 12px;
+            max-height: calc(100vh - 140px);
+            overflow-y: auto;
+        }
+
+        .panel.collapsed .panel-body {
+            display: none;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 7px 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 13px;
+            outline: none;
+            transition: border-color .2s;
+            font-family: inherit;
+        }
+
+        .search-input:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+        }
+
+        .type-actions {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0 6px;
+            flex-wrap: wrap;
+        }
+
+        .link-btn {
+            background: none;
+            border: none;
+            padding: 0;
+            color: #2563eb;
+            font-size: 12px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        .link-btn:hover {
+            text-decoration: underline;
+        }
+
+        .type-filters {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+        }
+
+        .type-chip {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 7px;
+            border-radius: 7px;
+            cursor: pointer;
+            transition: background .15s;
+            line-height: 1.2;
+        }
+
+        .type-chip:hover {
+            background: #f3f4f6;
+        }
+
+        .type-chip input {
+            accent-color: #2563eb;
+            cursor: pointer;
+            flex: none;
+            width: 14px;
+            height: 14px;
+        }
+
+        .type-chip .chip-name {
+            color: #374151;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .type-chip .count {
+            margin-left: auto;
+            font-size: 11px;
+            color: #9ca3af;
+            flex: none;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            flex: none;
+        }
+
+        .empty-tip {
+            font-size: 12px;
+            color: #9ca3af;
+            padding: 8px 2px;
+            line-height: 1.6;
+        }
+
+        /* ================= 弹窗 ================= */
         .leaflet-popup-content {
             margin: 0;
-            min-width: 260px;
+            min-width: 360px;
         }
 
         .popup-form {
@@ -130,8 +281,9 @@
             margin-top: 0;
         }
 
-        .popup-form input,
-        .popup-form textarea {
+        .popup-form input[type="text"],
+        .popup-form textarea,
+        .popup-form select {
             width: 100%;
             padding: 7px 10px;
             border: 1px solid #d1d5db;
@@ -140,17 +292,28 @@
             font-family: inherit;
             outline: none;
             transition: border-color 0.2s;
+            background: #fff;
+        }
+
+        .popup-form select {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path fill='%236b7280' d='M2 4l4 4 4-4z'/></svg>");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            padding-right: 28px;
         }
 
         .popup-form input:focus,
-        .popup-form textarea:focus {
+        .popup-form textarea:focus,
+        .popup-form select:focus {
             border-color: #2563eb;
             box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
         }
 
         .popup-form textarea {
             resize: vertical;
-            min-height: 60px;
+            min-height: 56px;
         }
 
         .popup-form .form-actions {
@@ -171,8 +334,21 @@
             cursor: pointer;
         }
 
+        /* ================= 详情 ================= */
         .marker-detail {
             padding: 16px;
+        }
+
+        .marker-detail .type-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 3px 9px;
+            border-radius: 999px;
+            border: 1px solid transparent;
+            margin-bottom: 8px;
         }
 
         .marker-detail h3 {
@@ -215,17 +391,7 @@
             background: #1d4ed8;
         }
 
-        @media (max-width: 600px) {
-            .toolbar {
-                width: calc(100% - 24px);
-                justify-content: center;
-            }
-
-            .leaflet-popup-content {
-                min-width: 220px;
-            }
-        }
-
+        /* ================= Toast ================= */
         .toast {
             position: fixed;
             bottom: 24px;
@@ -239,6 +405,8 @@
             opacity: 0;
             transition: opacity 0.3s;
             pointer-events: none;
+            max-width: 80vw;
+            text-align: center;
         }
 
         .toast.show {
@@ -256,6 +424,178 @@
         .toast.info {
             background: #2563eb;
         }
+
+        /* ================= 类型新增弹窗 ================= */
+        .modal-mask {
+            position: fixed;
+            inset: 0;
+            background: rgba(17, 24, 39, 0.45);
+            z-index: 9998;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .modal-mask.show {
+            display: flex;
+        }
+
+        .modal {
+            background: #fff;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 390px;
+            max-height: 86vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, .25);
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 16px;
+            border-bottom: 1px solid #e5e7eb;
+            flex: none;
+        }
+
+        .modal-header h2 {
+            font-size: 15px;
+            color: #111827;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 18px;
+            color: #9ca3af;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .modal-close:hover {
+            color: #374151;
+        }
+
+        .modal-body {
+            padding: 16px;
+            overflow-y: auto;
+        }
+
+        .field-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: #6b7280;
+            margin: 10px 0 4px;
+        }
+
+        .field-label:first-of-type {
+            margin-top: 0;
+        }
+
+        .required-star {
+            color: #ef4444;
+            margin-left: 2px;
+        }
+
+        .text-input {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 13px;
+            outline: none;
+            font-family: inherit;
+            transition: border-color .2s;
+        }
+
+        .text-input:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, .1);
+        }
+
+        .color-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        input[type="color"] {
+            width: 44px;
+            height: 36px;
+            padding: 2px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            background: #fff;
+            cursor: pointer;
+            flex: none;
+        }
+
+        .swatches {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 7px;
+            margin-top: 10px;
+        }
+
+        .swatch {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: transform .12s;
+        }
+
+        .swatch:hover {
+            transform: scale(1.15);
+        }
+
+        .save-type-btn {
+            width: 100%;
+            margin-top: 18px;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* ================= 自定义标记 ================= */
+        .marker-pin {
+            background: transparent !important;
+            border: none !important;
+        }
+
+        /* ================= 移动端 ================= */
+        @media (max-width: 640px) {
+            .toolbar {
+                left: 12px;
+                right: 12px;
+                justify-content: space-between;
+                font-size: 13px;
+            }
+
+            .panel {
+                top: 68px;
+                left: 12px;
+                right: 12px;
+                width: auto;
+            }
+
+            .panel-body {
+                max-height: 46vh;
+            }
+
+            .leaflet-popup-content {
+                min-width: 220px;
+            }
+        }
     </style>
 </head>
 
@@ -263,10 +603,52 @@
 
     <div id="map"></div>
 
+    <!-- 左侧：搜索 + 类型筛选 -->
+    <div class="panel" id="panel">
+        <div class="panel-header" id="panelHeader">
+            <h2>类型筛选</h2>
+            <span class="chev">▾</span>
+        </div>
+        <div class="panel-body">
+            <input class="search-input" id="searchInput" type="text" placeholder="🔍 搜索名称或描述">
+            <div class="type-actions">
+                <button class="link-btn" id="btnSelectAll">全选</button>
+                <button class="link-btn" id="btnSelectNone">清空</button>
+                <button class="link-btn" id="btnManageTypes">+ 新增类型</button>
+            </div>
+            <div class="type-filters" id="typeFilters"></div>
+        </div>
+    </div>
+
+    <!-- 右上：状态 + 添加 -->
     <div class="toolbar">
         <span class="status-dot loading" id="statusDot"></span>
         <span id="statusText" style="color:#6b7280;">加载中...</span>
         <button class="btn-primary" id="btnAddMode">添加标点</button>
+    </div>
+
+    <!-- 新增类型弹窗（仅表单） -->
+    <div class="modal-mask" id="typeModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>新增类型</h2>
+                <button class="modal-close" id="btnCloseTypeModal">✕</button>
+            </div>
+            <div class="modal-body">
+                <label class="field-label" for="nt-name">类型名称<span class="required-star">*</span></label>
+                <input class="text-input" id="nt-name" type="text" maxlength="20" placeholder="例如：餐厅 / 景区 / 钓点">
+
+                <label class="field-label" for="nt-color">类型颜色<span class="required-star">*</span></label>
+                <div class="color-row">
+                    <input type="color" id="nt-color" value="#2563eb">
+                    <input class="text-input" id="nt-color-text" type="text" maxlength="7" value="#2563eb"
+                        placeholder="#2563eb">
+                </div>
+                <div class="swatches" id="swatches"></div>
+
+                <button class="btn-primary save-type-btn" id="btnSaveType">保存类型</button>
+            </div>
+        </div>
     </div>
 
     <div class="toast" id="toast"></div>
@@ -274,30 +656,24 @@
     <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script>
+        /* ============================================================
+           加密 / 解密（Token 保护）
+           ============================================================ */
         async function encrypt(plainText, password) {
             const enc = new TextEncoder();
             const salt = crypto.getRandomValues(new Uint8Array(16));
             const iv = crypto.getRandomValues(new Uint8Array(12));
 
             const baseKey = await crypto.subtle.importKey(
-                'raw',
-                enc.encode(password),
-                'PBKDF2',
-                false,
-                ['deriveKey']
+                'raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']
             );
             const key = await crypto.subtle.deriveKey(
                 { name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' },
-                baseKey,
-                { name: 'AES-GCM', length: 256 },
-                false,
-                ['encrypt']
+                baseKey, { name: 'AES-GCM', length: 256 }, false, ['encrypt']
             );
 
             const encrypted = await crypto.subtle.encrypt(
-                { name: 'AES-GCM', iv },
-                key,
-                enc.encode(plainText)
+                { name: 'AES-GCM', iv }, key, enc.encode(plainText)
             );
 
             const encryptedArray = new Uint8Array(encrypted);
@@ -325,28 +701,19 @@
 
             const enc = new TextEncoder();
             const baseKey = await crypto.subtle.importKey(
-                'raw',
-                enc.encode(password),
-                'PBKDF2',
-                false,
-                ['deriveKey']
+                'raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']
             );
             const key = await crypto.subtle.deriveKey(
                 { name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' },
-                baseKey,
-                { name: 'AES-GCM', length: 256 },
-                false,
-                ['decrypt']
+                baseKey, { name: 'AES-GCM', length: 256 }, false, ['decrypt']
             );
 
             const decrypted = await crypto.subtle.decrypt(
-                { name: 'AES-GCM', iv },
-                key,
-                encrypted
+                { name: 'AES-GCM', iv }, key, encrypted
             );
             return new TextDecoder().decode(decrypted);
         }
-        console.log(decrypt)
+
         /* ============================================================
            配置区
            ============================================================ */
@@ -355,12 +722,11 @@
             GITHUB_REPO: 'tools',
             GITHUB_BRANCH: 'master',
             DATA_FILE: 'data/markers.geojson',
+            TYPES_FILE: 'data/types.json',
 
             // ⚠️ 强烈建议不要把真实 Token 直接写进公开页面
-            // 已被泄露的 Token 请立即到 GitHub 撤销
             GITHUB_TOKEN: '',
 
-            // 地图初始视图（IP 定位失败时的兜底中心点）
             MAP_CENTER: [34.75, 113.62],
             MAP_ZOOM: 12,
             IP_ZOOM: 11,
@@ -368,9 +734,20 @@
         };
 
         /* ============================================================
-           工具函数
+           常量 & 工具
            ============================================================ */
+        // 系统保留色：用于旧数据中类型缺失时的兜底显示
+        const RESERVED_COLORS = ['#9ca3af'];
+        const FALLBACK_COLOR = '#9ca3af';
+
+        const PRESET_COLORS = [
+            '#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16', '#22c55e',
+            '#10b981', '#14b8a6', '#06b6d4', '#0ea5e9', '#2563eb', '#6366f1',
+            '#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#f43f5e', '#78716c', '#111827'
+        ];
+
         const $ = id => document.getElementById(id);
+
         let toastTimer;
         function showToast(msg, type = 'info') {
             const t = $('toast');
@@ -383,6 +760,42 @@
         function setStatus(state, text) {
             $('statusDot').className = `status-dot ${state}`;
             $('statusText').textContent = text;
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str == null ? '' : String(str);
+            return div.innerHTML;
+        }
+
+        function genId() {
+            return 't_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+        }
+
+        function normalizeHex(v) {
+            v = (v || '').trim();
+            if (!v) return null;
+            if (v[0] !== '#') v = '#' + v;
+            if (/^#[0-9a-fA-F]{3}$/.test(v)) {
+                v = '#' + v[1] + v[1] + v[2] + v[2] + v[3] + v[3];
+            }
+            return /^#[0-9a-fA-F]{6}$/.test(v) ? v.toLowerCase() : null;
+        }
+
+        function hexToRgba(hex, a) {
+            const h = (hex || FALLBACK_COLOR).replace('#', '');
+            const r = parseInt(h.substring(0, 2), 16);
+            const g = parseInt(h.substring(2, 4), 16);
+            const b = parseInt(h.substring(4, 6), 16);
+            return `rgba(${r},${g},${b},${a})`;
+        }
+
+        function debounce(fn, wait) {
+            let timer;
+            return function (...args) {
+                clearTimeout(timer);
+                timer = setTimeout(() => fn.apply(this, args), wait);
+            };
         }
 
         /** WGS-84 → GCJ-02 坐标转换 */
@@ -419,36 +832,23 @@
             return [lng + dLng, lat + dLat];
         }
 
-        /**
-         * 生成导航链接。
-         * 由于我们已统一使用 GCJ-02（高德瓦片坐标系），这里直接传入即可。
-         */
         function buildNavigationUrl(lat, lng) {
             return `https://uri.amap.com/navigation?to=${lng.toFixed(6)},${lat.toFixed(6)},标点&mode=car&policy=1`;
         }
 
-        function escapeHtml(str) {
-            const div = document.createElement('div');
-            div.textContent = str;
-            return div.innerHTML;
-        }
-
         /* ============================================================
-           IP 地理定位（国内服务优先，返回 GCJ-02 坐标）
+           IP 地理定位
            ============================================================ */
         async function fetchIpLocation() {
-            // 每个服务返回 [lat, lng]（GCJ-02），失败抛错
             const services = [
-                // api.vore.top —— 国内服务，返回 WGS-84
                 async () => {
                     const res = await fetch('https://api.vore.top/api/IPdata');
                     const d = await res.json();
                     const lat = parseFloat(d?.ipdata?.lat);
                     const lng = parseFloat(d?.ipdata?.lng);
                     if (!isFinite(lat) || !isFinite(lng)) throw new Error('vore.top no coords');
-                    return wgs84ToGcj02(lng, lat).reverse(); // 转 GCJ-02 后返回 [lat, lng]
+                    return wgs84ToGcj02(lng, lat).reverse();
                 },
-                // ip.useragentinfo.com —— 国内服务，返回 WGS-84
                 async () => {
                     const res = await fetch('https://ip.useragentinfo.com/json');
                     const d = await res.json();
@@ -457,7 +857,6 @@
                     if (!isFinite(lat) || !isFinite(lng)) throw new Error('useragentinfo no coords');
                     return wgs84ToGcj02(lng, lat).reverse();
                 },
-                // ipwho.is —— 国外服务（可能被墙）
                 async () => {
                     const res = await fetch('https://ipwho.is/');
                     const d = await res.json();
@@ -471,8 +870,7 @@
 
             for (const fn of services) {
                 try {
-                    const loc = await fn();
-                    return loc;
+                    return await fn();
                 } catch (e) {
                     console.warn('IP 定位服务失败:', e.message);
                 }
@@ -501,30 +899,40 @@
             return res.json();
         }
 
-        async function loadMarkers() {
-            setStatus('loading', '加载中...');
-            const data = await ghApi(CONFIG.DATA_FILE);
-            const content = JSON.parse(decodeURIComponent(escape(atob(data.content))));
-            window._fileSha = data.sha;
-            return content;
+        /** 读取 JSON 文件，文件不存在时返回 { content: null, sha: null } */
+        async function ghGetFile(path) {
+            try {
+                const data = await ghApi(path);
+                const raw = atob((data.content || '').replace(/\s/g, ''));
+                const text = decodeURIComponent(escape(raw));
+                return { content: JSON.parse(text), sha: data.sha };
+            } catch (e) {
+                if (/not found|404/i.test(e.message)) return { content: null, sha: null };
+                throw e;
+            }
         }
 
-        async function saveMarkers(geojson) {
-            const jsonStr = JSON.stringify(geojson, null, 2);
+        /** 写入 JSON 文件 */
+        async function ghPutFile(path, obj, message, sha) {
+            const jsonStr = JSON.stringify(obj, null, 2);
             const content = btoa(unescape(encodeURIComponent(jsonStr)));
-            const body = {
-                message: `更新标点数据 - ${new Date().toLocaleString('zh-CN')}`,
-                content: content,
-                branch: CONFIG.GITHUB_BRANCH
-            };
-            if (window._fileSha) body.sha = window._fileSha;
-            const result = await ghApi(CONFIG.DATA_FILE, {
-                method: 'PUT',
-                body: JSON.stringify(body)
-            });
-            window._fileSha = result.content.sha;
-            return result;
+            const body = { message, content, branch: CONFIG.GITHUB_BRANCH };
+            if (sha) body.sha = sha;
+            return ghApi(path, { method: 'PUT', body: JSON.stringify(body) });
         }
+
+        /* ============================================================
+           全局状态
+           ============================================================ */
+        let geojsonData = { type: 'FeatureCollection', features: [] };
+        let typesData = { types: [] };
+        let activeTypeIds = new Set();
+        let searchKeyword = '';
+
+        let geoLayer = null;
+        let addMode = false;
+        let tempMarker = null;
+        let currentPopup = null;
 
         /* ============================================================
            地图初始化
@@ -533,8 +941,6 @@
             .setView(CONFIG.MAP_CENTER, CONFIG.MAP_ZOOM);
         L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-        // 高德瓦片（GCJ-02 坐标系，国内访问稳定）
-        // style=7 普通矢量图；style=8 矢量路网（带路名，适合导航场景）
         L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', {
             subdomains: ['1', '2', '3', '4'],
             maxZoom: 18,
@@ -542,30 +948,252 @@
             attribution: '&copy; 高德地图'
         }).addTo(map);
 
-        let geojsonData = { type: 'FeatureCollection', features: [] };
-        let geoLayer = null;
-        let addMode = false;
-        let tempMarker = null;
-        let currentPopup = null;
+        /* ============================================================
+           类型相关逻辑
+           ============================================================ */
+        function getTypeById(id) {
+            if (!id) return null;
+            return typesData.types.find(t => t.id === id) || null;
+        }
+
+        /** 获取某个标点的类型对象，找不到返回 null */
+        function getTypeForFeature(props) {
+            return getTypeById(props && props.type);
+        }
+
+        function allTypeIds() {
+            return typesData.types.map(t => t.id);
+        }
+
+        function countByType() {
+            const counts = {};
+            (geojsonData.features || []).forEach(f => {
+                const t = getTypeForFeature(f.properties || {});
+                if (!t) return;
+                counts[t.id] = (counts[t.id] || 0) + 1;
+            });
+            return counts;
+        }
+
+        function renderTypeFilters() {
+            const wrap = $('typeFilters');
+            const list = typesData.types;
+            const counts = countByType();
+
+            if (list.length === 0) {
+                wrap.innerHTML = `<div class="empty-tip">暂无类型，点击上方「+ 新增类型」创建。</div>`;
+                return;
+            }
+
+            wrap.innerHTML = list.map(t => `
+                <label class="type-chip">
+                    <input type="checkbox" value="${t.id}" ${activeTypeIds.has(t.id) ? 'checked' : ''}>
+                    <span class="dot" style="background:${t.color}"></span>
+                    <span class="chip-name">${escapeHtml(t.name)}</span>
+                    <span class="count">${counts[t.id] || 0}</span>
+                </label>
+            `).join('');
+
+            wrap.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                cb.addEventListener('change', () => {
+                    if (cb.checked) activeTypeIds.add(cb.value);
+                    else activeTypeIds.delete(cb.value);
+                    renderMarkers();
+                });
+            });
+        }
+
+        async function loadTypes() {
+            const { content, sha } = await ghGetFile(CONFIG.TYPES_FILE);
+            if (content && Array.isArray(content.types)) {
+                typesData = content;
+            } else {
+                typesData = { types: [] };
+            }
+            window._typesSha = sha;
+        }
+
+        async function saveTypes() {
+            const res = await ghPutFile(
+                CONFIG.TYPES_FILE,
+                typesData,
+                `更新类型数据 - ${new Date().toLocaleString('zh-CN')}`,
+                window._typesSha
+            );
+            window._typesSha = res.content.sha;
+        }
+
+        /* ============================================================
+           类型新增弹窗
+           ============================================================ */
+        function openTypeModal() {
+            $('typeModal').classList.add('show');
+            renderSwatches();
+            setColorInput('#2563eb');
+            $('nt-name').value = '';
+            setTimeout(() => $('nt-name').focus(), 50);
+        }
+
+        function closeTypeModal() {
+            $('typeModal').classList.remove('show');
+        }
+
+        function renderSwatches() {
+            $('swatches').innerHTML = PRESET_COLORS.map(c =>
+                `<span class="swatch" data-color="${c}" style="background:${c}" title="${c}"></span>`
+            ).join('');
+            $('swatches').querySelectorAll('.swatch').forEach(el => {
+                el.addEventListener('click', () => setColorInput(el.dataset.color));
+            });
+        }
+
+        function setColorInput(color) {
+            const hex = normalizeHex(color) || '#2563eb';
+            $('nt-color').value = hex;
+            $('nt-color-text').value = hex;
+        }
+
+        async function handleAddType() {
+            const name = $('nt-name').value.trim();
+            const colorText = $('nt-color-text').value.trim();
+            const pickerColor = $('nt-color').value;
+            const color = normalizeHex(colorText) || normalizeHex(pickerColor);
+
+            // 必填校验
+            if (!name) return showToast('请输入类型名称', 'error');
+            if (!colorText && !pickerColor) return showToast('请选择类型颜色', 'error');
+            if (!color) return showToast('颜色格式不正确，应为 #RRGGBB', 'error');
+
+            if (typesData.types.some(t => t.name.toLowerCase() === name.toLowerCase())) {
+                return showToast('类型名称已存在', 'error');
+            }
+            if (RESERVED_COLORS.includes(color)) {
+                return showToast('该颜色为系统保留色，请更换', 'error');
+            }
+            if (typesData.types.some(t => t.color.toLowerCase() === color)) {
+                return showToast('该颜色已被其他类型使用，请更换', 'error');
+            }
+
+            const btn = $('btnSaveType');
+            btn.disabled = true;
+            btn.textContent = '保存中...';
+
+            const newType = {
+                id: genId(),
+                name,
+                color,
+                created_at: new Date().toISOString()
+            };
+
+            typesData.types.push(newType);
+
+            try {
+                await saveTypes();
+
+                activeTypeIds.add(newType.id);
+
+                $('nt-name').value = '';
+                setColorInput('#2563eb');
+
+                renderTypeFilters();
+                renderMarkers();
+
+                showToast(`类型「${name}」已创建 ✓`, 'success');
+                closeTypeModal();
+            } catch (err) {
+                typesData.types.pop();
+                showToast('保存失败: ' + err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '保存类型';
+            }
+        }
+
+        /* ============================================================
+           标点数据读写
+           ============================================================ */
+        async function loadMarkers() {
+            const { content, sha } = await ghGetFile(CONFIG.DATA_FILE);
+            window._fileSha = sha;
+            if (content && content.type === 'FeatureCollection' && Array.isArray(content.features)) {
+                return content;
+            }
+            return { type: 'FeatureCollection', features: [] };
+        }
+
+        async function saveMarkers(geojson) {
+            const res = await ghPutFile(
+                CONFIG.DATA_FILE,
+                geojson,
+                `更新标点数据 - ${new Date().toLocaleString('zh-CN')}`,
+                window._fileSha
+            );
+            window._fileSha = res.content.sha;
+        }
+
+        /* ============================================================
+           渲染标点（含类型过滤 + 关键词检索）
+           ============================================================ */
+        function makeIcon(color) {
+            const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="25" height="41" viewBox="0 0 25 41">
+                <path d="M12.5 0C5.596 0 0 5.596 0 12.5 0 21.5 12.5 41 12.5 41S25 21.5 25 12.5C25 5.596 19.404 0 12.5 0z"
+                      fill="${color}" stroke="#ffffff" stroke-width="1.5"/>
+                <circle cx="12.5" cy="12.5" r="4.5" fill="#ffffff" opacity="0.92"/>
+            </svg>`;
+            return L.divIcon({
+                html: svg,
+                className: 'marker-pin',
+                iconSize: [25, 41],
+                iconAnchor: [12.5, 41],
+                popupAnchor: [0, -36]
+            });
+        }
+
+        function getVisibleFeatures() {
+            const kw = searchKeyword.trim().toLowerCase();
+            return (geojsonData.features || []).filter(f => {
+                const props = f.properties || {};
+                const t = getTypeForFeature(props);
+                // 有类型：需被勾选；无类型（历史数据）：始终显示
+                if (t && !activeTypeIds.has(t.id)) return false;
+                if (!kw) return true;
+                const hay = `${props.title || ''}\n${props.description || ''}`.toLowerCase();
+                return hay.includes(kw);
+            });
+        }
 
         function renderMarkers() {
             if (geoLayer) map.removeLayer(geoLayer);
-            geoLayer = L.geoJSON(geojsonData, {
-                pointToLayer: (feature, latlng) => L.marker(latlng),
+
+            const features = getVisibleFeatures();
+
+            geoLayer = L.geoJSON({ type: 'FeatureCollection', features }, {
+                pointToLayer: (feature, latlng) => {
+                    const t = getTypeForFeature(feature.properties || {});
+                    return L.marker(latlng, { icon: makeIcon(t ? t.color : FALLBACK_COLOR) });
+                },
                 onEachFeature: (feature, layer) => {
-                    const p = feature.properties;
-                    layer.bindPopup(buildDetailHtml(p, feature.geometry.coordinates), {
+                    layer.bindPopup(buildDetailHtml(feature.properties, feature.geometry.coordinates), {
                         maxWidth: 320, minWidth: 260
                     });
                 }
             }).addTo(map);
+
+            const total = (geojsonData.features || []).length;
+            setStatus('ok', `显示 ${features.length} / ${total} 个标点`);
         }
 
         function buildDetailHtml(props, coords) {
             const [lng, lat] = coords;
             const navUrl = buildNavigationUrl(lat, lng);
+            const t = getTypeForFeature(props);
+            const color = t ? t.color : FALLBACK_COLOR;
+            const typeName = t ? t.name : '未知类型';
             return `
     <div class="marker-detail">
+      <span class="type-badge" style="color:${color};background:${hexToRgba(color, 0.12)};border-color:${hexToRgba(color, 0.35)}">
+        <span class="dot" style="background:${color}"></span>${escapeHtml(typeName)}
+      </span>
       <h3>${escapeHtml(props.title || '未命名标点')}</h3>
       <div class="desc">${escapeHtml(props.description || '暂无详情')}</div>
       <div class="coords">📍 ${lat.toFixed(6)}, ${lng.toFixed(6)}</div>
@@ -577,6 +1205,10 @@
            添加标点交互
            ============================================================ */
         $('btnAddMode').addEventListener('click', () => {
+            if (!addMode && typesData.types.length === 0) {
+                showToast('请先点击「+ 新增类型」创建一个类型', 'error');
+                return;
+            }
             addMode = !addMode;
             const btn = $('btnAddMode');
             btn.textContent = addMode ? '取消添加' : '添加标点';
@@ -592,16 +1224,31 @@
 
         map.on('click', (e) => {
             if (!addMode) return;
-            const { lat, lng } = e.latlng; // 高德瓦片下即为 GCJ-02，直接使用
+
+            if (typesData.types.length === 0) {
+                showToast('请先点击「+ 新增类型」创建一个类型', 'error');
+                return;
+            }
+
+            const { lat, lng } = e.latlng; // 高德瓦片下即为 GCJ-02
 
             if (tempMarker) map.removeLayer(tempMarker);
             tempMarker = L.marker([lat, lng]).addTo(map);
+
+            const typeOptions = typesData.types.map(t =>
+                `<option value="${t.id}">${escapeHtml(t.name)}</option>`
+            ).join('');
 
             const formHtml = `
     <div class="popup-form">
       <h3>📍 新增标点</h3>
       <label>标题 *</label>
       <input id="f-title" type="text" placeholder="给这个位置起个名字" maxlength="50">
+      <label>类型 *</label>
+      <select id="f-type">
+        <option value="">请选择类型</option>
+        ${typeOptions}
+      </select>
       <label>详情描述</label>
       <textarea id="f-desc" placeholder="补充一些说明..." maxlength="500"></textarea>
       <div class="form-actions">
@@ -628,7 +1275,10 @@
                 document.getElementById('f-save')?.addEventListener('click', async () => {
                     const title = document.getElementById('f-title').value.trim();
                     const desc = document.getElementById('f-desc').value.trim();
+                    const typeId = document.getElementById('f-type').value;
+
                     if (!title) { showToast('请填写标题', 'error'); return; }
+                    if (!typeId) { showToast('请选择一种类型', 'error'); return; }
 
                     const saveBtn = document.getElementById('f-save');
                     saveBtn.textContent = '保存中...';
@@ -640,6 +1290,7 @@
                         properties: {
                             title,
                             description: desc,
+                            type: typeId,
                             created_at: new Date().toISOString()
                         }
                     };
@@ -648,13 +1299,13 @@
                     try {
                         await saveMarkers(geojsonData);
                         renderMarkers();
+                        renderTypeFilters();
                         map.closePopup(currentPopup);
                         if (tempMarker) { map.removeLayer(tempMarker); tempMarker = null; }
                         addMode = false;
                         $('btnAddMode').textContent = '添加标点';
                         $('btnAddMode').className = 'btn-primary';
                         map.getContainer().style.cursor = '';
-                        setStatus('ok', `已加载 ${geojsonData.features.length} 个标点`);
                         showToast('标点已保存 ✓', 'success');
                     } catch (err) {
                         geojsonData.features.pop();
@@ -667,33 +1318,99 @@
         });
 
         /* ============================================================
+           面板 / 搜索 / 类型管理 事件绑定
+           ============================================================ */
+        $('panelHeader').addEventListener('click', () => {
+            $('panel').classList.toggle('collapsed');
+        });
+
+        $('searchInput').addEventListener('input', debounce((e) => {
+            searchKeyword = e.target.value;
+            renderMarkers();
+        }, 180));
+
+        $('btnSelectAll').addEventListener('click', () => {
+            allTypeIds().forEach(id => activeTypeIds.add(id));
+            renderTypeFilters();
+            renderMarkers();
+        });
+
+        $('btnSelectNone').addEventListener('click', () => {
+            activeTypeIds.clear();
+            renderTypeFilters();
+            renderMarkers();
+        });
+
+        $('btnManageTypes').addEventListener('click', openTypeModal);
+        $('btnCloseTypeModal').addEventListener('click', closeTypeModal);
+        $('typeModal').addEventListener('click', (e) => {
+            if (e.target === $('typeModal')) closeTypeModal();
+        });
+
+        $('nt-color').addEventListener('input', (e) => {
+            $('nt-color-text').value = e.target.value.toLowerCase();
+        });
+        $('nt-color-text').addEventListener('input', (e) => {
+            const hex = normalizeHex(e.target.value);
+            if (hex) $('nt-color').value = hex;
+        });
+
+        $('btnSaveType').addEventListener('click', handleAddType);
+
+        $('nt-name').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') handleAddType();
+        });
+
+        /* ============================================================
            启动
            ============================================================ */
         (async function init() {
-            CONFIG.GITHUB_TOKEN = await decrypt('pN0DLAO2zEwTMKZlJZw+6zd4GAXI0t3mCX/iAqiGWY6ddaYNpX4u6LdZ7eeflYz7RaSCt6hCUYSPbhbejCY7lVChS9u3YaVWhiU38RWdMQf0iRo4UwUZ5kmnzZXBiZlDVIgWBVNPoxeFveABj02UVh8IFBBix/Bz+AOD9DIdlN8Jbh3s3olHlPs=', 'ulnae')
-            if (CONFIG.USE_IP_LOCATION) {
-                setStatus('loading', '正在定位...');
-                const ipLoc = await fetchIpLocation();
-                if (ipLoc) {
-                    map.flyTo(ipLoc, CONFIG.IP_ZOOM, { duration: 1.5 });
-                } else {
-                    console.warn('IP 定位失败，使用默认中心点');
-                }
+            try {
+                CONFIG.GITHUB_TOKEN = await decrypt(
+                    'pN0DLAO2zEwTMKZlJZw+6zd4GAXI0t3mCX/iAqiGWY6ddaYNpX4u6LdZ7eeflYz7RaSCt6hCUYSPbhbejCY7lVChS9u3YaVWhiU38RWdMQf0iRo4UwUZ5kmnzZXBiZlDVIgWBVNPoxeFveABj02UVh8IFBBix/Bz+AOD9DIdlN8Jbh3s3olHlPs=',
+                    'ulnae'
+                );
+            } catch (e) {
+                setStatus('err', 'Token 解密失败');
+                showToast('Token 解密失败，无法读写数据', 'error');
+                return;
             }
 
-            try {
-                const data = await loadMarkers();
-                geojsonData = data;
+            setStatus('loading', '加载中...');
+
+            const ipPromise = CONFIG.USE_IP_LOCATION ? fetchIpLocation() : Promise.resolve(null);
+
+            const [typesRes, markersRes] = await Promise.allSettled([
+                loadTypes(),
+                loadMarkers()
+            ]);
+
+            if (typesRes.status === 'fulfilled') {
+                activeTypeIds = new Set(allTypeIds());
+                renderTypeFilters();
+            } else {
+                console.warn('类型加载失败:', typesRes.reason);
+                showToast('类型数据加载失败：' + typesRes.reason.message, 'error');
+                activeTypeIds = new Set();
+                renderTypeFilters();
+            }
+
+            if (markersRes.status === 'fulfilled') {
+                geojsonData = markersRes.value;
                 renderMarkers();
-                setStatus('ok', `已加载 ${geojsonData.features.length} 个标点`);
-            } catch (err) {
-                setStatus('err', '加载失败: ' + err.message);
-                showToast('数据加载失败：' + err.message, 'error');
+                renderTypeFilters();
+            } else {
+                setStatus('err', '加载失败: ' + markersRes.reason.message);
+                showToast('数据加载失败：' + markersRes.reason.message, 'error');
+            }
+
+            const ipLoc = await ipPromise;
+            if (ipLoc) {
+                map.flyTo(ipLoc, CONFIG.IP_ZOOM, { duration: 1.5 });
+            } else if (CONFIG.USE_IP_LOCATION) {
+                console.warn('IP 定位失败，使用默认中心点');
             }
         })();
-
-
-
     </script>
 </body>
 
