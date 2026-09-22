@@ -32,6 +32,22 @@
         "type": "t_muca0y5e3au6",
         "created_at": "2026-09-22T09:40:14.112Z"
       }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          118.06715040690061,
+          24.444611010627018
+        ]
+      },
+      "properties": {
+        "title": "鼓浪屿",
+        "description": "风景不错，餐饮较贵",
+        "type": "t_muca0ai20skp",
+        "created_at": "2026-09-22T09:53:33.966Z"
+      }
     }
   ]
 }
