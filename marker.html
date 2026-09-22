@@ -304,6 +304,13 @@
             padding-right: 28px;
         }
 
+        .popup-form select:disabled {
+            background-color: #f3f4f6;
+            color: #6b7280;
+            cursor: not-allowed;
+            background-image: none;
+        }
+
         .popup-form input:focus,
         .popup-form textarea:focus,
         .popup-form select:focus {
@@ -314,6 +321,15 @@
         .popup-form textarea {
             resize: vertical;
             min-height: 56px;
+        }
+
+        .popup-form .lock-tip {
+            font-size: 11px;
+            color: #9ca3af;
+            margin-top: 4px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
 
         .popup-form .form-actions {
@@ -604,14 +620,14 @@
     <div id="map"></div>
 
     <!-- 左侧：搜索 + 类型筛选 -->
-    <div class="panel" id="panel">
+    <div class="panel" id="panel" style="display: none;">
         <div class="panel-header" id="panelHeader">
-            <h2>类型筛选</h2>
+            <h2 id="panelTitle">类型筛选</h2>
             <span class="chev">▾</span>
         </div>
         <div class="panel-body">
             <input class="search-input" id="searchInput" type="text" placeholder="🔍 搜索名称或描述">
-            <div class="type-actions">
+            <div class="type-actions" id="typeActions">
                 <button class="link-btn" id="btnSelectAll">全选</button>
                 <button class="link-btn" id="btnSelectNone">清空</button>
                 <button class="link-btn" id="btnManageTypes">+ 新增类型</button>
@@ -657,8 +673,89 @@
 
     <script>
         /* ============================================================
-           加密 / 解密（Token 保护）
+           配置
            ============================================================ */
+        const CONFIG = {
+            GITHUB_OWNER: 'ulnae',
+            GITHUB_REPO: 'tools',
+            GITHUB_BRANCH: 'master',
+            DATA_FILE: 'data/markers.geojson',
+            TYPES_FILE: 'data/types.json',
+            GITHUB_TOKEN: '',   // 运行时通过 decrypt 注入
+
+            MAP_CENTER: [34.75, 113.62],
+            MAP_ZOOM: 12,
+            IP_ZOOM: 11,
+            USE_IP_LOCATION: true,
+
+            // Token 加密串 & 口令
+            TOKEN_CIPHER: 'pN0DLAO2zEwTMKZlJZw+6zd4GAXI0t3mCX/iAqiGWY6ddaYNpX4u6LdZ7eeflYz7RaSCt6hCUYSPbhbejCY7lVChS9u3YaVWhiU38RWdMQf0iRo4UwUZ5kmnzZXBiZlDVIgWBVNPoxeFveABj02UVh8IFBBix/Bz+AOD9DIdlN8Jbh3s3olHlPs=',
+            TOKEN_PASS: 'ulnae'
+        };
+
+        const RESERVED_COLORS = ['#9ca3af'];
+        const FALLBACK_COLOR = '#9ca3af';
+        const PRESET_COLORS = [
+            '#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16', '#22c55e',
+            '#10b981', '#14b8a6', '#06b6d4', '#0ea5e9', '#2563eb', '#6366f1',
+            '#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#f43f5e', '#78716c', '#111827'
+        ];
+
+        /* ============================================================
+           通用工具
+           ============================================================ */
+        const $ = id => document.getElementById(id);
+
+        const escapeHtml = str => {
+            const div = document.createElement('div');
+            div.textContent = str == null ? '' : String(str);
+            return div.innerHTML;
+        };
+
+        const genId = () => 't_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+
+        function normalizeHex(v) {
+            v = (v || '').trim();
+            if (!v) return null;
+            if (v[0] !== '#') v = '#' + v;
+            if (/^#[0-9a-fA-F]{3}$/.test(v)) {
+                v = '#' + v[1] + v[1] + v[2] + v[2] + v[3] + v[3];
+            }
+            return /^#[0-9a-fA-F]{6}$/.test(v) ? v.toLowerCase() : null;
+        }
+
+        function hexToRgba(hex, a) {
+            const h = (hex || FALLBACK_COLOR).replace('#', '');
+            const r = parseInt(h.substring(0, 2), 16);
+            const g = parseInt(h.substring(2, 4), 16);
+            const b = parseInt(h.substring(4, 6), 16);
+            return `rgba(${r},${g},${b},${a})`;
+        }
+
+        function debounce(fn, wait) {
+            let timer;
+            return function (...args) {
+                clearTimeout(timer);
+                timer = setTimeout(() => fn.apply(this, args), wait);
+            };
+        }
+
+        /* ---------- Toast ---------- */
+        let toastTimer;
+        function showToast(msg, type = 'info') {
+            const t = $('toast');
+            t.textContent = msg;
+            t.className = `toast show ${type}`;
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => t.className = 'toast', 3000);
+        }
+
+        function setStatus(state, text) {
+            $('statusDot').className = `status-dot ${state}`;
+            $('statusText').textContent = text;
+        }
+
+        /* ---------- 加密 / 解密（Token 保护） ---------- */
         async function encrypt(plainText, password) {
             const enc = new TextEncoder();
             const salt = crypto.getRandomValues(new Uint8Array(16));
@@ -714,113 +811,32 @@
             return new TextDecoder().decode(decrypted);
         }
 
-        /* ============================================================
-           配置区
-           ============================================================ */
-        const CONFIG = {
-            GITHUB_OWNER: 'ulnae',
-            GITHUB_REPO: 'tools',
-            GITHUB_BRANCH: 'master',
-            DATA_FILE: 'data/markers.geojson',
-            TYPES_FILE: 'data/types.json',
-
-            // ⚠️ 强烈建议不要把真实 Token 直接写进公开页面
-            GITHUB_TOKEN: '',
-
-            MAP_CENTER: [34.75, 113.62],
-            MAP_ZOOM: 12,
-            IP_ZOOM: 11,
-            USE_IP_LOCATION: true
-        };
-
-        /* ============================================================
-           常量 & 工具
-           ============================================================ */
-        // 系统保留色：用于旧数据中类型缺失时的兜底显示
-        const RESERVED_COLORS = ['#9ca3af'];
-        const FALLBACK_COLOR = '#9ca3af';
-
-        const PRESET_COLORS = [
-            '#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16', '#22c55e',
-            '#10b981', '#14b8a6', '#06b6d4', '#0ea5e9', '#2563eb', '#6366f1',
-            '#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#f43f5e', '#78716c', '#111827'
-        ];
-
-        const $ = id => document.getElementById(id);
-
-        let toastTimer;
-        function showToast(msg, type = 'info') {
-            const t = $('toast');
-            t.textContent = msg;
-            t.className = `toast show ${type}`;
-            clearTimeout(toastTimer);
-            toastTimer = setTimeout(() => t.className = 'toast', 3000);
-        }
-
-        function setStatus(state, text) {
-            $('statusDot').className = `status-dot ${state}`;
-            $('statusText').textContent = text;
-        }
-
-        function escapeHtml(str) {
-            const div = document.createElement('div');
-            div.textContent = str == null ? '' : String(str);
-            return div.innerHTML;
-        }
-
-        function genId() {
-            return 't_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-        }
-
-        function normalizeHex(v) {
-            v = (v || '').trim();
-            if (!v) return null;
-            if (v[0] !== '#') v = '#' + v;
-            if (/^#[0-9a-fA-F]{3}$/.test(v)) {
-                v = '#' + v[1] + v[1] + v[2] + v[2] + v[3] + v[3];
-            }
-            return /^#[0-9a-fA-F]{6}$/.test(v) ? v.toLowerCase() : null;
-        }
-
-        function hexToRgba(hex, a) {
-            const h = (hex || FALLBACK_COLOR).replace('#', '');
-            const r = parseInt(h.substring(0, 2), 16);
-            const g = parseInt(h.substring(2, 4), 16);
-            const b = parseInt(h.substring(4, 6), 16);
-            return `rgba(${r},${g},${b},${a})`;
-        }
-
-        function debounce(fn, wait) {
-            let timer;
-            return function (...args) {
-                clearTimeout(timer);
-                timer = setTimeout(() => fn.apply(this, args), wait);
-            };
-        }
-
-        /** WGS-84 → GCJ-02 坐标转换 */
+        /* ---------- 坐标转换 ---------- */
         function wgs84ToGcj02(lng, lat) {
             const PI = 3.1415926535897932384626;
             const a = 6378245.0;
             const ee = 0.00669342162296594323;
-            function outOfChina(lng, lat) {
-                return lng < 72.004 || lng > 137.8347 || lat < 0.8293 || lat > 55.8271;
-            }
-            function transformLat(x, y) {
+
+            const outOfChina = (lng, lat) =>
+                lng < 72.004 || lng > 137.8347 || lat < 0.8293 || lat > 55.8271;
+
+            const transformLat = (x, y) => {
                 let ret = -100 + 2 * x + 3 * y + 0.2 * y * y + 0.1 * x * y + 0.2 * Math.sqrt(Math.abs(x));
                 ret += (20 * Math.sin(6 * x * PI) + 20 * Math.sin(2 * x * PI)) * 2 / 3;
                 ret += (20 * Math.sin(y * PI) + 40 * Math.sin(y / 3 * PI)) * 2 / 3;
                 ret += (160 * Math.sin(y / 12 * PI) + 320 * Math.sin(y * PI / 30)) * 2 / 3;
                 return ret;
-            }
-            function transformLng(x, y) {
+            };
+            const transformLng = (x, y) => {
                 let ret = 300 + x + 2 * y + 0.1 * x * x + 0.1 * x * y + 0.1 * Math.sqrt(Math.abs(x));
                 ret += (20 * Math.sin(6 * x * PI) + 20 * Math.sin(2 * x * PI)) * 2 / 3;
                 ret += (20 * Math.sin(x * PI) + 40 * Math.sin(x / 3 * PI)) * 2 / 3;
                 ret += (150 * Math.sin(x / 12 * PI) + 300 * Math.sin(x / 30 * PI)) * 2 / 3;
                 return ret;
-            }
+            };
+
             if (outOfChina(lng, lat)) return [lng, lat];
+
             let dLat = transformLat(lng - 105, lat - 35);
             let dLng = transformLng(lng - 105, lat - 35);
             const radLat = lat / 180 * PI;
@@ -832,9 +848,8 @@
             return [lng + dLng, lat + dLat];
         }
 
-        function buildNavigationUrl(lat, lng) {
-            return `https://uri.amap.com/navigation?to=${lng.toFixed(6)},${lat.toFixed(6)},标点&mode=car&policy=1`;
-        }
+        const buildNavigationUrl = (lat, lng) =>
+            `https://uri.amap.com/navigation?to=${lng.toFixed(6)},${lat.toFixed(6)},标点&mode=car&policy=1`;
 
         /* ============================================================
            IP 地理定位
@@ -879,7 +894,7 @@
         }
 
         /* ============================================================
-           GitHub API 操作
+           GitHub API
            ============================================================ */
         async function ghApi(path, options = {}) {
             const url = `https://api.github.com/repos/${CONFIG.GITHUB_OWNER}/${CONFIG.GITHUB_REPO}/contents/${path}`;
@@ -899,7 +914,6 @@
             return res.json();
         }
 
-        /** 读取 JSON 文件，文件不存在时返回 { content: null, sha: null } */
         async function ghGetFile(path) {
             try {
                 const data = await ghApi(path);
@@ -912,7 +926,6 @@
             }
         }
 
-        /** 写入 JSON 文件 */
         async function ghPutFile(path, obj, message, sha) {
             const jsonStr = JSON.stringify(obj, null, 2);
             const content = btoa(unescape(encodeURIComponent(jsonStr)));
@@ -924,15 +937,19 @@
         /* ============================================================
            全局状态
            ============================================================ */
-        let geojsonData = { type: 'FeatureCollection', features: [] };
-        let typesData = { types: [] };
-        let activeTypeIds = new Set();
-        let searchKeyword = '';
-
-        let geoLayer = null;
-        let addMode = false;
-        let tempMarker = null;
-        let currentPopup = null;
+        const state = {
+            geojson: { type: 'FeatureCollection', features: [] },
+            types: { types: [] },
+            activeTypeIds: new Set(),
+            searchKeyword: '',
+            lockedTypeId: null,        // URL ?type=xxx 锁定的类型 id
+            fileSha: null,             // markers.geojson 的 sha
+            typesSha: null,            // types.json 的 sha
+            addMode: false,
+            tempMarker: null,
+            currentPopup: null,
+            geoLayer: null
+        };
 
         /* ============================================================
            地图初始化
@@ -949,36 +966,74 @@
         }).addTo(map);
 
         /* ============================================================
-           类型相关逻辑
+           类型数据操作
            ============================================================ */
-        function getTypeById(id) {
-            if (!id) return null;
-            return typesData.types.find(t => t.id === id) || null;
-        }
+        const Types = {
+            getById(id) {
+                if (!id) return null;
+                return state.types.types.find(t => t.id === id) || null;
+            },
+            getForFeature(props) {
+                return this.getById(props && props.type);
+            },
+            allIds() {
+                return state.types.types.map(t => t.id);
+            },
+            countByType() {
+                const counts = {};
+                (state.geojson.features || []).forEach(f => {
+                    const t = this.getForFeature(f.properties || {});
+                    if (!t) return;
+                    counts[t.id] = (counts[t.id] || 0) + 1;
+                });
+                return counts;
+            },
+            async load() {
+                const { content, sha } = await ghGetFile(CONFIG.TYPES_FILE);
+                state.types = (content && Array.isArray(content.types)) ? content : { types: [] };
+                state.typesSha = sha;
+            },
+            async save() {
+                const res = await ghPutFile(
+                    CONFIG.TYPES_FILE,
+                    state.types,
+                    `更新类型数据 - ${new Date().toLocaleString('zh-CN')}`,
+                    state.typesSha
+                );
+                state.typesSha = res.content.sha;
+            }
+        };
 
-        /** 获取某个标点的类型对象，找不到返回 null */
-        function getTypeForFeature(props) {
-            return getTypeById(props && props.type);
-        }
+        /* ============================================================
+           标点数据操作
+           ============================================================ */
+        const Markers = {
+            async load() {
+                const { content, sha } = await ghGetFile(CONFIG.DATA_FILE);
+                state.fileSha = sha;
+                if (content && content.type === 'FeatureCollection' && Array.isArray(content.features)) {
+                    return content;
+                }
+                return { type: 'FeatureCollection', features: [] };
+            },
+            async save() {
+                const res = await ghPutFile(
+                    CONFIG.DATA_FILE,
+                    state.geojson,
+                    `更新标点数据 - ${new Date().toLocaleString('zh-CN')}`,
+                    state.fileSha
+                );
+                state.fileSha = res.content.sha;
+            }
+        };
 
-        function allTypeIds() {
-            return typesData.types.map(t => t.id);
-        }
-
-        function countByType() {
-            const counts = {};
-            (geojsonData.features || []).forEach(f => {
-                const t = getTypeForFeature(f.properties || {});
-                if (!t) return;
-                counts[t.id] = (counts[t.id] || 0) + 1;
-            });
-            return counts;
-        }
-
+        /* ============================================================
+           渲染：类型筛选器
+           ============================================================ */
         function renderTypeFilters() {
             const wrap = $('typeFilters');
-            const list = typesData.types;
-            const counts = countByType();
+            const list = state.types.types;
+            const counts = Types.countByType();
 
             if (list.length === 0) {
                 wrap.innerHTML = `<div class="empty-tip">暂无类型，点击上方「+ 新增类型」创建。</div>`;
@@ -987,7 +1042,7 @@
 
             wrap.innerHTML = list.map(t => `
                 <label class="type-chip">
-                    <input type="checkbox" value="${t.id}" ${activeTypeIds.has(t.id) ? 'checked' : ''}>
+                    <input type="checkbox" value="${t.id}" ${state.activeTypeIds.has(t.id) ? 'checked' : ''}>
                     <span class="dot" style="background:${t.color}"></span>
                     <span class="chip-name">${escapeHtml(t.name)}</span>
                     <span class="count">${counts[t.id] || 0}</span>
@@ -996,31 +1051,121 @@
 
             wrap.querySelectorAll('input[type="checkbox"]').forEach(cb => {
                 cb.addEventListener('change', () => {
-                    if (cb.checked) activeTypeIds.add(cb.value);
-                    else activeTypeIds.delete(cb.value);
+                    if (cb.checked) state.activeTypeIds.add(cb.value);
+                    else state.activeTypeIds.delete(cb.value);
                     renderMarkers();
                 });
             });
         }
 
-        async function loadTypes() {
-            const { content, sha } = await ghGetFile(CONFIG.TYPES_FILE);
-            if (content && Array.isArray(content.types)) {
-                typesData = content;
-            } else {
-                typesData = { types: [] };
-            }
-            window._typesSha = sha;
+        /* ============================================================
+           渲染：标点
+           ============================================================ */
+        function makeIcon(color) {
+            const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="25" height="41" viewBox="0 0 25 41">
+                <path d="M12.5 0C5.596 0 0 5.596 0 12.5 0 21.5 12.5 41 12.5 41S25 21.5 25 12.5C25 5.596 19.404 0 12.5 0z"
+                      fill="${color}" stroke="#ffffff" stroke-width="1.5"/>
+                <circle cx="12.5" cy="12.5" r="4.5" fill="#ffffff" opacity="0.92"/>
+            </svg>`;
+            return L.divIcon({
+                html: svg,
+                className: 'marker-pin',
+                iconSize: [25, 41],
+                iconAnchor: [12.5, 41],
+                popupAnchor: [0, -36]
+            });
         }
 
-        async function saveTypes() {
-            const res = await ghPutFile(
-                CONFIG.TYPES_FILE,
-                typesData,
-                `更新类型数据 - ${new Date().toLocaleString('zh-CN')}`,
-                window._typesSha
-            );
-            window._typesSha = res.content.sha;
+        function getVisibleFeatures() {
+            const kw = state.searchKeyword.trim().toLowerCase();
+            return (state.geojson.features || []).filter(f => {
+                const props = f.properties || {};
+                const t = Types.getForFeature(props);
+
+                if (state.lockedTypeId) {
+                    if (!t || t.id !== state.lockedTypeId) return false;
+                } else {
+                    if (t && !state.activeTypeIds.has(t.id)) return false;
+                }
+
+                if (!kw) return true;
+                const hay = `${props.title || ''}\n${props.description || ''}`.toLowerCase();
+                return hay.includes(kw);
+            });
+        }
+
+        function buildDetailHtml(props, coords) {
+            const [lng, lat] = coords;
+            const navUrl = buildNavigationUrl(lat, lng);
+            const t = Types.getForFeature(props);
+            const color = t ? t.color : FALLBACK_COLOR;
+            const typeName = t ? t.name : '未知类型';
+            return `
+    <div class="marker-detail">
+      <span class="type-badge" style="color:${color};background:${hexToRgba(color, 0.12)};border-color:${hexToRgba(color, 0.35)}">
+        <span class="dot" style="background:${color}"></span>${escapeHtml(typeName)}
+      </span>
+      <h3>${escapeHtml(props.title || '未命名标点')}</h3>
+      <div class="desc">${escapeHtml(props.description || '暂无详情')}</div>
+      <div class="coords">📍 ${lat.toFixed(6)}, ${lng.toFixed(6)}</div>
+      <a class="nav-btn" href="${navUrl}" target="_blank" rel="noopener">🧭 导航到此位置</a>
+    </div>`;
+        }
+
+        function renderMarkers() {
+            if (state.geoLayer) map.removeLayer(state.geoLayer);
+
+            const features = getVisibleFeatures();
+
+            state.geoLayer = L.geoJSON({ type: 'FeatureCollection', features }, {
+                pointToLayer: (feature, latlng) => {
+                    const t = Types.getForFeature(feature.properties || {});
+                    return L.marker(latlng, { icon: makeIcon(t ? t.color : FALLBACK_COLOR) });
+                },
+                onEachFeature: (feature, layer) => {
+                    layer.bindPopup(buildDetailHtml(feature.properties, feature.geometry.coordinates), {
+                        maxWidth: 320, minWidth: 260
+                    });
+                }
+            }).addTo(map);
+
+            let total;
+            if (state.lockedTypeId) {
+                total = (state.geojson.features || []).filter(f => {
+                    const t = Types.getForFeature(f.properties || {});
+                    return t && t.id === state.lockedTypeId;
+                }).length;
+            } else {
+                total = (state.geojson.features || []).length;
+            }
+            setStatus('ok', `显示 ${features.length} / ${total} 个标点`);
+        }
+
+        /* ============================================================
+           URL 参数：锁定类型（?type=xxx）
+           ============================================================ */
+        const getUrlTypeParam = () =>
+            (new URLSearchParams(location.search).get('type') || '').trim();
+
+        function resolveUrlLockedType() {
+            const raw = getUrlTypeParam();
+            if (!raw) return null;
+
+            const byId = state.types.types.find(t => t.id === raw);
+            if (byId) return byId;
+
+            const lower = raw.toLowerCase();
+            return state.types.types.find(t => (t.name || '').toLowerCase() === lower) || null;
+        }
+
+        function applyTypeLockUI(type) {
+            state.lockedTypeId = type.id;
+            state.activeTypeIds = new Set([type.id]);
+
+            $('typeActions').style.display = 'none';
+            $('typeFilters').style.display = 'none';
+            $('panelTitle').textContent = '标点搜索';
+            $('searchInput').placeholder = `🔍 搜索「${type.name}」标点`;
         }
 
         /* ============================================================
@@ -1039,10 +1184,11 @@
         }
 
         function renderSwatches() {
-            $('swatches').innerHTML = PRESET_COLORS.map(c =>
+            const wrap = $('swatches');
+            wrap.innerHTML = PRESET_COLORS.map(c =>
                 `<span class="swatch" data-color="${c}" style="background:${c}" title="${c}"></span>`
             ).join('');
-            $('swatches').querySelectorAll('.swatch').forEach(el => {
+            wrap.querySelectorAll('.swatch').forEach(el => {
                 el.addEventListener('click', () => setColorInput(el.dataset.color));
             });
         }
@@ -1059,18 +1205,17 @@
             const pickerColor = $('nt-color').value;
             const color = normalizeHex(colorText) || normalizeHex(pickerColor);
 
-            // 必填校验
             if (!name) return showToast('请输入类型名称', 'error');
             if (!colorText && !pickerColor) return showToast('请选择类型颜色', 'error');
             if (!color) return showToast('颜色格式不正确，应为 #RRGGBB', 'error');
 
-            if (typesData.types.some(t => t.name.toLowerCase() === name.toLowerCase())) {
+            if (state.types.types.some(t => t.name.toLowerCase() === name.toLowerCase())) {
                 return showToast('类型名称已存在', 'error');
             }
             if (RESERVED_COLORS.includes(color)) {
                 return showToast('该颜色为系统保留色，请更换', 'error');
             }
-            if (typesData.types.some(t => t.color.toLowerCase() === color)) {
+            if (state.types.types.some(t => t.color.toLowerCase() === color)) {
                 return showToast('该颜色已被其他类型使用，请更换', 'error');
             }
 
@@ -1084,24 +1229,19 @@
                 color,
                 created_at: new Date().toISOString()
             };
-
-            typesData.types.push(newType);
+            state.types.types.push(newType);
 
             try {
-                await saveTypes();
-
-                activeTypeIds.add(newType.id);
-
+                await Types.save();
+                state.activeTypeIds.add(newType.id);
                 $('nt-name').value = '';
                 setColorInput('#2563eb');
-
                 renderTypeFilters();
                 renderMarkers();
-
                 showToast(`类型「${name}」已创建 ✓`, 'success');
                 closeTypeModal();
             } catch (err) {
-                typesData.types.pop();
+                state.types.types.pop();
                 showToast('保存失败: ' + err.message, 'error');
             } finally {
                 btn.disabled = false;
@@ -1110,145 +1250,28 @@
         }
 
         /* ============================================================
-           标点数据读写
+           添加标点
            ============================================================ */
-        async function loadMarkers() {
-            const { content, sha } = await ghGetFile(CONFIG.DATA_FILE);
-            window._fileSha = sha;
-            if (content && content.type === 'FeatureCollection' && Array.isArray(content.features)) {
-                return content;
-            }
-            return { type: 'FeatureCollection', features: [] };
-        }
+        function buildAddPopupHtml(lat, lng) {
+            const lockedType = state.lockedTypeId ? Types.getById(state.lockedTypeId) : null;
 
-        async function saveMarkers(geojson) {
-            const res = await ghPutFile(
-                CONFIG.DATA_FILE,
-                geojson,
-                `更新标点数据 - ${new Date().toLocaleString('zh-CN')}`,
-                window._fileSha
-            );
-            window._fileSha = res.content.sha;
-        }
+            const typeOptions = lockedType
+                ? `<option value="${lockedType.id}" selected>${escapeHtml(lockedType.name)}</option>`
+                : state.types.types.map(t =>
+                    `<option value="${t.id}">${escapeHtml(t.name)}</option>`
+                ).join('');
 
-        /* ============================================================
-           渲染标点（含类型过滤 + 关键词检索）
-           ============================================================ */
-        function makeIcon(color) {
-            const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="25" height="41" viewBox="0 0 25 41">
-                <path d="M12.5 0C5.596 0 0 5.596 0 12.5 0 21.5 12.5 41 12.5 41S25 21.5 25 12.5C25 5.596 19.404 0 12.5 0z"
-                      fill="${color}" stroke="#ffffff" stroke-width="1.5"/>
-                <circle cx="12.5" cy="12.5" r="4.5" fill="#ffffff" opacity="0.92"/>
-            </svg>`;
-            return L.divIcon({
-                html: svg,
-                className: 'marker-pin',
-                iconSize: [25, 41],
-                iconAnchor: [12.5, 41],
-                popupAnchor: [0, -36]
-            });
-        }
-
-        function getVisibleFeatures() {
-            const kw = searchKeyword.trim().toLowerCase();
-            return (geojsonData.features || []).filter(f => {
-                const props = f.properties || {};
-                const t = getTypeForFeature(props);
-                // 有类型：需被勾选；无类型（历史数据）：始终显示
-                if (t && !activeTypeIds.has(t.id)) return false;
-                if (!kw) return true;
-                const hay = `${props.title || ''}\n${props.description || ''}`.toLowerCase();
-                return hay.includes(kw);
-            });
-        }
-
-        function renderMarkers() {
-            if (geoLayer) map.removeLayer(geoLayer);
-
-            const features = getVisibleFeatures();
-
-            geoLayer = L.geoJSON({ type: 'FeatureCollection', features }, {
-                pointToLayer: (feature, latlng) => {
-                    const t = getTypeForFeature(feature.properties || {});
-                    return L.marker(latlng, { icon: makeIcon(t ? t.color : FALLBACK_COLOR) });
-                },
-                onEachFeature: (feature, layer) => {
-                    layer.bindPopup(buildDetailHtml(feature.properties, feature.geometry.coordinates), {
-                        maxWidth: 320, minWidth: 260
-                    });
-                }
-            }).addTo(map);
-
-            const total = (geojsonData.features || []).length;
-            setStatus('ok', `显示 ${features.length} / ${total} 个标点`);
-        }
-
-        function buildDetailHtml(props, coords) {
-            const [lng, lat] = coords;
-            const navUrl = buildNavigationUrl(lat, lng);
-            const t = getTypeForFeature(props);
-            const color = t ? t.color : FALLBACK_COLOR;
-            const typeName = t ? t.name : '未知类型';
             return `
-    <div class="marker-detail">
-      <span class="type-badge" style="color:${color};background:${hexToRgba(color, 0.12)};border-color:${hexToRgba(color, 0.35)}">
-        <span class="dot" style="background:${color}"></span>${escapeHtml(typeName)}
-      </span>
-      <h3>${escapeHtml(props.title || '未命名标点')}</h3>
-      <div class="desc">${escapeHtml(props.description || '暂无详情')}</div>
-      <div class="coords">📍 ${lat.toFixed(6)}, ${lng.toFixed(6)}</div>
-      <a class="nav-btn" href="${navUrl}" target="_blank" rel="noopener">🧭 导航到此位置</a>
-    </div>`;
-        }
-
-        /* ============================================================
-           添加标点交互
-           ============================================================ */
-        $('btnAddMode').addEventListener('click', () => {
-            if (!addMode && typesData.types.length === 0) {
-                showToast('请先点击「+ 新增类型」创建一个类型', 'error');
-                return;
-            }
-            addMode = !addMode;
-            const btn = $('btnAddMode');
-            btn.textContent = addMode ? '取消添加' : '添加标点';
-            btn.className = addMode ? 'btn-primary active' : 'btn-primary';
-            if (addMode) {
-                map.getContainer().style.cursor = 'crosshair';
-                showToast('点击地图上的位置来添加标点', 'info');
-            } else {
-                map.getContainer().style.cursor = '';
-                if (tempMarker) { map.removeLayer(tempMarker); tempMarker = null; }
-            }
-        });
-
-        map.on('click', (e) => {
-            if (!addMode) return;
-
-            if (typesData.types.length === 0) {
-                showToast('请先点击「+ 新增类型」创建一个类型', 'error');
-                return;
-            }
-
-            const { lat, lng } = e.latlng; // 高德瓦片下即为 GCJ-02
-
-            if (tempMarker) map.removeLayer(tempMarker);
-            tempMarker = L.marker([lat, lng]).addTo(map);
-
-            const typeOptions = typesData.types.map(t =>
-                `<option value="${t.id}">${escapeHtml(t.name)}</option>`
-            ).join('');
-
-            const formHtml = `
     <div class="popup-form">
       <h3>📍 新增标点</h3>
       <label>标题 *</label>
       <input id="f-title" type="text" placeholder="给这个位置起个名字" maxlength="50">
       <label>类型 *</label>
-      <select id="f-type">
-        <option value="">请选择类型</option>
+      <select id="f-type" ${lockedType ? 'disabled' : ''}>
+        ${lockedType ? '' : '<option value="">请选择类型</option>'}
         ${typeOptions}
       </select>
+      ${lockedType ? '<div class="lock-tip">🔒 类型由链接指定，不可修改</div>' : ''}
       <label>详情描述</label>
       <textarea id="f-desc" placeholder="补充一些说明..." maxlength="500"></textarea>
       <div class="form-actions">
@@ -1256,120 +1279,176 @@
         <button class="btn-primary" id="f-save">保存</button>
       </div>
     </div>`;
+        }
 
-            if (currentPopup) map.closePopup(currentPopup);
-            currentPopup = L.popup({ maxWidth: 320, minWidth: 260, closeOnClick: false })
+        function exitAddMode() {
+            state.addMode = false;
+            $('btnAddMode').textContent = '添加标点';
+            $('btnAddMode').className = 'btn-primary';
+            map.getContainer().style.cursor = '';
+            if (state.tempMarker) {
+                map.removeLayer(state.tempMarker);
+                state.tempMarker = null;
+            }
+        }
+
+        function bindAddPopupEvents(lat, lng) {
+            const titleInput = document.getElementById('f-title');
+            if (titleInput) titleInput.focus();
+
+            document.getElementById('f-cancel')?.addEventListener('click', () => {
+                map.closePopup(state.currentPopup);
+                if (state.tempMarker) {
+                    map.removeLayer(state.tempMarker);
+                    state.tempMarker = null;
+                }
+            });
+
+            document.getElementById('f-save')?.addEventListener('click', async () => {
+                const title = document.getElementById('f-title').value.trim();
+                const desc = document.getElementById('f-desc').value.trim();
+                const typeId = document.getElementById('f-type').value;
+
+                if (!title) { showToast('请填写标题', 'error'); return; }
+                if (!typeId) { showToast('请选择一种类型', 'error'); return; }
+
+                const saveBtn = document.getElementById('f-save');
+                saveBtn.textContent = '保存中...';
+                saveBtn.disabled = true;
+
+                const newFeature = {
+                    type: 'Feature',
+                    geometry: { type: 'Point', coordinates: [lng, lat] },
+                    properties: {
+                        title,
+                        description: desc,
+                        type: typeId,
+                        created_at: new Date().toISOString()
+                    }
+                };
+
+                state.geojson.features.push(newFeature);
+                try {
+                    await Markers.save();
+                    renderMarkers();
+                    renderTypeFilters();
+                    map.closePopup(state.currentPopup);
+                    exitAddMode();
+                    showToast('标点已保存 ✓', 'success');
+                } catch (err) {
+                    state.geojson.features.pop();
+                    showToast('保存失败: ' + err.message, 'error');
+                    saveBtn.textContent = '保存';
+                    saveBtn.disabled = false;
+                }
+            });
+        }
+
+        function toggleAddMode() {
+            if (!state.addMode && state.types.types.length === 0) {
+                showToast('请先点击「+ 新增类型」创建一个类型', 'error');
+                return;
+            }
+
+            state.addMode = !state.addMode;
+            const btn = $('btnAddMode');
+            btn.textContent = state.addMode ? '取消添加' : '添加标点';
+            btn.className = state.addMode ? 'btn-primary active' : 'btn-primary';
+
+            if (state.addMode) {
+                map.getContainer().style.cursor = 'crosshair';
+                showToast('点击地图上的位置来添加标点', 'info');
+            } else {
+                map.getContainer().style.cursor = '';
+                if (state.tempMarker) {
+                    map.removeLayer(state.tempMarker);
+                    state.tempMarker = null;
+                }
+            }
+        }
+
+        function handleMapClick(e) {
+            if (!state.addMode) return;
+
+            if (state.types.types.length === 0) {
+                showToast('请先点击「+ 新增类型」创建一个类型', 'error');
+                return;
+            }
+
+            const { lat, lng } = e.latlng;
+
+            if (state.tempMarker) map.removeLayer(state.tempMarker);
+            state.tempMarker = L.marker([lat, lng]).addTo(map);
+
+            if (state.currentPopup) map.closePopup(state.currentPopup);
+            state.currentPopup = L.popup({ maxWidth: 320, minWidth: 260, closeOnClick: false })
                 .setLatLng([lat, lng])
-                .setContent(formHtml)
+                .setContent(buildAddPopupHtml(lat, lng))
                 .openOn(map);
 
-            setTimeout(() => {
-                const titleInput = document.getElementById('f-title');
-                if (titleInput) titleInput.focus();
-
-                document.getElementById('f-cancel')?.addEventListener('click', () => {
-                    map.closePopup(currentPopup);
-                    if (tempMarker) { map.removeLayer(tempMarker); tempMarker = null; }
-                });
-
-                document.getElementById('f-save')?.addEventListener('click', async () => {
-                    const title = document.getElementById('f-title').value.trim();
-                    const desc = document.getElementById('f-desc').value.trim();
-                    const typeId = document.getElementById('f-type').value;
-
-                    if (!title) { showToast('请填写标题', 'error'); return; }
-                    if (!typeId) { showToast('请选择一种类型', 'error'); return; }
-
-                    const saveBtn = document.getElementById('f-save');
-                    saveBtn.textContent = '保存中...';
-                    saveBtn.disabled = true;
-
-                    const newFeature = {
-                        type: 'Feature',
-                        geometry: { type: 'Point', coordinates: [lng, lat] },
-                        properties: {
-                            title,
-                            description: desc,
-                            type: typeId,
-                            created_at: new Date().toISOString()
-                        }
-                    };
-
-                    geojsonData.features.push(newFeature);
-                    try {
-                        await saveMarkers(geojsonData);
-                        renderMarkers();
-                        renderTypeFilters();
-                        map.closePopup(currentPopup);
-                        if (tempMarker) { map.removeLayer(tempMarker); tempMarker = null; }
-                        addMode = false;
-                        $('btnAddMode').textContent = '添加标点';
-                        $('btnAddMode').className = 'btn-primary';
-                        map.getContainer().style.cursor = '';
-                        showToast('标点已保存 ✓', 'success');
-                    } catch (err) {
-                        geojsonData.features.pop();
-                        showToast('保存失败: ' + err.message, 'error');
-                        saveBtn.textContent = '保存';
-                        saveBtn.disabled = false;
-                    }
-                });
-            }, 50);
-        });
+            setTimeout(() => bindAddPopupEvents(lat, lng), 50);
+        }
 
         /* ============================================================
-           面板 / 搜索 / 类型管理 事件绑定
+           事件绑定
            ============================================================ */
-        $('panelHeader').addEventListener('click', () => {
-            $('panel').classList.toggle('collapsed');
-        });
+        function bindEvents() {
+            // 面板折叠
+            $('panelHeader').addEventListener('click', () => {
+                $('panel').classList.toggle('collapsed');
+            });
 
-        $('searchInput').addEventListener('input', debounce((e) => {
-            searchKeyword = e.target.value;
-            renderMarkers();
-        }, 180));
+            // 搜索
+            $('searchInput').addEventListener('input', debounce((e) => {
+                state.searchKeyword = e.target.value;
+                renderMarkers();
+            }, 180));
 
-        $('btnSelectAll').addEventListener('click', () => {
-            allTypeIds().forEach(id => activeTypeIds.add(id));
-            renderTypeFilters();
-            renderMarkers();
-        });
+            // 类型全选 / 清空
+            $('btnSelectAll').addEventListener('click', () => {
+                Types.allIds().forEach(id => state.activeTypeIds.add(id));
+                renderTypeFilters();
+                renderMarkers();
+            });
 
-        $('btnSelectNone').addEventListener('click', () => {
-            activeTypeIds.clear();
-            renderTypeFilters();
-            renderMarkers();
-        });
+            $('btnSelectNone').addEventListener('click', () => {
+                state.activeTypeIds.clear();
+                renderTypeFilters();
+                renderMarkers();
+            });
 
-        $('btnManageTypes').addEventListener('click', openTypeModal);
-        $('btnCloseTypeModal').addEventListener('click', closeTypeModal);
-        $('typeModal').addEventListener('click', (e) => {
-            if (e.target === $('typeModal')) closeTypeModal();
-        });
+            // 新增类型弹窗
+            $('btnManageTypes').addEventListener('click', openTypeModal);
+            $('btnCloseTypeModal').addEventListener('click', closeTypeModal);
+            $('typeModal').addEventListener('click', (e) => {
+                if (e.target === $('typeModal')) closeTypeModal();
+            });
 
-        $('nt-color').addEventListener('input', (e) => {
-            $('nt-color-text').value = e.target.value.toLowerCase();
-        });
-        $('nt-color-text').addEventListener('input', (e) => {
-            const hex = normalizeHex(e.target.value);
-            if (hex) $('nt-color').value = hex;
-        });
+            // 颜色选择器联动
+            $('nt-color').addEventListener('input', (e) => {
+                $('nt-color-text').value = e.target.value.toLowerCase();
+            });
+            $('nt-color-text').addEventListener('input', (e) => {
+                const hex = normalizeHex(e.target.value);
+                if (hex) $('nt-color').value = hex;
+            });
 
-        $('btnSaveType').addEventListener('click', handleAddType);
+            $('btnSaveType').addEventListener('click', handleAddType);
+            $('nt-name').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') handleAddType();
+            });
 
-        $('nt-name').addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') handleAddType();
-        });
+            // 添加标点
+            $('btnAddMode').addEventListener('click', toggleAddMode);
+            map.on('click', handleMapClick);
+        }
 
         /* ============================================================
            启动
            ============================================================ */
         (async function init() {
             try {
-                CONFIG.GITHUB_TOKEN = await decrypt(
-                    'pN0DLAO2zEwTMKZlJZw+6zd4GAXI0t3mCX/iAqiGWY6ddaYNpX4u6LdZ7eeflYz7RaSCt6hCUYSPbhbejCY7lVChS9u3YaVWhiU38RWdMQf0iRo4UwUZ5kmnzZXBiZlDVIgWBVNPoxeFveABj02UVh8IFBBix/Bz+AOD9DIdlN8Jbh3s3olHlPs=',
-                    'ulnae'
-                );
+                CONFIG.GITHUB_TOKEN = await decrypt(CONFIG.TOKEN_CIPHER, CONFIG.TOKEN_PASS);
             } catch (e) {
                 setStatus('err', 'Token 解密失败');
                 showToast('Token 解密失败，无法读写数据', 'error');
@@ -1378,38 +1457,53 @@
 
             setStatus('loading', '加载中...');
 
+            // 并行：IP 定位 + 类型 + 标点
             const ipPromise = CONFIG.USE_IP_LOCATION ? fetchIpLocation() : Promise.resolve(null);
-
             const [typesRes, markersRes] = await Promise.allSettled([
-                loadTypes(),
-                loadMarkers()
+                Types.load(),
+                Markers.load()
             ]);
 
+            // ---------- 类型 ----------
             if (typesRes.status === 'fulfilled') {
-                activeTypeIds = new Set(allTypeIds());
-                renderTypeFilters();
+                const lockedType = resolveUrlLockedType();
+                if (lockedType) {
+                    applyTypeLockUI(lockedType);
+                } else {
+                    const raw = getUrlTypeParam();
+                    if (raw) showToast(`未找到类型「${raw}」，已显示全部标点`, 'error');
+                    state.activeTypeIds = new Set(Types.allIds());
+                }
             } else {
                 console.warn('类型加载失败:', typesRes.reason);
                 showToast('类型数据加载失败：' + typesRes.reason.message, 'error');
-                activeTypeIds = new Set();
-                renderTypeFilters();
+                state.activeTypeIds = new Set();
             }
 
+            // 类型加载完成（无论成功失败）都显示左侧面板
+            $('panel').style.display = 'block';
+
+            // ---------- 标点 ----------
             if (markersRes.status === 'fulfilled') {
-                geojsonData = markersRes.value;
-                renderMarkers();
+                state.geojson = markersRes.value;
                 renderTypeFilters();
+                renderMarkers();
             } else {
                 setStatus('err', '加载失败: ' + markersRes.reason.message);
                 showToast('数据加载失败：' + markersRes.reason.message, 'error');
+                renderTypeFilters();
             }
 
+            // ---------- IP 定位 ----------
             const ipLoc = await ipPromise;
             if (ipLoc) {
                 map.flyTo(ipLoc, CONFIG.IP_ZOOM, { duration: 1.5 });
             } else if (CONFIG.USE_IP_LOCATION) {
                 console.warn('IP 定位失败，使用默认中心点');
             }
+
+            // ---------- 事件绑定 ----------
+            bindEvents();
         })();
     </script>
 </body>
