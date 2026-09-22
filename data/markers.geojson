@@ -75,6 +75,21 @@
         "description": "",
         "created_at": "2026-09-22T05:06:46.154Z"
       }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          114.30175781250001,
+          30.56226095049944
+        ]
+      },
+      "properties": {
+        "title": "樱花大学",
+        "description": "",
+        "created_at": "2026-09-22T05:12:51.772Z"
+      }
     }
   ]
 }
