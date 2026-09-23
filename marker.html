@@ -1062,17 +1062,17 @@
            渲染：标点
            ============================================================ */
         function makeIcon(color) {
-            const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="25" height="41" viewBox="0 0 25 41">
+            const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="24" viewBox="0 0 25 41">
                 <path d="M12.5 0C5.596 0 0 5.596 0 12.5 0 21.5 12.5 41 12.5 41S25 21.5 25 12.5C25 5.596 19.404 0 12.5 0z"
-                      fill="${color}" stroke="#ffffff" stroke-width="1.5"/>
-                <circle cx="12.5" cy="12.5" r="4.5" fill="#ffffff" opacity="0.92"/>
+                      fill="${color}" stroke="#ffffff" stroke-width="0"/>
+                <circle cx="12.5" cy="12.5" r="4.5" fill="#e0e0e0" opacity="1"/>
             </svg>`;
             return L.divIcon({
                 html: svg,
                 className: 'marker-pin',
-                iconSize: [25, 41],
-                iconAnchor: [12.5, 41],
-                popupAnchor: [0, -36]
+                iconSize: [15, 24],
+                iconAnchor: [7.5, 24],
+                popupAnchor: [0, -24]
             });
         }
 
