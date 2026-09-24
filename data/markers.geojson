@@ -112,6 +112,22 @@
         "type": "t_muca0ai20skp",
         "created_at": "2026-09-24T00:49:12.445Z"
       }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          116.41081094741821,
+          39.881881541265315
+        ]
+      },
+      "properties": {
+        "title": "天坛公园",
+        "description": "愿风调雨顺、国泰民安",
+        "type": "t_muca0ai20skp",
+        "created_at": "2026-09-24T00:51:22.973Z"
+      }
     }
   ]
 }
