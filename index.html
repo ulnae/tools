@@ -3,324 +3,170 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
-<title>导航中心</title>
+<meta name="description" content="工具箱 —— 文件传输、小说阅读、共享标点等常用工具的集中入口。">
+<title>工具箱 · 导航中心</title>
 
-<!-- 第三方库：Animate.css 入场动画 · Lucide 图标 -->
+<!-- 站点图标：内联 SVG（渐变圆角底 + 2×2 方块，呼应“工具箱”） -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%230A84FF'/%3E%3Cstop offset='1' stop-color='%230060DF'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='15' fill='url(%23g)'/%3E%3Crect x='14' y='14' width='16' height='16' rx='5' fill='%23FFFFFF'/%3E%3Crect x='34' y='14' width='16' height='16' rx='5' fill='%23FFFFFF' fill-opacity='.72'/%3E%3Crect x='14' y='34' width='16' height='16' rx='5' fill='%23FFFFFF' fill-opacity='.72'/%3E%3Crect x='34' y='34' width='16' height='16' rx='5' fill='%23FFFFFF' fill-opacity='.45'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%230A84FF'/%3E%3Cstop offset='1' stop-color='%230060DF'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='15' fill='url(%23g)'/%3E%3Crect x='14' y='14' width='16' height='16' rx='5' fill='%23FFFFFF'/%3E%3Crect x='34' y='14' width='16' height='16' rx='5' fill='%23FFFFFF' fill-opacity='.72'/%3E%3Crect x='14' y='34' width='16' height='16' rx='5' fill='%23FFFFFF' fill-opacity='.72'/%3E%3Crect x='34' y='34' width='16' height='16' rx='5' fill='%23FFFFFF' fill-opacity='.45'/%3E%3C/svg%3E">
+
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    darkMode: 'media',
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['-apple-system', 'BlinkMacSystemFont', 'SF Pro SC', 'PingFang SC',
+                 'Helvetica Neue', 'Microsoft YaHei', 'system-ui', 'sans-serif'],
+        },
+      },
+    },
+  };
+</script>
+
+<!-- 入场动画 -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@4.1.1/animate.min.css">
 
 <style>
-/* =========================================================
-   设计令牌 —— 参考 iOS Human Interface Guidelines
-   ========================================================= */
-:root {
-  color-scheme: light dark;
+  /* ---- 仅保留 Tailwind 无法表达的部分 ---- */
 
-  /* iOS 系统色 */
-  --blue:   #007AFF;
-  --indigo: #5856D6;
-  --green:  #34C759;
+  html { -webkit-text-size-adjust: 100%; }
 
-  /* 材质与层级 */
-  --bg:         #F2F2F7;
-  --surface:    rgba(255, 255, 255, .78);
-  --border:     rgba(60, 60, 67, .10);
-  --inset-line: rgba(255, 255, 255, .70);
-
-  /* 文字层级 */
-  --text:   #000000;
-  --text-2: rgba(60, 60, 67, .60);
-  --text-3: rgba(60, 60, 67, .28);
-
-  /* 圆角与阴影 */
-  --radius:   22px;
-  --shadow-1: 0 1px 2px rgba(0, 0, 0, .05), 0 10px 28px -16px rgba(0, 0, 0, .35);
-  --shadow-2: 0 2px 6px rgba(0, 0, 0, .06), 0 26px 52px -26px rgba(0, 0, 0, .45);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg:         #000000;
-    --surface:    rgba(28, 28, 30, .76);
-    --border:     rgba(84, 84, 88, .50);
-    --inset-line: rgba(255, 255, 255, .07);
-
-    --text:   #FFFFFF;
-    --text-2: rgba(235, 235, 245, .60);
-    --text-3: rgba(235, 235, 245, .26);
-
-    --shadow-1: 0 1px 2px rgba(0, 0, 0, .60), 0 12px 30px -18px rgba(0, 0, 0, .90);
-    --shadow-2: 0 2px 8px rgba(0, 0, 0, .70), 0 30px 56px -28px rgba(0, 0, 0, 1);
-  }
-}
-
-/* =========================================================
-   基础
-   ========================================================= */
-*, *::before, *::after { box-sizing: border-box; }
-
-html { -webkit-text-size-adjust: 100%; }
-
-body {
-  margin: 0;
-  min-height: 100vh;
-  padding: clamp(48px, 9vh, 92px) 20px calc(48px + env(safe-area-inset-bottom));
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro SC", "PingFang SC",
-               "Helvetica Neue", "Microsoft YaHei", system-ui, sans-serif;
-  color: var(--text);
-  -webkit-font-smoothing: antialiased;
-  -webkit-tap-highlight-color: transparent;
-
-  /* iOS 风格氛围背景 */
-  background:
-    radial-gradient(900px 520px at 12% -12%, rgba(10, 132, 255, .16), transparent 62%),
-    radial-gradient(760px 460px at 102% 4%,  rgba(175, 82, 222, .14), transparent 62%),
-    var(--bg);
-  background-attachment: fixed;
-}
-
-@media (prefers-color-scheme: dark) {
   body {
+    padding-top: clamp(48px, 9vh, 92px);
+    padding-bottom: calc(48px + env(safe-area-inset-bottom));
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* iOS 风格氛围光晕 */
+  .aurora {
     background:
-      radial-gradient(900px 520px at 12% -12%, rgba(10, 132, 255, .22), transparent 62%),
-      radial-gradient(760px 460px at 102% 4%,  rgba(191, 90, 242, .18), transparent 62%),
-      var(--bg);
-    background-attachment: fixed;
+      radial-gradient(900px 520px at 12% -12%, rgba(10, 132, 255, .16), transparent 62%),
+      radial-gradient(760px 460px at 102% 4%, rgba(175, 82, 222, .14), transparent 62%);
   }
-}
-
-/* =========================================================
-   页头
-   ========================================================= */
-.page-header {
-  max-width: 620px;
-  margin: 0 auto 30px;
-  text-align: center;
-}
-
-.page-header h1 {
-  margin: 0 0 8px;
-  font-size: clamp(34px, 7vw, 44px);
-  font-weight: 800;
-  letter-spacing: -.03em;
-  line-height: 1.1;
-}
-
-.page-header p {
-  margin: 0;
-  font-size: 16px;
-  line-height: 1.6;
-  color: var(--text-2);
-}
-
-/* =========================================================
-   卡片列表 —— 类似 iOS「设置」的分组列表
-   ========================================================= */
-.card-grid {
-  max-width: 620px;
-  margin: 0 auto;
-  display: grid;
-  gap: 14px;
-}
-
-.card {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 16px 18px;
-  min-height: 86px;
-
-  background: var(--surface);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
-          backdrop-filter: saturate(180%) blur(20px);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-1);
-
-  text-decoration: none;
-  color: inherit;
-  transition: transform .24s cubic-bezier(.32, .72, 0, 1),
-              box-shadow .24s ease,
-              border-color .24s ease;
-}
-
-/* 顶部内高光，模拟 iOS 材质 */
-.card::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  box-shadow: inset 0 1px 0 var(--inset-line);
-}
-
-.card:hover {
-  transform: translateY(-3px);
-  border-color: color-mix(in srgb, var(--glow) 45%, var(--border));
-  box-shadow: var(--shadow-2), 0 20px 40px -22px var(--glow);
-}
-
-/* 触摸 / 点击反馈 */
-.card:active {
-  transform: scale(.975);
-  transition-duration: .1s;
-}
-
-.card:focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--blue) 55%, transparent);
-  outline-offset: 3px;
-}
-
-/* ---------- 图标：iOS App 图标质感 ---------- */
-.card-icon {
-  flex: 0 0 auto;
-  width: 52px;
-  height: 52px;
-  display: grid;
-  place-items: center;
-  border-radius: 15px;
-  color: #fff;
-  background: linear-gradient(180deg, var(--c-top), var(--c-bottom));
-  box-shadow: 0 8px 18px -9px var(--glow),
-              inset 0 1px 0 rgba(255, 255, 255, .35);
-  transition: transform .24s cubic-bezier(.32, .72, 0, 1);
-}
-
-.card-icon svg { width: 26px; height: 26px; stroke-width: 2; }
-
-.card:hover .card-icon { transform: scale(1.06) rotate(-3deg); }
-
-/* 三套配色 */
-.icon-blue   { --c-top: #0A84FF; --c-bottom: #0060DF; --glow: rgba(0, 122, 255, .55); }
-.icon-indigo { --c-top: #7A79F5; --c-bottom: #4B49C8; --glow: rgba(88, 86, 214, .55); }
-.icon-green  { --c-top: #4CD964; --c-bottom: #248A3D; --glow: rgba(52, 199, 89, .50); }
-
-/* ---------- 文案区 ---------- */
-.card-body {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.card-title {
-  margin: 0;
-  font-size: 17px;
-  font-weight: 600;
-  letter-spacing: -.01em;
-  line-height: 1.3;
-}
-
-.card-desc {
-  margin: 0;
-  font-size: 13.5px;
-  line-height: 1.55;
-  color: var(--text-2);
-}
-
-/* ---------- 右侧箭头 ---------- */
-.card-chevron {
-  flex: 0 0 auto;
-  display: grid;
-  place-items: center;
-  color: var(--text-3);
-  transition: transform .24s cubic-bezier(.32, .72, 0, 1), color .24s ease;
-}
-
-.card-chevron svg { width: 20px; height: 20px; stroke-width: 2.5; }
-
-.card:hover .card-chevron {
-  transform: translateX(3px);
-  color: var(--text-2);
-}
-
-/* =========================================================
-   页脚
-   ========================================================= */
-.page-footer {
-  max-width: 620px;
-  margin: 40px auto 0;
-  text-align: center;
-  font-size: 13px;
-  color: var(--text-3);
-}
-
-/* =========================================================
-   无障碍：尊重「减弱动态效果」
-   ========================================================= */
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: .001ms !important;
-    animation-delay: 0s !important;
-    transition-duration: .001ms !important;
+  @media (prefers-color-scheme: dark) {
+    .aurora {
+      background:
+        radial-gradient(900px 520px at 12% -12%, rgba(10, 132, 255, .22), transparent 62%),
+        radial-gradient(760px 460px at 102% 4%, rgba(191, 90, 242, .18), transparent 62%);
+    }
   }
-}
+
+  /* 动画结束后释放 transform，保证 hover 位移 / 按压缩放不被填充帧锁死 */
+  .animate__animated { animation-fill-mode: backwards; }
+
+  /* 无障碍：尊重「减弱动态效果」 */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: .001ms !important;
+      animation-delay: 0s !important;
+      transition-duration: .001ms !important;
+    }
+  }
 </style>
 </head>
-<body>
 
-  <header class="page-header animate__animated animate__fadeInDown">
-    <h1>导航中心</h1>
-    <p>选择一个功能，立即开始使用</p>
+<body class="min-h-screen bg-[#F2F2F7] px-5 font-sans text-black antialiased selection:bg-[#007AFF]/25 dark:bg-black dark:text-white">
+
+  <!-- 氛围背景 -->
+  <div class="aurora pointer-events-none fixed inset-0 -z-10" aria-hidden="true"></div>
+
+  <!-- 页头 -->
+  <header class="animate__animated animate__fadeInDown mx-auto mb-8 max-w-[620px] text-center">
+    <h1 class="mb-2 text-[clamp(34px,7vw,44px)] font-extrabold leading-[1.1] tracking-[-0.03em]">
+      工具箱
+    </h1>
+    <p class="text-base leading-relaxed text-black/60 dark:text-white/60">
+      常用工具集中管理 · 选择一个立即开始
+    </p>
   </header>
 
-  <main class="card-grid">
+  <!-- 工具卡片 -->
+  <main class="mx-auto grid w-full max-w-[620px] gap-3.5 md:max-w-[980px] md:grid-cols-2 lg:grid-cols-3">
 
-    <a class="card animate__animated animate__fadeInUp"
-       href="./transfer.html" style="animation-delay:.08s">
-      <span class="card-icon icon-blue">
-        <i data-lucide="arrow-up-down"></i>
+    <!-- 文件传输助手 -->
+    <a href="./transfer.html"
+       style="--glow: rgba(0, 122, 255, .55); animation-delay: .08s"
+       class="animate__animated animate__fadeInUp group relative flex min-h-[86px] items-center gap-4 rounded-[22px] border border-black/[0.07] bg-white/[0.78] p-4 shadow-[0_1px_2px_rgba(0,0,0,.05),0_10px_28px_-16px_rgba(0,0,0,.35)] backdrop-blur-xl backdrop-saturate-150 transition duration-300 ease-out before:pointer-events-none before:absolute before:inset-0 before:rounded-[inherit] before:shadow-[inset_0_1px_0_rgba(255,255,255,.7)] hover:-translate-y-[3px] hover:shadow-[0_2px_6px_rgba(0,0,0,.06),0_26px_52px_-26px_rgba(0,0,0,.45),0_18px_38px_-20px_var(--glow)] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[#007AFF]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#F2F2F7] active:scale-[0.975] active:duration-100 dark:border-white/[0.08] dark:bg-[#1C1C1E]/[0.76] dark:before:shadow-[inset_0_1px_0_rgba(255,255,255,.07)] dark:focus-visible:ring-offset-black">
+
+      <span class="grid h-[52px] w-[52px] shrink-0 place-items-center rounded-[15px] bg-gradient-to-b from-[#0A84FF] to-[#0060DF] text-white shadow-[0_8px_18px_-9px_var(--glow),inset_0_1px_0_rgba(255,255,255,.35)] transition-transform duration-300 ease-out group-hover:-rotate-3 group-hover:scale-[1.06]">
+        <i data-lucide="arrow-up-down" class="h-[26px] w-[26px]"></i>
       </span>
-      <span class="card-body">
-        <h2 class="card-title">文件传输助手</h2>
-        <p class="card-desc">
+
+      <div class="min-w-0 flex-1">
+        <h2 class="text-[17px] font-semibold leading-snug tracking-[-0.01em]">文件传输助手</h2>
+        <p class="mt-[3px] text-[13.5px] leading-[1.55] text-black/60 dark:text-white/60">
           设备间快速互传文件，支持拖拽上传、链接分享与历史记录查看。
         </p>
+      </div>
+
+      <span class="grid shrink-0 place-items-center text-black/30 transition duration-300 ease-out group-hover:translate-x-[3px] group-hover:text-black/60 dark:text-white/25 dark:group-hover:text-white/60">
+        <i data-lucide="chevron-right" class="h-5 w-5"></i>
       </span>
-      <span class="card-chevron"><i data-lucide="chevron-right"></i></span>
     </a>
 
-    <a class="card animate__animated animate__fadeInUp"
-       href="./reader.html" style="animation-delay:.16s">
-      <span class="card-icon icon-indigo">
-        <i data-lucide="book-open"></i>
+    <!-- 小说阅读器 -->
+    <a href="./reader.html"
+       style="--glow: rgba(88, 86, 214, .55); animation-delay: .16s"
+       class="animate__animated animate__fadeInUp group relative flex min-h-[86px] items-center gap-4 rounded-[22px] border border-black/[0.07] bg-white/[0.78] p-4 shadow-[0_1px_2px_rgba(0,0,0,.05),0_10px_28px_-16px_rgba(0,0,0,.35)] backdrop-blur-xl backdrop-saturate-150 transition duration-300 ease-out before:pointer-events-none before:absolute before:inset-0 before:rounded-[inherit] before:shadow-[inset_0_1px_0_rgba(255,255,255,.7)] hover:-translate-y-[3px] hover:shadow-[0_2px_6px_rgba(0,0,0,.06),0_26px_52px_-26px_rgba(0,0,0,.45),0_18px_38px_-20px_var(--glow)] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[#5856D6]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#F2F2F7] active:scale-[0.975] active:duration-100 dark:border-white/[0.08] dark:bg-[#1C1C1E]/[0.76] dark:before:shadow-[inset_0_1px_0_rgba(255,255,255,.07)] dark:focus-visible:ring-offset-black">
+
+      <span class="grid h-[52px] w-[52px] shrink-0 place-items-center rounded-[15px] bg-gradient-to-b from-[#7A79F5] to-[#4B49C8] text-white shadow-[0_8px_18px_-9px_var(--glow),inset_0_1px_0_rgba(255,255,255,.35)] transition-transform duration-300 ease-out group-hover:-rotate-3 group-hover:scale-[1.06]">
+        <i data-lucide="book-open" class="h-[26px] w-[26px]"></i>
       </span>
-      <span class="card-body">
-        <h2 class="card-title">小说阅读器</h2>
-        <p class="card-desc">
+
+      <div class="min-w-0 flex-1">
+        <h2 class="text-[17px] font-semibold leading-snug tracking-[-0.01em]">小说阅读器</h2>
+        <p class="mt-[3px] text-[13.5px] leading-[1.55] text-black/60 dark:text-white/60">
           沉浸式阅读，支持书架管理、章节跳转与字号背景调节，自动记录进度。
         </p>
+      </div>
+
+      <span class="grid shrink-0 place-items-center text-black/30 transition duration-300 ease-out group-hover:translate-x-[3px] group-hover:text-black/60 dark:text-white/25 dark:group-hover:text-white/60">
+        <i data-lucide="chevron-right" class="h-5 w-5"></i>
       </span>
-      <span class="card-chevron"><i data-lucide="chevron-right"></i></span>
     </a>
 
-    <a class="card animate__animated animate__fadeInUp"
-       href="./marker.html" style="animation-delay:.24s">
-      <span class="card-icon icon-green">
-        <i data-lucide="map-pin"></i>
+    <!-- 共享标点 -->
+    <a href="./marker.html"
+       style="--glow: rgba(52, 199, 89, .50); animation-delay: .24s"
+       class="animate__animated animate__fadeInUp group relative flex min-h-[86px] items-center gap-4 rounded-[22px] border border-black/[0.07] bg-white/[0.78] p-4 shadow-[0_1px_2px_rgba(0,0,0,.05),0_10px_28px_-16px_rgba(0,0,0,.35)] backdrop-blur-xl backdrop-saturate-150 transition duration-300 ease-out before:pointer-events-none before:absolute before:inset-0 before:rounded-[inherit] before:shadow-[inset_0_1px_0_rgba(255,255,255,.7)] hover:-translate-y-[3px] hover:shadow-[0_2px_6px_rgba(0,0,0,.06),0_26px_52px_-26px_rgba(0,0,0,.45),0_18px_38px_-20px_var(--glow)] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[#34C759]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#F2F2F7] active:scale-[0.975] active:duration-100 dark:border-white/[0.08] dark:bg-[#1C1C1E]/[0.76] dark:before:shadow-[inset_0_1px_0_rgba(255,255,255,.07)] dark:focus-visible:ring-offset-black">
+
+      <span class="grid h-[52px] w-[52px] shrink-0 place-items-center rounded-[15px] bg-gradient-to-b from-[#4CD964] to-[#248A3D] text-white shadow-[0_8px_18px_-9px_var(--glow),inset_0_1px_0_rgba(255,255,255,.35)] transition-transform duration-300 ease-out group-hover:-rotate-3 group-hover:scale-[1.06]">
+        <i data-lucide="map-pin" class="h-[26px] w-[26px]"></i>
       </span>
-      <span class="card-body">
-        <h2 class="card-title">共享标点</h2>
-        <p class="card-desc">
+
+      <div class="min-w-0 flex-1">
+        <h2 class="text-[17px] font-semibold leading-snug tracking-[-0.01em]">共享标点</h2>
+        <p class="mt-[3px] text-[13.5px] leading-[1.55] text-black/60 dark:text-white/60">
           在地图上标记并共享位置，点击即可一键导航，适合收藏与行程规划。
         </p>
+      </div>
+
+      <span class="grid shrink-0 place-items-center text-black/30 transition duration-300 ease-out group-hover:translate-x-[3px] group-hover:text-black/60 dark:text-white/25 dark:group-hover:text-white/60">
+        <i data-lucide="chevron-right" class="h-5 w-5"></i>
       </span>
-      <span class="card-chevron"><i data-lucide="chevron-right"></i></span>
     </a>
+
+    <!-- 新增工具时，复制上面任意一张卡片，改 href / 图标 / 文案 / --glow 配色即可 -->
 
   </main>
 
-  <footer class="page-footer animate__animated animate__fadeIn"
-          style="animation-delay:.42s">
-    © 2025 导航中心
+  <!-- 页脚 -->
+  <footer class="animate__animated animate__fadeIn mx-auto mt-10 max-w-[620px] text-center text-[13px] leading-relaxed text-black/30 dark:text-white/25"
+          style="animation-delay: .42s">
+    © <span id="year">2025</span> 工具箱 · 持续更新中
   </footer>
 
   <!-- Lucide 图标：把 <i data-lucide> 渲染为 SVG -->
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.454.0/dist/umd/lucide.min.js"></script>
-  <script>lucide.createIcons();</script>
+  <script>
+    lucide.createIcons();
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
 
 </body>
 </html>
