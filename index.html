@@ -2,293 +2,325 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 <title>导航中心</title>
+
+<!-- 第三方库：Animate.css 入场动画 · Lucide 图标 -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@4.1.1/animate.min.css">
+
 <style>
-  /* ---------- 基础重置 ---------- */
-  * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-  }
+/* =========================================================
+   设计令牌 —— 参考 iOS Human Interface Guidelines
+   ========================================================= */
+:root {
+  color-scheme: light dark;
 
+  /* iOS 系统色 */
+  --blue:   #007AFF;
+  --indigo: #5856D6;
+  --green:  #34C759;
+
+  /* 材质与层级 */
+  --bg:         #F2F2F7;
+  --surface:    rgba(255, 255, 255, .78);
+  --border:     rgba(60, 60, 67, .10);
+  --inset-line: rgba(255, 255, 255, .70);
+
+  /* 文字层级 */
+  --text:   #000000;
+  --text-2: rgba(60, 60, 67, .60);
+  --text-3: rgba(60, 60, 67, .28);
+
+  /* 圆角与阴影 */
+  --radius:   22px;
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, .05), 0 10px 28px -16px rgba(0, 0, 0, .35);
+  --shadow-2: 0 2px 6px rgba(0, 0, 0, .06), 0 26px 52px -26px rgba(0, 0, 0, .45);
+}
+
+@media (prefers-color-scheme: dark) {
   :root {
-    --card-bg: #ffffff;
-    --text-main: #1a202c;
-    --text-sub: #64748b;
-    --accent: #6366f1;
-    --accent-2: #8b5cf6;
-    --radius: 18px;
-    --shadow-sm: 0 2px 8px rgba(15, 23, 42, .06);
-    --shadow-lg: 0 18px 40px -12px rgba(79, 70, 229, .35);
-  }
+    --bg:         #000000;
+    --surface:    rgba(28, 28, 30, .76);
+    --border:     rgba(84, 84, 88, .50);
+    --inset-line: rgba(255, 255, 255, .07);
 
+    --text:   #FFFFFF;
+    --text-2: rgba(235, 235, 245, .60);
+    --text-3: rgba(235, 235, 245, .26);
+
+    --shadow-1: 0 1px 2px rgba(0, 0, 0, .60), 0 12px 30px -18px rgba(0, 0, 0, .90);
+    --shadow-2: 0 2px 8px rgba(0, 0, 0, .70), 0 30px 56px -28px rgba(0, 0, 0, 1);
+  }
+}
+
+/* =========================================================
+   基础
+   ========================================================= */
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  padding: clamp(48px, 9vh, 92px) 20px calc(48px + env(safe-area-inset-bottom));
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro SC", "PingFang SC",
+               "Helvetica Neue", "Microsoft YaHei", system-ui, sans-serif;
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+
+  /* iOS 风格氛围背景 */
+  background:
+    radial-gradient(900px 520px at 12% -12%, rgba(10, 132, 255, .16), transparent 62%),
+    radial-gradient(760px 460px at 102% 4%,  rgba(175, 82, 222, .14), transparent 62%),
+    var(--bg);
+  background-attachment: fixed;
+}
+
+@media (prefers-color-scheme: dark) {
   body {
-    min-height: 100vh;
-    font-family: "PingFang SC", "Microsoft YaHei", -apple-system,
-                 BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    color: var(--text-main);
     background:
-      radial-gradient(1200px 600px at 10% -10%, #e0e7ff 0%, transparent 60%),
-      radial-gradient(1000px 500px at 100% 0%, #fae8ff 0%, transparent 55%),
-      #f7f8fc;
-    padding: 64px 24px 96px;
-    -webkit-font-smoothing: antialiased;
-
-    /* 让内容在垂直方向更好看 */
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
+      radial-gradient(900px 520px at 12% -12%, rgba(10, 132, 255, .22), transparent 62%),
+      radial-gradient(760px 460px at 102% 4%,  rgba(191, 90, 242, .18), transparent 62%),
+      var(--bg);
+    background-attachment: fixed;
   }
+}
 
-  /* ---------- 页头 ---------- */
-  .page-header {
-    max-width: 900px;
-    width: 100%;
-    margin: 0 auto 48px;
-    text-align: center;
+/* =========================================================
+   页头
+   ========================================================= */
+.page-header {
+  max-width: 620px;
+  margin: 0 auto 30px;
+  text-align: center;
+}
+
+.page-header h1 {
+  margin: 0 0 8px;
+  font-size: clamp(34px, 7vw, 44px);
+  font-weight: 800;
+  letter-spacing: -.03em;
+  line-height: 1.1;
+}
+
+.page-header p {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--text-2);
+}
+
+/* =========================================================
+   卡片列表 —— 类似 iOS「设置」的分组列表
+   ========================================================= */
+.card-grid {
+  max-width: 620px;
+  margin: 0 auto;
+  display: grid;
+  gap: 14px;
+}
+
+.card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 18px;
+  min-height: 86px;
+
+  background: var(--surface);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+          backdrop-filter: saturate(180%) blur(20px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-1);
+
+  text-decoration: none;
+  color: inherit;
+  transition: transform .24s cubic-bezier(.32, .72, 0, 1),
+              box-shadow .24s ease,
+              border-color .24s ease;
+}
+
+/* 顶部内高光，模拟 iOS 材质 */
+.card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: inset 0 1px 0 var(--inset-line);
+}
+
+.card:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--glow) 45%, var(--border));
+  box-shadow: var(--shadow-2), 0 20px 40px -22px var(--glow);
+}
+
+/* 触摸 / 点击反馈 */
+.card:active {
+  transform: scale(.975);
+  transition-duration: .1s;
+}
+
+.card:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--blue) 55%, transparent);
+  outline-offset: 3px;
+}
+
+/* ---------- 图标：iOS App 图标质感 ---------- */
+.card-icon {
+  flex: 0 0 auto;
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 15px;
+  color: #fff;
+  background: linear-gradient(180deg, var(--c-top), var(--c-bottom));
+  box-shadow: 0 8px 18px -9px var(--glow),
+              inset 0 1px 0 rgba(255, 255, 255, .35);
+  transition: transform .24s cubic-bezier(.32, .72, 0, 1);
+}
+
+.card-icon svg { width: 26px; height: 26px; stroke-width: 2; }
+
+.card:hover .card-icon { transform: scale(1.06) rotate(-3deg); }
+
+/* 三套配色 */
+.icon-blue   { --c-top: #0A84FF; --c-bottom: #0060DF; --glow: rgba(0, 122, 255, .55); }
+.icon-indigo { --c-top: #7A79F5; --c-bottom: #4B49C8; --glow: rgba(88, 86, 214, .55); }
+.icon-green  { --c-top: #4CD964; --c-bottom: #248A3D; --glow: rgba(52, 199, 89, .50); }
+
+/* ---------- 文案区 ---------- */
+.card-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.card-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -.01em;
+  line-height: 1.3;
+}
+
+.card-desc {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--text-2);
+}
+
+/* ---------- 右侧箭头 ---------- */
+.card-chevron {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  color: var(--text-3);
+  transition: transform .24s cubic-bezier(.32, .72, 0, 1), color .24s ease;
+}
+
+.card-chevron svg { width: 20px; height: 20px; stroke-width: 2.5; }
+
+.card:hover .card-chevron {
+  transform: translateX(3px);
+  color: var(--text-2);
+}
+
+/* =========================================================
+   页脚
+   ========================================================= */
+.page-footer {
+  max-width: 620px;
+  margin: 40px auto 0;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-3);
+}
+
+/* =========================================================
+   无障碍：尊重「减弱动态效果」
+   ========================================================= */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-delay: 0s !important;
+    transition-duration: .001ms !important;
   }
-
-  .page-header h1 {
-    font-size: clamp(28px, 4vw, 44px);
-    font-weight: 800;
-    letter-spacing: -0.02em;
-    background: linear-gradient(120deg, #4f46e5, #9333ea 55%, #ec4899);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    margin-bottom: 14px;
-  }
-
-  .page-header p {
-    font-size: 16px;
-    color: var(--text-sub);
-    line-height: 1.7;
-  }
-
-  /* ---------- 卡片网格：自动换行 ---------- */
-  .card-grid {
-    max-width: 900px;
-    width: 100%;
-    margin: 0 auto;
-    display: grid;
-    /* 空间不足时自动换行 */
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 28px;
-  }
-
-  /* ---------- 卡片本体 ---------- */
-  .card {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    padding: 34px 28px 28px;
-    background: var(--card-bg);
-    border: 1px solid rgba(148, 163, 184, .22);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow-sm);
-    text-decoration: none;
-    color: inherit;
-    overflow: hidden;
-    isolation: isolate;
-    transition: transform .32s cubic-bezier(.22, .8, .3, 1),
-                box-shadow .32s cubic-bezier(.22, .8, .3, 1),
-                border-color .32s ease;
-  }
-
-  /* 顶部渐变条（hover 时展开） */
-  .card::before {
-    content: "";
-    position: absolute;
-    inset: 0 0 auto 0;
-    height: 4px;
-    background: linear-gradient(90deg, var(--accent), var(--accent-2), #ec4899);
-    transform: scaleX(0);
-    transform-origin: left;
-    transition: transform .38s cubic-bezier(.22, .8, .3, 1);
-    z-index: 2;
-  }
-
-  /* 柔和光晕背景 */
-  .card::after {
-    content: "";
-    position: absolute;
-    width: 240px;
-    height: 240px;
-    right: -90px;
-    bottom: -120px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(99, 102, 241, .18), transparent 70%);
-    opacity: 0;
-    transition: opacity .38s ease;
-    z-index: -1;
-  }
-
-  .card:hover {
-    transform: translateY(-6px);
-    border-color: rgba(99, 102, 241, .45);
-    box-shadow: var(--shadow-lg);
-  }
-
-  .card:hover::before { transform: scaleX(1); }
-  .card:hover::after  { opacity: 1; }
-
-  .card:focus-visible {
-    outline: 3px solid rgba(99, 102, 241, .45);
-    outline-offset: 3px;
-  }
-
-  /* ---------- 卡片内部元素 ---------- */
-  .card-icon {
-    width: 54px;
-    height: 54px;
-    display: grid;
-    place-items: center;
-    border-radius: 15px;
-    font-size: 26px;
-    background: linear-gradient(135deg, #eef2ff, #f5f3ff);
-    border: 1px solid rgba(99, 102, 241, .16);
-    transition: transform .32s cubic-bezier(.22, .8, .3, 1);
-  }
-
-  .card:hover .card-icon { transform: scale(1.08) rotate(-4deg); }
-
-  .card-title {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 20px;
-    font-weight: 700;
-    letter-spacing: -0.01em;
-  }
-
-  .card-title .arrow {
-    font-size: 16px;
-    color: var(--accent);
-    opacity: 0;
-    transform: translateX(-6px);
-    transition: opacity .3s ease, transform .3s ease;
-  }
-
-  .card:hover .card-title .arrow {
-    opacity: 1;
-    transform: translateX(0);
-  }
-
-  .card-desc {
-    font-size: 14.5px;
-    line-height: 1.8;
-    color: var(--text-sub);
-    flex: 1;
-  }
-
-  .card-footer {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    margin-top: 8px;
-    padding-top: 16px;
-    border-top: 1px dashed rgba(148, 163, 184, .32);
-  }
-
-  .card-go {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--accent);
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    transition: gap .25s ease;
-  }
-
-  .card:hover .card-go { gap: 10px; }
-
-  /* ---------- 页脚 ---------- */
-  .page-footer {
-    max-width: 900px;
-    width: 100%;
-    margin: 72px auto 0;
-    text-align: center;
-    font-size: 13px;
-    color: #94a3b8;
-  }
-
-  /* ---------- 入场动画 ---------- */
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(16px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-
-  .card {
-    animation: fadeUp .55s cubic-bezier(.22, .8, .3, 1) backwards;
-  }
-
-  .card:nth-child(1) { animation-delay: .06s; }
-  .card:nth-child(2) { animation-delay: .16s; }
-
-  @media (prefers-reduced-motion: reduce) {
-    * { animation: none !important; transition: none !important; }
-  }
-
-  /* ---------- 小屏适配 ---------- */
-  @media (max-width: 640px) {
-    body { padding: 40px 16px 64px; }
-    .card-grid { gap: 18px; grid-template-columns: 1fr; }
-    .card { padding: 26px 22px 22px; }
-  }
+}
 </style>
 </head>
 <body>
 
-  <header class="page-header">
+  <header class="page-header animate__animated animate__fadeInDown">
     <h1>导航中心</h1>
     <p>选择一个功能，立即开始使用</p>
   </header>
 
   <main class="card-grid">
 
-    <a class="card" href="./transfer.html">
-      <div class="card-icon">📤</div>
-      <h2 class="card-title">文件传输助手 <span class="arrow">→</span></h2>
-      <p class="card-desc">
-        在设备之间快速互传文件，支持拖拽上传、链接分享与历史记录查看，
-        让跨端传递资料变得简单高效。
-      </p>
-      <div class="card-footer">
-        <span class="card-go">进入 <span>→</span></span>
-      </div>
+    <a class="card animate__animated animate__fadeInUp"
+       href="./transfer.html" style="animation-delay:.08s">
+      <span class="card-icon icon-blue">
+        <i data-lucide="arrow-up-down"></i>
+      </span>
+      <span class="card-body">
+        <h2 class="card-title">文件传输助手</h2>
+        <p class="card-desc">
+          设备间快速互传文件，支持拖拽上传、链接分享与历史记录查看。
+        </p>
+      </span>
+      <span class="card-chevron"><i data-lucide="chevron-right"></i></span>
     </a>
 
-    <a class="card" href="./reader.html">
-      <div class="card-icon">📖</div>
-      <h2 class="card-title">小说阅读器 <span class="arrow">→</span></h2>
-      <p class="card-desc">
-        沉浸式阅读体验，支持书架管理、章节跳转、字号与背景调节，
-        并自动记录阅读进度，随时续读。
-      </p>
-      <div class="card-footer">
-        <span class="card-go">进入 <span>→</span></span>
-      </div>
+    <a class="card animate__animated animate__fadeInUp"
+       href="./reader.html" style="animation-delay:.16s">
+      <span class="card-icon icon-indigo">
+        <i data-lucide="book-open"></i>
+      </span>
+      <span class="card-body">
+        <h2 class="card-title">小说阅读器</h2>
+        <p class="card-desc">
+          沉浸式阅读，支持书架管理、章节跳转与字号背景调节，自动记录进度。
+        </p>
+      </span>
+      <span class="card-chevron"><i data-lucide="chevron-right"></i></span>
     </a>
 
-    
-    <a class="card" href="./marker.html">
-      <div class="card-icon">📍</div>
-      <h2 class="card-title">共享标点 <span class="arrow">→</span></h2>
-      <p class="card-desc">
-        在地图上标记并共享位置信息，点击即可一键导航，
-        适合收藏常去地点、团队协作标记与行程规划。
-      </p>
-      <div class="card-footer">
-        <span class="card-go">进入 <span>→</span></span>
-      </div>
+    <a class="card animate__animated animate__fadeInUp"
+       href="./marker.html" style="animation-delay:.24s">
+      <span class="card-icon icon-green">
+        <i data-lucide="map-pin"></i>
+      </span>
+      <span class="card-body">
+        <h2 class="card-title">共享标点</h2>
+        <p class="card-desc">
+          在地图上标记并共享位置，点击即可一键导航，适合收藏与行程规划。
+        </p>
+      </span>
+      <span class="card-chevron"><i data-lucide="chevron-right"></i></span>
     </a>
+
   </main>
 
-  <footer class="page-footer">
+  <footer class="page-footer animate__animated animate__fadeIn"
+          style="animation-delay:.42s">
     © 2025 导航中心
   </footer>
+
+  <!-- Lucide 图标：把 <i data-lucide> 渲染为 SVG -->
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.454.0/dist/umd/lucide.min.js"></script>
+  <script>lucide.createIcons();</script>
 
 </body>
 </html>
