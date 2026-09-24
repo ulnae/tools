@@ -3,7 +3,8 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>共享标点</title>
     <link rel="icon" type="image/svg+xml"
         href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23007AFF'/%3E%3Cpath d='M16 6c-3.9 0-7 3.1-7 7 0 5.3 7 13 7 13s7-7.7 7-13c0-3.9-3.1-7-7-7z' fill='%23fff'/%3E%3Ccircle cx='16' cy='13' r='2.6' fill='%23007AFF'/%3E%3C/svg%3E">
@@ -407,11 +408,10 @@
     <!-- ============ 左侧面板（桌面常显 / 移动端下拉浮层） ============ -->
     <div id="panel"
         class="hidden md:block absolute z-[1000] top-[68px] md:top-3 left-3 right-3 md:right-auto md:w-[264px] glass rounded-[20px] overflow-hidden">
-        <div id="panelHeader"
-            class="flex items-center justify-between px-4 py-3.5 cursor-pointer select-none">
+        <div id="panelHeader" class="flex items-center justify-between px-4 py-3.5 cursor-pointer select-none">
             <h2 id="panelTitle" class="text-[13px] font-semibold text-[#1c1c1e] tracking-tight">类型筛选</h2>
-            <svg id="panelChev" class="w-3.5 h-3.5 text-[#C7C7CC] transition-transform duration-200"
-                viewBox="0 0 20 20" fill="currentColor">
+            <svg id="panelChev" class="w-3.5 h-3.5 text-[#C7C7CC] transition-transform duration-200" viewBox="0 0 20 20"
+                fill="currentColor">
                 <path fill-rule="evenodd"
                     d="M5.29 7.29a1 1 0 011.42 0L10 10.59l3.29-3.3a1 1 0 111.42 1.42l-4 4a1 1 0 01-1.42 0l-4-4a1 1 0 010-1.42z"
                     clip-rule="evenodd" />
@@ -423,8 +423,8 @@
             <div class="flex items-center gap-3 px-1 mb-2">
                 <button id="btnSelectAll" class="text-[12px] font-medium text-[#007AFF] active:opacity-60">全选</button>
                 <button id="btnSelectNone" class="text-[12px] font-medium text-[#007AFF] active:opacity-60">清空</button>
-                <button id="btnManageTypes"
-                    class="ml-auto text-[12px] font-semibold text-[#007AFF] active:opacity-60">+ 新增类型</button>
+                <button id="btnManageTypes" class="ml-auto text-[12px] font-semibold text-[#007AFF] active:opacity-60">+
+                    新增类型</button>
             </div>
             <div id="typeFilters" class="space-y-0.5"></div>
         </div>
@@ -454,8 +454,10 @@
     </div>
 
     <!-- ============ 新增类型弹窗 ============ -->
-    <div id="typeModal" class="hidden fixed inset-0 z-[9998] items-center justify-center p-4 bg-black/40 backdrop-blur-[2px]">
-        <div class="anim-pop w-full max-w-[380px] bg-white rounded-[24px] shadow-[0_24px_64px_rgba(0,0,0,.28)] overflow-hidden">
+    <div id="typeModal"
+        class="hidden fixed inset-0 z-[9998] items-center justify-center p-4 bg-black/40 backdrop-blur-[2px]">
+        <div
+            class="anim-pop w-full max-w-[380px] bg-white rounded-[24px] shadow-[0_24px_64px_rgba(0,0,0,.28)] overflow-hidden">
             <div class="flex items-center justify-between px-5 pt-5 pb-3">
                 <h2 class="text-[17px] font-bold text-[#1c1c1e] tracking-tight">新增类型</h2>
                 <button id="btnCloseTypeModal"
@@ -896,6 +898,22 @@
             });
         }
 
+        /* 新增模式下的临时标点图标（蓝色高亮 + 白描边，与正式标点区分） */
+        function makeTempIcon() {
+            const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="26" viewBox="-2 -2 29 45">
+                <path d="M12.5 0C5.596 0 0 5.596 0 12.5 0 21.5 12.5 41 12.5 41S25 21.5 25 12.5C25 5.596 19.404 0 12.5 0z"
+                      fill="#007AFF" stroke="#ffffff" stroke-width="2.5" stroke-linejoin="round"/>
+                <circle cx="12.5" cy="12.5" r="4.5" fill="#ffffff" opacity="0.95"/>
+            </svg>`;
+            return L.divIcon({
+                html: svg,
+                className: 'marker-pin',
+                iconSize: [16, 26],
+                iconAnchor: [8, 26],     // 修正到图标底部
+                popupAnchor: [0, -26]    // 弹窗尖端贴图标顶部
+            });
+        }
+
         function getVisibleFeatures() {
             const kw = state.searchKeyword.trim().toLowerCase();
             return (state.geojson.features || []).filter(f => {
@@ -1130,16 +1148,24 @@
             </div>`;
         }
 
+        function clearTempMarker() {
+            if (state.currentPopup) {
+                map.closePopup(state.currentPopup);
+                state.currentPopup = null;
+            }
+            if (state.tempMarker) {
+                map.removeLayer(state.tempMarker);
+                state.tempMarker = null;
+            }
+        }
+
         function exitAddMode() {
             state.addMode = false;
             const btn = $('btnAddMode');
             btn.textContent = '添加标点';
             btn.className = 'flex-none px-4 py-2 rounded-xl text-[13px] font-semibold text-white bg-[#007AFF] active:scale-95 transition shadow-[0_4px_14px_rgba(0,122,255,.32)]';
             map.getContainer().style.cursor = '';
-            if (state.tempMarker) {
-                map.removeLayer(state.tempMarker);
-                state.tempMarker = null;
-            }
+            clearTempMarker();
         }
 
         function bindAddPopupEvents(lat, lng) {
@@ -1147,11 +1173,7 @@
             if (titleInput) titleInput.focus();
 
             document.getElementById('f-cancel')?.addEventListener('click', () => {
-                map.closePopup(state.currentPopup);
-                if (state.tempMarker) {
-                    map.removeLayer(state.tempMarker);
-                    state.tempMarker = null;
-                }
+                clearTempMarker();
             });
 
             document.getElementById('f-save')?.addEventListener('click', async () => {
@@ -1182,7 +1204,6 @@
                     await Markers.save();
                     renderMarkers();
                     renderTypeFilters();
-                    map.closePopup(state.currentPopup);
                     exitAddMode();
                     showToast('标点已保存', 'success');
                 } catch (err) {
@@ -1213,10 +1234,7 @@
                 showToast('点击地图上的位置来添加标点', 'info');
             } else {
                 map.getContainer().style.cursor = '';
-                if (state.tempMarker) {
-                    map.removeLayer(state.tempMarker);
-                    state.tempMarker = null;
-                }
+                clearTempMarker();
             }
         }
 
@@ -1233,18 +1251,24 @@
 
             const { lat, lng } = e.latlng;
 
-            if (state.tempMarker) map.removeLayer(state.tempMarker);
-            state.tempMarker = L.marker([lat, lng]).addTo(map);
+            // 先清理上一次的临时标记与弹窗，避免残留 / 叠加
+            clearTempMarker();
 
-            if (state.currentPopup) map.closePopup(state.currentPopup);
-            state.currentPopup = L.popup({
-                maxWidth: 300, minWidth: 260,
-                closeOnClick: false, autoClose: false, closeButton: true,
+            // 临时标记使用自定义图标（默认 Leaflet 图标与站点风格不符，且会与弹窗重叠）
+            state.tempMarker = L.marker([lat, lng], {
+                icon: makeTempIcon(),
+                zIndexOffset: 1000,
+                keyboard: false
+            }).addTo(map);
+
+            state.currentPopup = state.tempMarker.bindPopup(buildAddPopupHtml(lat, lng), {
+                maxWidth: 300,
+                minWidth: 260,
+                closeOnClick: false,
+                autoClose: false,
+                closeButton: true,
                 autoPanPadding: [24, 24]
-            })
-                .setLatLng([lat, lng])
-                .setContent(buildAddPopupHtml(lat, lng))
-                .openOn(map);
+            }).openPopup();
 
             setTimeout(() => bindAddPopupEvents(lat, lng), 60);
         }
