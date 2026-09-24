@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>共享标点</title>
-
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232563eb'/%3E%3Cpath d='M16 6c-3.9 0-7 3.1-7 7 0 5.3 7 13 7 13s7-7.7 7-13c0-3.9-3.1-7-7-7z' fill='%23fff'/%3E%3Ccircle cx='16' cy='13' r='2.6' fill='%232563eb'/%3E%3C/svg%3E">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
 
     <style>
@@ -24,6 +24,11 @@
         #map {
             width: 100%;
             height: 100%;
+        }
+
+        /* ================= 通用隐藏 ================= */
+        .hidden {
+            display: none !important;
         }
 
         /* ================= 工具栏 ================= */
@@ -52,6 +57,32 @@
             transition: background 0.2s;
         }
 
+        /* 移动端工具栏内的搜索框（桌面端隐藏） */
+        .toolbar-search {
+            display: none;
+            flex: 1 1 auto;
+            min-width: 0;
+            padding: 7px 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 13px;
+            font-family: inherit;
+            outline: none;
+            transition: border-color .2s;
+        }
+
+        .toolbar-search:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+        }
+
+        /* 移动端工具栏内的「类型」按钮（桌面端隐藏） */
+        .toolbar-types-btn {
+            display: none;
+            flex: none;
+            white-space: nowrap;
+        }
+
         .btn-primary {
             background: #2563eb;
             color: #fff;
@@ -77,6 +108,11 @@
 
         .btn-secondary:hover {
             background: #e5e7eb;
+        }
+
+        .btn-secondary.active {
+            background: #dbeafe;
+            color: #1d4ed8;
         }
 
         .status-dot {
@@ -388,6 +424,11 @@
             margin-bottom: 12px;
         }
 
+        /* 创建时间紧跟在坐标下方 */
+        .marker-detail .coords.no-gap {
+            margin-top: -8px;
+        }
+
         .marker-detail .nav-btn {
             display: block;
             width: 100%;
@@ -593,19 +634,57 @@
             .toolbar {
                 left: 12px;
                 right: 12px;
-                justify-content: space-between;
+                gap: 6px;
+                padding: 8px 10px;
                 font-size: 13px;
+                justify-content: flex-start;
+                flex-wrap: nowrap;
             }
 
+            /* 移动端：搜索框 + 类型 + 添加标点 同一行 */
+            .toolbar .toolbar-search {
+                display: block;
+                flex: 1 1 auto;
+                min-width: 0;
+            }
+
+            .toolbar-types-btn {
+                display: inline-flex;
+                align-items: center;
+            }
+
+            .toolbar button {
+                padding: 6px 10px;
+                font-size: 12px;
+            }
+
+            .toolbar #btnAddMode {
+                flex: none;
+                white-space: nowrap;
+            }
+
+            /* 移动端隐藏状态文字，仅保留小圆点 */
+            #statusText {
+                display: none;
+            }
+
+            /* 移动端隐藏面板内的搜索框（已移到顶部） */
+            #searchInput {
+                display: none;
+            }
+
+            /* 移动端面板作为下拉浮层，默认收起，由「类型」按钮展开 */
             .panel {
-                top: 68px;
+                top: 66px;
                 left: 12px;
                 right: 12px;
                 width: auto;
+                max-height: calc(100vh - 150px);
+                box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
             }
 
             .panel-body {
-                max-height: 46vh;
+                max-height: 42vh;
             }
 
             .leaflet-popup-content {
@@ -619,7 +698,7 @@
 
     <div id="map"></div>
 
-    <!-- 左侧：搜索 + 类型筛选 -->
+    <!-- 左侧：搜索 + 类型筛选（移动端作为下拉浮层） -->
     <div class="panel" id="panel" style="display: none;">
         <div class="panel-header" id="panelHeader">
             <h2 id="panelTitle">类型筛选</h2>
@@ -636,10 +715,13 @@
         </div>
     </div>
 
-    <!-- 右上：状态 + 添加 -->
+    <!-- 右上：状态 + 搜索（移动端）+ 类型（移动端）+ 添加 -->
     <div class="toolbar">
         <span class="status-dot loading" id="statusDot"></span>
         <span id="statusText" style="color:#6b7280;">加载中...</span>
+        <input class="toolbar-search" id="searchInputM" type="text" placeholder="🔍 搜索名称或描述">
+        <!-- 初始 hidden：等类型数据加载完成后再由 JS 显示 -->
+        <button class="btn-secondary toolbar-types-btn hidden" id="btnToggleTypesM">类型 ▾</button>
         <button class="btn-primary" id="btnAddMode">添加标点</button>
     </div>
 
@@ -739,6 +821,20 @@
                 timer = setTimeout(() => fn.apply(this, args), wait);
             };
         }
+
+        /* ---------- 时间格式化：YYYY/MM/DD hh:mm:ss ---------- */
+        function formatDateTime(input) {
+            if (!input) return '';
+            const d = new Date(input);
+            if (isNaN(d.getTime())) return '';
+            const p = n => String(n).padStart(2, '0');
+            return `${d.getFullYear()}/${p(d.getMonth() + 1)}/${p(d.getDate())} ` +
+                `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+        }
+
+        /* ---------- 移动端断点 ---------- */
+        const mobileMQ = window.matchMedia('(max-width: 640px)');
+        const isMobileLayout = () => mobileMQ.matches;
 
         /* ---------- Toast ---------- */
         let toastTimer;
@@ -1100,6 +1196,8 @@
             const t = Types.getForFeature(props);
             const color = t ? t.color : FALLBACK_COLOR;
             const typeName = t ? t.name : '未知类型';
+            const createdText = formatDateTime(props.created_at);
+
             return `
     <div class="marker-detail">
       <span class="type-badge" style="color:${color};background:${hexToRgba(color, 0.12)};border-color:${hexToRgba(color, 0.35)}">
@@ -1108,6 +1206,7 @@
       <h3>${escapeHtml(props.title || '未命名标点')}</h3>
       <div class="desc">${escapeHtml(props.description || '暂无详情')}</div>
       <div class="coords">📍 ${lat.toFixed(6)}, ${lng.toFixed(6)}</div>
+      ${createdText ? `<div class="coords no-gap">🕒 创建于 ${escapeHtml(createdText)}</div>` : ''}
       <a class="nav-btn" href="${navUrl}" target="_blank" rel="noopener">🧭 导航到此位置</a>
     </div>`;
         }
@@ -1158,6 +1257,12 @@
             return state.types.types.find(t => (t.name || '').toLowerCase() === lower) || null;
         }
 
+        /* 同步两个搜索框的占位提示 */
+        function setSearchPlaceholder(text) {
+            $('searchInput').placeholder = text;
+            $('searchInputM').placeholder = text;
+        }
+
         function applyTypeLockUI(type) {
             state.lockedTypeId = type.id;
             state.activeTypeIds = new Set([type.id]);
@@ -1165,7 +1270,32 @@
             $('typeActions').style.display = 'none';
             $('typeFilters').style.display = 'none';
             $('panelTitle').textContent = '标点搜索';
-            $('searchInput').placeholder = `🔍 搜索「${type.name}」标点`;
+            setSearchPlaceholder(`🔍 搜索「${type.name}」标点`);
+
+            // 锁定类型时，移动端「类型」按钮无意义，保持隐藏并收起面板
+            $('btnToggleTypesM').classList.add('hidden');
+            setMobilePanelOpen(false);
+        }
+
+        /* ============================================================
+           移动端：类型面板展开 / 收起
+           ============================================================ */
+        function isMobilePanelOpen() {
+            return $('panel').style.display === 'block';
+        }
+
+        function setMobilePanelOpen(open) {
+            const panel = $('panel');
+            const btn = $('btnToggleTypesM');
+
+            if (open) {
+                panel.style.display = 'block';
+                panel.classList.remove('collapsed');
+                btn.classList.add('active');
+            } else {
+                panel.style.display = 'none';
+                btn.classList.remove('active');
+            }
         }
 
         /* ============================================================
@@ -1393,16 +1523,27 @@
            事件绑定
            ============================================================ */
         function bindEvents() {
-            // 面板折叠
+            // 面板折叠（桌面端 / 移动端通用）
             $('panelHeader').addEventListener('click', () => {
                 $('panel').classList.toggle('collapsed');
             });
 
-            // 搜索
-            $('searchInput').addEventListener('input', debounce((e) => {
-                state.searchKeyword = e.target.value;
+            // 搜索（桌面端 + 移动端两个输入框互相同步）
+            const searchInputs = [$('searchInput'), $('searchInputM')].filter(Boolean);
+            const applySearch = debounce((value) => {
+                state.searchKeyword = value;
                 renderMarkers();
-            }, 180));
+            }, 180);
+
+            searchInputs.forEach(input => {
+                input.addEventListener('input', (e) => {
+                    const val = e.target.value;
+                    searchInputs.forEach(other => {
+                        if (other !== e.target) other.value = val;
+                    });
+                    applySearch(val);
+                });
+            });
 
             // 类型全选 / 清空
             $('btnSelectAll').addEventListener('click', () => {
@@ -1441,6 +1582,35 @@
             // 添加标点
             $('btnAddMode').addEventListener('click', toggleAddMode);
             map.on('click', handleMapClick);
+
+            /* ---------- 移动端：类型面板开关 ---------- */
+            $('btnToggleTypesM').addEventListener('click', (e) => {
+                e.stopPropagation();
+                setMobilePanelOpen(!isMobilePanelOpen());
+            });
+
+            // 点击面板外部自动收起（移动端）
+            document.addEventListener('click', (e) => {
+                if (!isMobileLayout() || !isMobilePanelOpen()) return;
+                if ($('panel').contains(e.target)) return;
+                if ($('btnToggleTypesM').contains(e.target)) return;
+                if ($('typeModal').classList.contains('show')) return;
+                setMobilePanelOpen(false);
+            });
+
+            // 跨越移动端 / 桌面端断点时的处理
+            const onMQChange = (e) => {
+                if (e.matches) {
+                    // 进入移动端布局：收起面板，交给「类型」按钮控制
+                    setMobilePanelOpen(false);
+                } else {
+                    // 进入桌面端布局：面板常显，按钮回到初始态
+                    $('panel').style.display = 'block';
+                    $('btnToggleTypesM').classList.remove('active');
+                }
+            };
+            if (mobileMQ.addEventListener) mobileMQ.addEventListener('change', onMQChange);
+            else if (mobileMQ.addListener) mobileMQ.addListener(onMQChange);
         }
 
         /* ============================================================
@@ -1468,7 +1638,7 @@
             if (typesRes.status === 'fulfilled') {
                 const lockedType = resolveUrlLockedType();
                 if (lockedType) {
-                    applyTypeLockUI(lockedType);
+                    applyTypeLockUI(lockedType); // 内部已对移动端按钮保持隐藏
                 } else {
                     const raw = getUrlTypeParam();
                     if (raw) showToast(`未找到类型「${raw}」，已显示全部标点`, 'error');
@@ -1480,8 +1650,14 @@
                 state.activeTypeIds = new Set();
             }
 
-            // 类型加载完成（无论成功失败）都显示左侧面板
-            $('panel').style.display = 'block';
+            // 类型加载完毕（无论成功失败）：
+            // 1) 桌面端常显左侧面板；移动端默认收起，由顶部「类型」按钮展开
+            $('panel').style.display = isMobileLayout() ? 'none' : 'block';
+
+            // 2) 移动端「类型」按钮此时才显示（锁定类型时保持隐藏）
+            if (!state.lockedTypeId) {
+                $('btnToggleTypesM').classList.remove('hidden');
+            }
 
             // ---------- 标点 ----------
             if (markersRes.status === 'fulfilled') {
