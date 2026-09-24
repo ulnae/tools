@@ -80,6 +80,22 @@
         "type": "t_muc9zqlh6p2z",
         "created_at": "2026-09-24T00:44:47.970Z"
       }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          116.18857383728029,
+          39.99027326196773
+        ]
+      },
+      "properties": {
+        "title": "香山公园",
+        "description": "秋季赏香山红叶，最好十一月份去观赏",
+        "type": "t_muca0ai20skp",
+        "created_at": "2026-09-24T00:47:25.589Z"
+      }
     }
   ]
 }
