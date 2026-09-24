@@ -3,119 +3,260 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>共享标点</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232563eb'/%3E%3Cpath d='M16 6c-3.9 0-7 3.1-7 7 0 5.3 7 13 7 13s7-7.7 7-13c0-3.9-3.1-7-7-7z' fill='%23fff'/%3E%3Ccircle cx='16' cy='13' r='2.6' fill='%232563eb'/%3E%3C/svg%3E">
+    <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23007AFF'/%3E%3Cpath d='M16 6c-3.9 0-7 3.1-7 7 0 5.3 7 13 7 13s7-7.7 7-13c0-3.9-3.1-7-7-7z' fill='%23fff'/%3E%3Ccircle cx='16' cy='13' r='2.6' fill='%23007AFF'/%3E%3C/svg%3E">
+
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js@1.12.0/src/toastify.min.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        :root {
+            --ios-blue: #007AFF;
+            --ios-blue-dark: #0062CC;
+            --ios-red: #FF3B30;
+            --ios-green: #34C759;
+            --ios-orange: #FF9500;
+            --ios-gray: #8E8E93;
+            --ios-bg: #F2F2F7;
         }
 
         html,
         body {
             height: 100%;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+                "Helvetica Neue", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -webkit-tap-highlight-color: transparent;
+            background: var(--ios-bg);
         }
 
         #map {
             width: 100%;
             height: 100%;
+            background: var(--ios-bg);
         }
 
-        /* ================= 通用隐藏 ================= */
-        .hidden {
-            display: none !important;
+        /* ============ 毛玻璃 ============ */
+        .glass {
+            background: rgba(255, 255, 255, .82);
+            backdrop-filter: saturate(180%) blur(20px);
+            -webkit-backdrop-filter: saturate(180%) blur(20px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, .12), 0 0 0 .5px rgba(0, 0, 0, .04);
         }
 
-        /* ================= 工具栏 ================= */
-        .toolbar {
-            position: absolute;
-            top: 12px;
-            right: 12px;
-            z-index: 1000;
-            display: flex;
-            gap: 8px;
-            align-items: center;
+        /* ============ 隐藏滚动条 ============ */
+        .no-sb::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-sb {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* ============ 开关式复选 ============ */
+        .ios-check {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 1.5px solid #C7C7CC;
             background: #fff;
-            padding: 8px 14px;
-            border-radius: 10px;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
-            font-size: 14px;
-        }
-
-        .toolbar button {
-            padding: 6px 14px;
-            border: none;
-            border-radius: 6px;
+            position: relative;
             cursor: pointer;
-            font-size: 13px;
-            font-weight: 500;
-            transition: background 0.2s;
-        }
-
-        /* 移动端工具栏内的搜索框（桌面端隐藏） */
-        .toolbar-search {
-            display: none;
-            flex: 1 1 auto;
-            min-width: 0;
-            padding: 7px 10px;
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
-            font-size: 13px;
-            font-family: inherit;
-            outline: none;
-            transition: border-color .2s;
-        }
-
-        .toolbar-search:focus {
-            border-color: #2563eb;
-            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
-        }
-
-        /* 移动端工具栏内的「类型」按钮（桌面端隐藏） */
-        .toolbar-types-btn {
-            display: none;
+            transition: all .18s ease;
             flex: none;
-            white-space: nowrap;
         }
 
-        .btn-primary {
-            background: #2563eb;
+        .ios-check:checked {
+            background: var(--ios-blue);
+            border-color: var(--ios-blue);
+        }
+
+        .ios-check:checked::after {
+            content: '';
+            position: absolute;
+            left: 6.5px;
+            top: 3px;
+            width: 5px;
+            height: 9px;
+            border: solid #fff;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+
+        /* ============ 类型按钮激活态 ============ */
+        #btnToggleTypesM[data-active="true"] {
+            background: var(--ios-blue);
             color: #fff;
         }
 
-        .btn-primary:hover {
-            background: #1d4ed8;
+        /* ============ Leaflet 弹窗 iOS 化 ============ */
+        .leaflet-popup-content-wrapper {
+            border-radius: 20px;
+            padding: 0;
+            overflow: hidden;
+            box-shadow: 0 16px 48px rgba(0, 0, 0, .2), 0 0 0 .5px rgba(0, 0, 0, .05);
         }
 
-        .btn-primary.active {
-            background: #dc2626;
+        /* 关键：不要覆盖 Leaflet 计算出的宽度，避免首次测量错位 */
+        .leaflet-popup-content {
+            margin: 0;
+            line-height: 1.5;
         }
 
-        .btn-primary:disabled {
-            opacity: .6;
-            cursor: not-allowed;
+        .leaflet-popup-tip {
+            box-shadow: none;
         }
 
-        .btn-secondary {
-            background: #f3f4f6;
-            color: #374151;
+        .leaflet-container a.leaflet-popup-close-button {
+            top: 10px;
+            right: 10px;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: rgba(120, 120, 128, .14);
+            color: var(--ios-gray);
+            font-size: 17px;
+            line-height: 24px;
+            transition: background .18s;
+            z-index: 10;
         }
 
-        .btn-secondary:hover {
-            background: #e5e7eb;
+        .leaflet-container a.leaflet-popup-close-button:hover {
+            background: rgba(120, 120, 128, .28);
+            color: #1c1c1e;
         }
 
-        .btn-secondary.active {
-            background: #dbeafe;
-            color: #1d4ed8;
+        /* ============ 标记图标 ============ */
+        .marker-pin {
+            background: transparent !important;
+            border: none !important;
         }
 
-        .status-dot {
+        /* ============ 动画 ============ */
+        @keyframes pop-in {
+            from {
+                transform: scale(.92) translateY(12px);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1) translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .anim-pop {
+            animation: pop-in .28s cubic-bezier(.32, .72, 0, 1);
+        }
+
+        /* ============ 输入框 ============ */
+        .ios-input {
+            width: 100%;
+            box-sizing: border-box;
+            background: rgba(120, 120, 128, .1);
+            border: none;
+            border-radius: 12px;
+            padding: 10px 14px;
+            font-size: 14px;
+            font-family: inherit;
+            color: #1c1c1e;
+            outline: none;
+            transition: box-shadow .18s;
+        }
+
+        .ios-input::placeholder {
+            color: #AEAEB2;
+        }
+
+        .ios-input:focus {
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, .18);
+        }
+
+        /* ============ 色板 ============ */
+        .swatch {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: transform .14s;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, .18);
+        }
+
+        .swatch:hover {
+            transform: scale(1.15);
+        }
+
+        input[type="color"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 46px;
+            height: 42px;
+            padding: 0;
+            border: none;
+            border-radius: 12px;
+            background: none;
+            cursor: pointer;
+            overflow: hidden;
+        }
+
+        input[type="color"]::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+
+        input[type="color"]::-webkit-color-swatch {
+            border: 1px solid rgba(0, 0, 0, .1);
+            border-radius: 12px;
+        }
+
+        /* ============ Toastify iOS 化 ============ */
+        .toastify {
+            border-radius: 16px !important;
+            padding: 12px 20px !important;
+            font-size: 13.5px !important;
+            font-weight: 500 !important;
+            font-family: inherit !important;
+            box-shadow: 0 10px 32px rgba(0, 0, 0, .22) !important;
+            max-width: 82vw !important;
+        }
+
+        /* ============================================================
+           弹窗内容（固定 CSS 类，避免 Tailwind CDN 首次渲染样式未就绪导致测量偏移）
+           ============================================================ */
+        .popup-detail,
+        .popup-form {
+            width: 280px;
+            max-width: calc(100vw - 60px);
+            box-sizing: border-box;
+            padding: 20px;
+            font-family: inherit;
+            text-align: left;
+        }
+
+        /* ---------- 详情弹窗 ---------- */
+        .popup-detail .type-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 3px 10px;
+            border-radius: 999px;
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+
+        .popup-detail .type-badge .dot {
             width: 8px;
             height: 8px;
             border-radius: 50%;
@@ -123,573 +264,138 @@
             flex: none;
         }
 
-        .status-dot.ok {
-            background: #22c55e;
+        .popup-detail h3 {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1c1c1e;
+            line-height: 1.35;
+            margin: 0 0 8px;
+            word-break: break-word;
         }
 
-        .status-dot.err {
-            background: #ef4444;
-        }
-
-        .status-dot.loading {
-            background: #f59e0b;
-            animation: pulse 1s infinite;
-        }
-
-        @keyframes pulse {
-            50% {
-                opacity: 0.3;
-            }
-        }
-
-        /* ================= 左侧面板 ================= */
-        .panel {
-            position: absolute;
-            top: 12px;
-            left: 12px;
-            z-index: 1000;
-            width: 246px;
-            background: #fff;
-            border-radius: 12px;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
-            overflow: hidden;
+        .popup-detail .desc {
             font-size: 13px;
-        }
-
-        .panel-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 10px 12px;
-            cursor: pointer;
-            user-select: none;
-        }
-
-        .panel-header h2 {
-            font-size: 13px;
-            font-weight: 600;
-            color: #374151;
-        }
-
-        .panel-header .chev {
-            color: #9ca3af;
-            font-size: 12px;
-            transition: transform .2s;
-        }
-
-        .panel.collapsed .panel-header .chev {
-            transform: rotate(-90deg);
-        }
-
-        .panel-body {
-            padding: 0 12px 12px;
-            max-height: calc(100vh - 140px);
-            overflow-y: auto;
-        }
-
-        .panel.collapsed .panel-body {
-            display: none;
-        }
-
-        .search-input {
-            width: 100%;
-            padding: 7px 10px;
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
-            font-size: 13px;
-            outline: none;
-            transition: border-color .2s;
-            font-family: inherit;
-        }
-
-        .search-input:focus {
-            border-color: #2563eb;
-            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
-        }
-
-        .type-actions {
-            display: flex;
-            gap: 10px;
-            margin: 10px 0 6px;
-            flex-wrap: wrap;
-        }
-
-        .link-btn {
-            background: none;
-            border: none;
-            padding: 0;
-            color: #2563eb;
-            font-size: 12px;
-            cursor: pointer;
-            font-family: inherit;
-        }
-
-        .link-btn:hover {
-            text-decoration: underline;
-        }
-
-        .type-filters {
-            display: flex;
-            flex-direction: column;
-            gap: 1px;
-        }
-
-        .type-chip {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 6px 7px;
-            border-radius: 7px;
-            cursor: pointer;
-            transition: background .15s;
-            line-height: 1.2;
-        }
-
-        .type-chip:hover {
-            background: #f3f4f6;
-        }
-
-        .type-chip input {
-            accent-color: #2563eb;
-            cursor: pointer;
-            flex: none;
-            width: 14px;
-            height: 14px;
-        }
-
-        .type-chip .chip-name {
-            color: #374151;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .type-chip .count {
-            margin-left: auto;
-            font-size: 11px;
-            color: #9ca3af;
-            flex: none;
-        }
-
-        .dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            display: inline-block;
-            flex: none;
-        }
-
-        .empty-tip {
-            font-size: 12px;
-            color: #9ca3af;
-            padding: 8px 2px;
+            color: #48484A;
             line-height: 1.6;
+            white-space: pre-wrap;
+            word-break: break-word;
+            margin: 0 0 16px;
         }
 
-        /* ================= 弹窗 ================= */
-        .leaflet-popup-content {
-            margin: 0;
-            min-width: 360px;
+        .popup-detail .nav-btn {
+            display: block;
+            width: 100%;
+            box-sizing: border-box;
+            padding: 11px 16px;
+            border-radius: 14px;
+            background: #007AFF;
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: 600;
+            text-align: center;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            transition: background .18s, transform .12s;
+            box-shadow: 0 4px 14px rgba(0, 122, 255, .32);
         }
 
-        .popup-form {
-            padding: 16px;
+        .popup-detail .nav-btn:hover {
+            background: #0062CC;
+            color: #ffffff;
         }
 
+        .popup-detail .nav-btn:active {
+            transform: scale(.98);
+            color: #ffffff;
+        }
+
+        /* ---------- 新增标点表单弹窗 ---------- */
         .popup-form h3 {
-            font-size: 15px;
-            margin-bottom: 12px;
-            color: #111827;
-            padding-bottom: 8px;
-            border-bottom: 1px solid #e5e7eb;
+            font-size: 16px;
+            font-weight: 700;
+            color: #1c1c1e;
+            margin: 0 0 16px;
+            letter-spacing: -.2px;
         }
 
         .popup-form label {
             display: block;
             font-size: 12px;
             font-weight: 600;
-            color: #6b7280;
-            margin-bottom: 4px;
-            margin-top: 10px;
+            color: #8E8E93;
+            margin-bottom: 6px;
         }
 
-        .popup-form label:first-of-type {
-            margin-top: 0;
-        }
-
-        .popup-form input[type="text"],
-        .popup-form textarea,
-        .popup-form select {
-            width: 100%;
-            padding: 7px 10px;
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
-            font-size: 13px;
-            font-family: inherit;
-            outline: none;
-            transition: border-color 0.2s;
-            background: #fff;
-        }
-
-        .popup-form select {
-            cursor: pointer;
-            appearance: none;
-            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path fill='%236b7280' d='M2 4l4 4 4-4z'/></svg>");
-            background-repeat: no-repeat;
-            background-position: right 10px center;
-            padding-right: 28px;
-        }
-
-        .popup-form select:disabled {
-            background-color: #f3f4f6;
-            color: #6b7280;
-            cursor: not-allowed;
-            background-image: none;
-        }
-
-        .popup-form input:focus,
-        .popup-form textarea:focus,
-        .popup-form select:focus {
-            border-color: #2563eb;
-            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
-        }
-
-        .popup-form textarea {
-            resize: vertical;
-            min-height: 56px;
+        .popup-form label:not(:first-of-type) {
+            margin-top: 14px;
         }
 
         .popup-form .lock-tip {
             font-size: 11px;
-            color: #9ca3af;
-            margin-top: 4px;
+            color: #AEAEB2;
+            margin-top: 6px;
             display: flex;
             align-items: center;
             gap: 4px;
         }
 
+        .popup-form select.ios-input {
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path fill='%238E8E93' d='M2 4l4 4 4-4z'/></svg>");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 32px;
+            cursor: pointer;
+        }
+
+        .popup-form select.ios-input:disabled {
+            opacity: .6;
+            cursor: not-allowed;
+        }
+
+        .popup-form textarea.ios-input {
+            resize: none;
+            line-height: 1.5;
+        }
+
         .popup-form .form-actions {
             display: flex;
-            gap: 8px;
-            margin-top: 14px;
-            padding-top: 12px;
-            border-top: 1px solid #e5e7eb;
+            gap: 10px;
+            margin-top: 20px;
         }
 
         .popup-form .form-actions button {
             flex: 1;
-            padding: 8px;
+            padding: 11px;
             border: none;
-            border-radius: 6px;
-            font-size: 13px;
-            font-weight: 500;
-            cursor: pointer;
-        }
-
-        /* ================= 详情 ================= */
-        .marker-detail {
-            padding: 16px;
-        }
-
-        .marker-detail .type-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 11px;
-            font-weight: 600;
-            padding: 3px 9px;
-            border-radius: 999px;
-            border: 1px solid transparent;
-            margin-bottom: 8px;
-        }
-
-        .marker-detail h3 {
-            font-size: 16px;
-            color: #111827;
-            margin-bottom: 8px;
-            line-height: 1.3;
-        }
-
-        .marker-detail .desc {
-            font-size: 13px;
-            color: #4b5563;
-            line-height: 1.6;
-            margin-bottom: 10px;
-            white-space: pre-wrap;
-        }
-
-        .marker-detail .coords {
-            font-size: 11px;
-            color: #9ca3af;
-            margin-bottom: 12px;
-        }
-
-        /* 创建时间紧跟在坐标下方 */
-        .marker-detail .coords.no-gap {
-            margin-top: -8px;
-        }
-
-        .marker-detail .nav-btn {
-            display: block;
-            width: 100%;
-            padding: 10px;
-            background: #2563eb;
-            color: #fff;
-            border: none;
-            border-radius: 8px;
+            border-radius: 14px;
             font-size: 14px;
             font-weight: 600;
-            cursor: pointer;
-            text-align: center;
-            text-decoration: none;
-        }
-
-        .marker-detail .nav-btn:hover {
-            background: #1d4ed8;
-        }
-
-        /* ================= Toast ================= */
-        .toast {
-            position: fixed;
-            bottom: 24px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 9999;
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-size: 13px;
-            color: #fff;
-            opacity: 0;
-            transition: opacity 0.3s;
-            pointer-events: none;
-            max-width: 80vw;
-            text-align: center;
-        }
-
-        .toast.show {
-            opacity: 1;
-        }
-
-        .toast.success {
-            background: #16a34a;
-        }
-
-        .toast.error {
-            background: #dc2626;
-        }
-
-        .toast.info {
-            background: #2563eb;
-        }
-
-        /* ================= 类型新增弹窗 ================= */
-        .modal-mask {
-            position: fixed;
-            inset: 0;
-            background: rgba(17, 24, 39, 0.45);
-            z-index: 9998;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            padding: 16px;
-        }
-
-        .modal-mask.show {
-            display: flex;
-        }
-
-        .modal {
-            background: #fff;
-            border-radius: 12px;
-            width: 100%;
-            max-width: 390px;
-            max-height: 86vh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            box-shadow: 0 12px 40px rgba(0, 0, 0, .25);
-        }
-
-        .modal-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 14px 16px;
-            border-bottom: 1px solid #e5e7eb;
-            flex: none;
-        }
-
-        .modal-header h2 {
-            font-size: 15px;
-            color: #111827;
-        }
-
-        .modal-close {
-            background: none;
-            border: none;
-            font-size: 18px;
-            color: #9ca3af;
-            cursor: pointer;
-            line-height: 1;
-        }
-
-        .modal-close:hover {
-            color: #374151;
-        }
-
-        .modal-body {
-            padding: 16px;
-            overflow-y: auto;
-        }
-
-        .field-label {
-            display: block;
-            font-size: 12px;
-            font-weight: 600;
-            color: #6b7280;
-            margin: 10px 0 4px;
-        }
-
-        .field-label:first-of-type {
-            margin-top: 0;
-        }
-
-        .required-star {
-            color: #ef4444;
-            margin-left: 2px;
-        }
-
-        .text-input {
-            width: 100%;
-            padding: 8px 10px;
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
-            font-size: 13px;
-            outline: none;
             font-family: inherit;
-            transition: border-color .2s;
-        }
-
-        .text-input:focus {
-            border-color: #2563eb;
-            box-shadow: 0 0 0 2px rgba(37, 99, 235, .1);
-        }
-
-        .color-row {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
-
-        input[type="color"] {
-            width: 44px;
-            height: 36px;
-            padding: 2px;
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
-            background: #fff;
             cursor: pointer;
-            flex: none;
+            transition: transform .12s, opacity .18s;
         }
 
-        .swatches {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 7px;
-            margin-top: 10px;
+        .popup-form .form-actions button:active {
+            transform: scale(.98);
         }
 
-        .swatch {
-            width: 22px;
-            height: 22px;
-            border-radius: 50%;
-            cursor: pointer;
-            border: 2px solid transparent;
-            transition: transform .12s;
+        .popup-form .btn-secondary {
+            background: rgba(120, 120, 128, .12);
+            color: #007AFF;
         }
 
-        .swatch:hover {
-            transform: scale(1.15);
+        .popup-form .btn-primary {
+            background: #007AFF;
+            color: #ffffff;
+            box-shadow: 0 4px 14px rgba(0, 122, 255, .32);
         }
 
-        .save-type-btn {
-            width: 100%;
-            margin-top: 18px;
-            padding: 10px;
-            border: none;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-
-        /* ================= 自定义标记 ================= */
-        .marker-pin {
-            background: transparent !important;
-            border: none !important;
-        }
-
-        /* ================= 移动端 ================= */
-        @media (max-width: 640px) {
-            .toolbar {
-                left: 12px;
-                right: 12px;
-                gap: 6px;
-                padding: 8px 10px;
-                font-size: 13px;
-                justify-content: flex-start;
-                flex-wrap: nowrap;
-            }
-
-            /* 移动端：搜索框 + 类型 + 添加标点 同一行 */
-            .toolbar .toolbar-search {
-                display: block;
-                flex: 1 1 auto;
-                min-width: 0;
-            }
-
-            .toolbar-types-btn {
-                display: inline-flex;
-                align-items: center;
-            }
-
-            .toolbar button {
-                padding: 6px 10px;
-                font-size: 12px;
-            }
-
-            .toolbar #btnAddMode {
-                flex: none;
-                white-space: nowrap;
-            }
-
-            /* 移动端隐藏状态文字，仅保留小圆点 */
-            #statusText {
-                display: none;
-            }
-
-            /* 移动端隐藏面板内的搜索框（已移到顶部） */
-            #searchInput {
-                display: none;
-            }
-
-            /* 移动端面板作为下拉浮层，默认收起，由「类型」按钮展开 */
-            .panel {
-                top: 66px;
-                left: 12px;
-                right: 12px;
-                width: auto;
-                max-height: calc(100vh - 150px);
-                box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
-            }
-
-            .panel-body {
-                max-height: 42vh;
-            }
-
-            .leaflet-popup-content {
-                min-width: 220px;
-            }
+        .popup-form .btn-primary:disabled {
+            opacity: .6;
+            cursor: not-allowed;
         }
     </style>
 </head>
@@ -698,60 +404,88 @@
 
     <div id="map"></div>
 
-    <!-- 左侧：搜索 + 类型筛选（移动端作为下拉浮层） -->
-    <div class="panel" id="panel" style="display: none;">
-        <div class="panel-header" id="panelHeader">
-            <h2 id="panelTitle">类型筛选</h2>
-            <span class="chev">▾</span>
+    <!-- ============ 左侧面板（桌面常显 / 移动端下拉浮层） ============ -->
+    <div id="panel"
+        class="hidden md:block absolute z-[1000] top-[68px] md:top-3 left-3 right-3 md:right-auto md:w-[264px] glass rounded-[20px] overflow-hidden">
+        <div id="panelHeader"
+            class="flex items-center justify-between px-4 py-3.5 cursor-pointer select-none">
+            <h2 id="panelTitle" class="text-[13px] font-semibold text-[#1c1c1e] tracking-tight">类型筛选</h2>
+            <svg id="panelChev" class="w-3.5 h-3.5 text-[#C7C7CC] transition-transform duration-200"
+                viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd"
+                    d="M5.29 7.29a1 1 0 011.42 0L10 10.59l3.29-3.3a1 1 0 111.42 1.42l-4 4a1 1 0 01-1.42 0l-4-4a1 1 0 010-1.42z"
+                    clip-rule="evenodd" />
+            </svg>
         </div>
-        <div class="panel-body">
-            <input class="search-input" id="searchInput" type="text" placeholder="🔍 搜索名称或描述">
-            <div class="type-actions" id="typeActions">
-                <button class="link-btn" id="btnSelectAll">全选</button>
-                <button class="link-btn" id="btnSelectNone">清空</button>
-                <button class="link-btn" id="btnManageTypes">+ 新增类型</button>
+
+        <div id="panelBody" class="px-3 pt-3 pb-3 max-h-[calc(100vh-160px)] overflow-y-auto no-sb">
+            <input id="searchInput" class="ios-input mb-3 hidden md:block" type="text" placeholder="搜索名称或描述">
+            <div class="flex items-center gap-3 px-1 mb-2">
+                <button id="btnSelectAll" class="text-[12px] font-medium text-[#007AFF] active:opacity-60">全选</button>
+                <button id="btnSelectNone" class="text-[12px] font-medium text-[#007AFF] active:opacity-60">清空</button>
+                <button id="btnManageTypes"
+                    class="ml-auto text-[12px] font-semibold text-[#007AFF] active:opacity-60">+ 新增类型</button>
             </div>
-            <div class="type-filters" id="typeFilters"></div>
+            <div id="typeFilters" class="space-y-0.5"></div>
         </div>
     </div>
 
-    <!-- 右上：状态 + 搜索（移动端）+ 类型（移动端）+ 添加 -->
-    <div class="toolbar">
-        <span class="status-dot loading" id="statusDot"></span>
-        <span id="statusText" style="color:#6b7280;">加载中...</span>
-        <input class="toolbar-search" id="searchInputM" type="text" placeholder="🔍 搜索名称或描述">
-        <!-- 初始 hidden：等类型数据加载完成后再由 JS 显示 -->
-        <button class="btn-secondary toolbar-types-btn hidden" id="btnToggleTypesM">类型 ▾</button>
-        <button class="btn-primary" id="btnAddMode">添加标点</button>
+    <!-- ============ 顶部工具栏 ============ -->
+    <div
+        class="absolute z-[1000] top-3 left-3 right-3 md:left-auto md:right-3 md:w-auto flex items-center gap-2 glass rounded-[20px] px-2.5 py-2">
+
+        <div class="hidden md:flex items-center gap-1.5 pl-1.5 pr-1 flex-none">
+            <span id="statusDot" class="w-2 h-2 rounded-full bg-[#FF9500] animate-pulse"></span>
+            <span id="statusText" class="text-[12px] text-[#8E8E93] whitespace-nowrap">加载中...</span>
+        </div>
+
+        <input id="searchInputM" class="md:hidden flex-1 min-w-0 ios-input !py-2 !px-3" type="text"
+            placeholder="搜索名称或描述">
+
+        <button id="btnToggleTypesM" data-active="false"
+            class="hidden md:hidden flex-none px-3 py-2 rounded-xl text-[13px] font-medium text-[#1c1c1e] bg-black/5 active:scale-95 transition">
+            类型
+        </button>
+
+        <button id="btnAddMode"
+            class="flex-none px-4 py-2 rounded-xl text-[13px] font-semibold text-white bg-[#007AFF] active:scale-95 transition shadow-[0_4px_14px_rgba(0,122,255,.32)]">
+            添加标点
+        </button>
     </div>
 
-    <!-- 新增类型弹窗（仅表单） -->
-    <div class="modal-mask" id="typeModal">
-        <div class="modal">
-            <div class="modal-header">
-                <h2>新增类型</h2>
-                <button class="modal-close" id="btnCloseTypeModal">✕</button>
+    <!-- ============ 新增类型弹窗 ============ -->
+    <div id="typeModal" class="hidden fixed inset-0 z-[9998] items-center justify-center p-4 bg-black/40 backdrop-blur-[2px]">
+        <div class="anim-pop w-full max-w-[380px] bg-white rounded-[24px] shadow-[0_24px_64px_rgba(0,0,0,.28)] overflow-hidden">
+            <div class="flex items-center justify-between px-5 pt-5 pb-3">
+                <h2 class="text-[17px] font-bold text-[#1c1c1e] tracking-tight">新增类型</h2>
+                <button id="btnCloseTypeModal"
+                    class="w-7 h-7 rounded-full bg-black/5 text-[#8E8E93] text-[15px] leading-none flex items-center justify-center active:scale-90 transition">✕</button>
             </div>
-            <div class="modal-body">
-                <label class="field-label" for="nt-name">类型名称<span class="required-star">*</span></label>
-                <input class="text-input" id="nt-name" type="text" maxlength="20" placeholder="例如：餐厅 / 景区 / 钓点">
 
-                <label class="field-label" for="nt-color">类型颜色<span class="required-star">*</span></label>
-                <div class="color-row">
-                    <input type="color" id="nt-color" value="#2563eb">
-                    <input class="text-input" id="nt-color-text" type="text" maxlength="7" value="#2563eb"
-                        placeholder="#2563eb">
+            <div class="px-5 pb-5 max-h-[70vh] overflow-y-auto no-sb">
+                <label class="block text-[12px] font-semibold text-[#8E8E93] mb-1.5 mt-1">类型名称 <span
+                        class="text-[#FF3B30]">*</span></label>
+                <input id="nt-name" class="ios-input" type="text" maxlength="20" placeholder="例如：餐厅 / 景区 / 钓点">
+
+                <label class="block text-[12px] font-semibold text-[#8E8E93] mb-1.5 mt-4">类型颜色 <span
+                        class="text-[#FF3B30]">*</span></label>
+                <div class="flex gap-2 items-center">
+                    <input type="color" id="nt-color" value="#007AFF">
+                    <input id="nt-color-text" class="ios-input flex-1" type="text" maxlength="7" value="#007AFF"
+                        placeholder="#007AFF">
                 </div>
-                <div class="swatches" id="swatches"></div>
+                <div id="swatches" class="flex flex-wrap gap-2.5 mt-3.5"></div>
 
-                <button class="btn-primary save-type-btn" id="btnSaveType">保存类型</button>
+                <button id="btnSaveType"
+                    class="w-full mt-6 py-3 rounded-2xl text-[15px] font-semibold text-white bg-[#007AFF] active:scale-[.98] transition shadow-[0_6px_20px_rgba(0,122,255,.32)] disabled:opacity-50">
+                    保存类型
+                </button>
             </div>
         </div>
     </div>
-
-    <div class="toast" id="toast"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/toastify-js@1.12.0/src/toastify.min.js"></script>
 
     <script>
         /* ============================================================
@@ -763,14 +497,13 @@
             GITHUB_BRANCH: 'master',
             DATA_FILE: 'data/markers.geojson',
             TYPES_FILE: 'data/types.json',
-            GITHUB_TOKEN: '',   // 运行时通过 decrypt 注入
+            GITHUB_TOKEN: '',
 
             MAP_CENTER: [34.75, 113.62],
             MAP_ZOOM: 12,
             IP_ZOOM: 11,
             USE_IP_LOCATION: true,
 
-            // Token 加密串 & 口令
             TOKEN_CIPHER: 'pN0DLAO2zEwTMKZlJZw+6zd4GAXI0t3mCX/iAqiGWY6ddaYNpX4u6LdZ7eeflYz7RaSCt6hCUYSPbhbejCY7lVChS9u3YaVWhiU38RWdMQf0iRo4UwUZ5kmnzZXBiZlDVIgWBVNPoxeFveABj02UVh8IFBBix/Bz+AOD9DIdlN8Jbh3s3olHlPs=',
             TOKEN_PASS: 'ulnae'
         };
@@ -778,9 +511,8 @@
         const RESERVED_COLORS = ['#9ca3af'];
         const FALLBACK_COLOR = '#9ca3af';
         const PRESET_COLORS = [
-            '#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16', '#22c55e',
-            '#10b981', '#14b8a6', '#06b6d4', '#0ea5e9', '#2563eb', '#6366f1',
-            '#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#f43f5e', '#78716c', '#111827'
+            '#FF3B30', '#FF9500', '#FFCC00', '#34C759', '#00C7BE', '#30B0C7',
+            '#007AFF', '#5856D6', '#AF52DE', '#FF2D55', '#A2845E', '#8E8E93'
         ];
 
         /* ============================================================
@@ -822,7 +554,6 @@
             };
         }
 
-        /* ---------- 时间格式化：YYYY/MM/DD hh:mm:ss ---------- */
         function formatDateTime(input) {
             if (!input) return '';
             const d = new Date(input);
@@ -832,49 +563,53 @@
                 `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
         }
 
-        /* ---------- 移动端断点 ---------- */
-        const mobileMQ = window.matchMedia('(max-width: 640px)');
+        const mobileMQ = window.matchMedia('(max-width: 768px)');
         const isMobileLayout = () => mobileMQ.matches;
 
-        /* ---------- Toast ---------- */
-        let toastTimer;
+        const TOAST_STYLE = {
+            success: 'linear-gradient(135deg,#34C759,#28A745)',
+            error: 'linear-gradient(135deg,#FF3B30,#D92D20)',
+            info: 'linear-gradient(135deg,#007AFF,#0062CC)'
+        };
+
         function showToast(msg, type = 'info') {
-            const t = $('toast');
-            t.textContent = msg;
-            t.className = `toast show ${type}`;
-            clearTimeout(toastTimer);
-            toastTimer = setTimeout(() => t.className = 'toast', 3000);
+            Toastify({
+                text: msg,
+                duration: 2400,
+                gravity: 'bottom',
+                position: 'center',
+                stopOnFocus: true,
+                style: { background: TOAST_STYLE[type] || TOAST_STYLE.info }
+            }).showToast();
         }
 
+        const STATUS_DOT = {
+            ok: 'w-2 h-2 rounded-full flex-none bg-[#34C759]',
+            err: 'w-2 h-2 rounded-full flex-none bg-[#FF3B30]',
+            loading: 'w-2 h-2 rounded-full flex-none bg-[#FF9500] animate-pulse'
+        };
+
         function setStatus(state, text) {
-            $('statusDot').className = `status-dot ${state}`;
+            $('statusDot').className = STATUS_DOT[state] || STATUS_DOT.loading;
             $('statusText').textContent = text;
         }
 
-        /* ---------- 加密 / 解密（Token 保护） ---------- */
+        /* ---------- 加密 / 解密 ---------- */
         async function encrypt(plainText, password) {
             const enc = new TextEncoder();
             const salt = crypto.getRandomValues(new Uint8Array(16));
             const iv = crypto.getRandomValues(new Uint8Array(12));
-
-            const baseKey = await crypto.subtle.importKey(
-                'raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']
-            );
+            const baseKey = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']);
             const key = await crypto.subtle.deriveKey(
                 { name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' },
                 baseKey, { name: 'AES-GCM', length: 256 }, false, ['encrypt']
             );
-
-            const encrypted = await crypto.subtle.encrypt(
-                { name: 'AES-GCM', iv }, key, enc.encode(plainText)
-            );
-
+            const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, enc.encode(plainText));
             const encryptedArray = new Uint8Array(encrypted);
             const result = new Uint8Array(salt.length + iv.length + encryptedArray.length);
             result.set(salt, 0);
             result.set(iv, salt.length);
             result.set(encryptedArray, salt.length + iv.length);
-
             let binary = '';
             const chunkSize = 0x8000;
             for (let i = 0; i < result.length; i += chunkSize) {
@@ -887,23 +622,16 @@
             const binary = atob(cipherText.trim());
             const data = new Uint8Array(binary.length);
             for (let i = 0; i < binary.length; i++) data[i] = binary.charCodeAt(i);
-
             const salt = data.subarray(0, 16);
             const iv = data.subarray(16, 28);
             const encrypted = data.subarray(28);
-
             const enc = new TextEncoder();
-            const baseKey = await crypto.subtle.importKey(
-                'raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']
-            );
+            const baseKey = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']);
             const key = await crypto.subtle.deriveKey(
                 { name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' },
                 baseKey, { name: 'AES-GCM', length: 256 }, false, ['decrypt']
             );
-
-            const decrypted = await crypto.subtle.decrypt(
-                { name: 'AES-GCM', iv }, key, encrypted
-            );
+            const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, encrypted);
             return new TextDecoder().decode(decrypted);
         }
 
@@ -912,10 +640,8 @@
             const PI = 3.1415926535897932384626;
             const a = 6378245.0;
             const ee = 0.00669342162296594323;
-
             const outOfChina = (lng, lat) =>
                 lng < 72.004 || lng > 137.8347 || lat < 0.8293 || lat > 55.8271;
-
             const transformLat = (x, y) => {
                 let ret = -100 + 2 * x + 3 * y + 0.2 * y * y + 0.1 * x * y + 0.2 * Math.sqrt(Math.abs(x));
                 ret += (20 * Math.sin(6 * x * PI) + 20 * Math.sin(2 * x * PI)) * 2 / 3;
@@ -930,9 +656,7 @@
                 ret += (150 * Math.sin(x / 12 * PI) + 300 * Math.sin(x / 30 * PI)) * 2 / 3;
                 return ret;
             };
-
             if (outOfChina(lng, lat)) return [lng, lat];
-
             let dLat = transformLat(lng - 105, lat - 35);
             let dLng = transformLng(lng - 105, lat - 35);
             const radLat = lat / 180 * PI;
@@ -1038,9 +762,9 @@
             types: { types: [] },
             activeTypeIds: new Set(),
             searchKeyword: '',
-            lockedTypeId: null,        // URL ?type=xxx 锁定的类型 id
-            fileSha: null,             // markers.geojson 的 sha
-            typesSha: null,            // types.json 的 sha
+            lockedTypeId: null,
+            fileSha: null,
+            typesSha: null,
             addMode: false,
             tempMarker: null,
             currentPopup: null,
@@ -1132,16 +856,16 @@
             const counts = Types.countByType();
 
             if (list.length === 0) {
-                wrap.innerHTML = `<div class="empty-tip">暂无类型，点击上方「+ 新增类型」创建。</div>`;
+                wrap.innerHTML = `<div class="text-[12px] text-[#AEAEB2] px-2 py-2.5 leading-relaxed">暂无类型，点击上方「+ 新增类型」创建。</div>`;
                 return;
             }
 
             wrap.innerHTML = list.map(t => `
-                <label class="type-chip">
-                    <input type="checkbox" value="${t.id}" ${state.activeTypeIds.has(t.id) ? 'checked' : ''}>
-                    <span class="dot" style="background:${t.color}"></span>
-                    <span class="chip-name">${escapeHtml(t.name)}</span>
-                    <span class="count">${counts[t.id] || 0}</span>
+                <label class="flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-black/[0.04] active:bg-black/[0.07] cursor-pointer transition-colors">
+                    <input type="checkbox" class="ios-check" value="${t.id}" ${state.activeTypeIds.has(t.id) ? 'checked' : ''}>
+                    <span class="w-2.5 h-2.5 rounded-full flex-none" style="background:${t.color}"></span>
+                    <span class="flex-1 text-[13px] text-[#1c1c1e] truncate">${escapeHtml(t.name)}</span>
+                    <span class="text-[11px] text-[#AEAEB2] flex-none tabular-nums">${counts[t.id] || 0}</span>
                 </label>
             `).join('');
 
@@ -1161,7 +885,7 @@
             const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="24" viewBox="0 0 25 41">
                 <path d="M12.5 0C5.596 0 0 5.596 0 12.5 0 21.5 12.5 41 12.5 41S25 21.5 25 12.5C25 5.596 19.404 0 12.5 0z"
                       fill="${color}" stroke="#ffffff" stroke-width="0"/>
-                <circle cx="12.5" cy="12.5" r="4.5" fill="#e0e0e0" opacity="1"/>
+                <circle cx="12.5" cy="12.5" r="4.5" fill="#ffffff" opacity="0.9"/>
             </svg>`;
             return L.divIcon({
                 html: svg,
@@ -1190,25 +914,23 @@
             });
         }
 
+        /* ---------- 详情弹窗（固定 CSS 类，无坐标/时间/图标） ---------- */
         function buildDetailHtml(props, coords) {
             const [lng, lat] = coords;
             const navUrl = buildNavigationUrl(lat, lng);
             const t = Types.getForFeature(props);
             const color = t ? t.color : FALLBACK_COLOR;
             const typeName = t ? t.name : '未知类型';
-            const createdText = formatDateTime(props.created_at);
 
             return `
-    <div class="marker-detail">
-      <span class="type-badge" style="color:${color};background:${hexToRgba(color, 0.12)};border-color:${hexToRgba(color, 0.35)}">
-        <span class="dot" style="background:${color}"></span>${escapeHtml(typeName)}
-      </span>
-      <h3>${escapeHtml(props.title || '未命名标点')}</h3>
-      <div class="desc">${escapeHtml(props.description || '暂无详情')}</div>
-      <div class="coords">📍 ${lat.toFixed(6)}, ${lng.toFixed(6)}</div>
-      ${createdText ? `<div class="coords no-gap">🕒 创建于 ${escapeHtml(createdText)}</div>` : ''}
-      <a class="nav-btn" href="${navUrl}" target="_blank" rel="noopener">🧭 导航到此位置</a>
-    </div>`;
+            <div class="popup-detail">
+                <span class="type-badge" style="color:${color};background:${hexToRgba(color, 0.12)};border:1px solid ${hexToRgba(color, 0.28)}">
+                    <span class="dot" style="background:${color}"></span>${escapeHtml(typeName)}
+                </span>
+                <h3>${escapeHtml(props.title || '未命名标点')}</h3>
+                <div class="desc">${escapeHtml(props.description || '暂无详情')}</div>
+                <a class="nav-btn" href="${navUrl}" target="_blank" rel="noopener">导航到此位置</a>
+            </div>`;
         }
 
         function renderMarkers() {
@@ -1223,7 +945,7 @@
                 },
                 onEachFeature: (feature, layer) => {
                     layer.bindPopup(buildDetailHtml(feature.properties, feature.geometry.coordinates), {
-                        maxWidth: 320, minWidth: 260
+                        maxWidth: 300, minWidth: 260, autoPanPadding: [24, 24]
                     });
                 }
             }).addTo(map);
@@ -1257,22 +979,20 @@
             return state.types.types.find(t => (t.name || '').toLowerCase() === lower) || null;
         }
 
-        /* 同步两个搜索框的占位提示 */
         function setSearchPlaceholder(text) {
-            $('searchInput').placeholder = text;
-            $('searchInputM').placeholder = text;
+            if ($('searchInput')) $('searchInput').placeholder = text;
+            if ($('searchInputM')) $('searchInputM').placeholder = text;
         }
 
         function applyTypeLockUI(type) {
             state.lockedTypeId = type.id;
             state.activeTypeIds = new Set([type.id]);
 
-            $('typeActions').style.display = 'none';
-            $('typeFilters').style.display = 'none';
+            $('typeFilters').classList.add('hidden');
+            document.querySelectorAll('#panelBody .flex.items-center.gap-3').forEach(el => el.classList.add('hidden'));
             $('panelTitle').textContent = '标点搜索';
-            setSearchPlaceholder(`🔍 搜索「${type.name}」标点`);
+            setSearchPlaceholder(`搜索「${type.name}」标点`);
 
-            // 锁定类型时，移动端「类型」按钮无意义，保持隐藏并收起面板
             $('btnToggleTypesM').classList.add('hidden');
             setMobilePanelOpen(false);
         }
@@ -1281,36 +1001,31 @@
            移动端：类型面板展开 / 收起
            ============================================================ */
         function isMobilePanelOpen() {
-            return $('panel').style.display === 'block';
+            return !$('panel').classList.contains('hidden');
         }
 
         function setMobilePanelOpen(open) {
-            const panel = $('panel');
-            const btn = $('btnToggleTypesM');
-
-            if (open) {
-                panel.style.display = 'block';
-                panel.classList.remove('collapsed');
-                btn.classList.add('active');
-            } else {
-                panel.style.display = 'none';
-                btn.classList.remove('active');
-            }
+            $('panel').classList.toggle('hidden', !open);
+            $('btnToggleTypesM').dataset.active = open ? 'true' : 'false';
         }
 
         /* ============================================================
            类型新增弹窗
            ============================================================ */
         function openTypeModal() {
-            $('typeModal').classList.add('show');
+            const m = $('typeModal');
+            m.classList.remove('hidden');
+            m.classList.add('flex');
             renderSwatches();
-            setColorInput('#2563eb');
+            setColorInput('#007AFF');
             $('nt-name').value = '';
-            setTimeout(() => $('nt-name').focus(), 50);
+            setTimeout(() => $('nt-name').focus(), 60);
         }
 
         function closeTypeModal() {
-            $('typeModal').classList.remove('show');
+            const m = $('typeModal');
+            m.classList.add('hidden');
+            m.classList.remove('flex');
         }
 
         function renderSwatches() {
@@ -1324,7 +1039,7 @@
         }
 
         function setColorInput(color) {
-            const hex = normalizeHex(color) || '#2563eb';
+            const hex = normalizeHex(color) || '#007AFF';
             $('nt-color').value = hex;
             $('nt-color-text').value = hex;
         }
@@ -1365,10 +1080,10 @@
                 await Types.save();
                 state.activeTypeIds.add(newType.id);
                 $('nt-name').value = '';
-                setColorInput('#2563eb');
+                setColorInput('#007AFF');
                 renderTypeFilters();
                 renderMarkers();
-                showToast(`类型「${name}」已创建 ✓`, 'success');
+                showToast(`类型「${name}」已创建`, 'success');
                 closeTypeModal();
             } catch (err) {
                 state.types.types.pop();
@@ -1392,29 +1107,34 @@
                 ).join('');
 
             return `
-    <div class="popup-form">
-      <h3>📍 新增标点</h3>
-      <label>标题 *</label>
-      <input id="f-title" type="text" placeholder="给这个位置起个名字" maxlength="50">
-      <label>类型 *</label>
-      <select id="f-type" ${lockedType ? 'disabled' : ''}>
-        ${lockedType ? '' : '<option value="">请选择类型</option>'}
-        ${typeOptions}
-      </select>
-      ${lockedType ? '<div class="lock-tip">🔒 类型由链接指定，不可修改</div>' : ''}
-      <label>详情描述</label>
-      <textarea id="f-desc" placeholder="补充一些说明..." maxlength="500"></textarea>
-      <div class="form-actions">
-        <button class="btn-secondary" id="f-cancel">取消</button>
-        <button class="btn-primary" id="f-save">保存</button>
-      </div>
-    </div>`;
+            <div class="popup-form">
+                <h3>新增标点</h3>
+
+                <label>标题 *</label>
+                <input id="f-title" class="ios-input" type="text" placeholder="给这个位置起个名字" maxlength="50">
+
+                <label>类型 *</label>
+                <select id="f-type" class="ios-input" ${lockedType ? 'disabled' : ''}>
+                    ${lockedType ? '' : '<option value="">请选择类型</option>'}
+                    ${typeOptions}
+                </select>
+                ${lockedType ? '<div class="lock-tip">类型由链接指定，不可修改</div>' : ''}
+
+                <label>详情描述</label>
+                <textarea id="f-desc" class="ios-input" rows="3" placeholder="补充一些说明..." maxlength="500"></textarea>
+
+                <div class="form-actions">
+                    <button class="btn-secondary" id="f-cancel">取消</button>
+                    <button class="btn-primary" id="f-save">保存</button>
+                </div>
+            </div>`;
         }
 
         function exitAddMode() {
             state.addMode = false;
-            $('btnAddMode').textContent = '添加标点';
-            $('btnAddMode').className = 'btn-primary';
+            const btn = $('btnAddMode');
+            btn.textContent = '添加标点';
+            btn.className = 'flex-none px-4 py-2 rounded-xl text-[13px] font-semibold text-white bg-[#007AFF] active:scale-95 transition shadow-[0_4px_14px_rgba(0,122,255,.32)]';
             map.getContainer().style.cursor = '';
             if (state.tempMarker) {
                 map.removeLayer(state.tempMarker);
@@ -1464,7 +1184,7 @@
                     renderTypeFilters();
                     map.closePopup(state.currentPopup);
                     exitAddMode();
-                    showToast('标点已保存 ✓', 'success');
+                    showToast('标点已保存', 'success');
                 } catch (err) {
                     state.geojson.features.pop();
                     showToast('保存失败: ' + err.message, 'error');
@@ -1482,11 +1202,14 @@
 
             state.addMode = !state.addMode;
             const btn = $('btnAddMode');
-            btn.textContent = state.addMode ? '取消添加' : '添加标点';
-            btn.className = state.addMode ? 'btn-primary active' : 'btn-primary';
+            btn.textContent = state.addMode ? '取消' : '添加标点';
+            btn.className = state.addMode
+                ? 'flex-none px-4 py-2 rounded-xl text-[13px] font-semibold text-white bg-[#FF3B30] active:scale-95 transition shadow-[0_4px_14px_rgba(255,59,48,.32)]'
+                : 'flex-none px-4 py-2 rounded-xl text-[13px] font-semibold text-white bg-[#007AFF] active:scale-95 transition shadow-[0_4px_14px_rgba(0,122,255,.32)]';
 
             if (state.addMode) {
                 map.getContainer().style.cursor = 'crosshair';
+                if (isMobileLayout()) setMobilePanelOpen(false);
                 showToast('点击地图上的位置来添加标点', 'info');
             } else {
                 map.getContainer().style.cursor = '';
@@ -1498,7 +1221,10 @@
         }
 
         function handleMapClick(e) {
-            if (!state.addMode) return;
+            if (!state.addMode) {
+                if (isMobileLayout() && isMobilePanelOpen()) setMobilePanelOpen(false);
+                return;
+            }
 
             if (state.types.types.length === 0) {
                 showToast('请先点击「+ 新增类型」创建一个类型', 'error');
@@ -1511,24 +1237,32 @@
             state.tempMarker = L.marker([lat, lng]).addTo(map);
 
             if (state.currentPopup) map.closePopup(state.currentPopup);
-            state.currentPopup = L.popup({ maxWidth: 320, minWidth: 260, closeOnClick: false })
+            state.currentPopup = L.popup({
+                maxWidth: 300, minWidth: 260,
+                closeOnClick: false, autoClose: false, closeButton: true,
+                autoPanPadding: [24, 24]
+            })
                 .setLatLng([lat, lng])
                 .setContent(buildAddPopupHtml(lat, lng))
                 .openOn(map);
 
-            setTimeout(() => bindAddPopupEvents(lat, lng), 50);
+            setTimeout(() => bindAddPopupEvents(lat, lng), 60);
         }
 
         /* ============================================================
            事件绑定
            ============================================================ */
         function bindEvents() {
-            // 面板折叠（桌面端 / 移动端通用）
             $('panelHeader').addEventListener('click', () => {
-                $('panel').classList.toggle('collapsed');
+                const panel = $('panel');
+                panel.classList.toggle('collapsed');
+                const body = $('panelBody');
+                const chev = $('panelChev');
+                const collapsed = panel.classList.contains('collapsed');
+                body.classList.toggle('hidden', collapsed);
+                chev.style.transform = collapsed ? 'rotate(-90deg)' : '';
             });
 
-            // 搜索（桌面端 + 移动端两个输入框互相同步）
             const searchInputs = [$('searchInput'), $('searchInputM')].filter(Boolean);
             const applySearch = debounce((value) => {
                 state.searchKeyword = value;
@@ -1545,7 +1279,6 @@
                 });
             });
 
-            // 类型全选 / 清空
             $('btnSelectAll').addEventListener('click', () => {
                 Types.allIds().forEach(id => state.activeTypeIds.add(id));
                 renderTypeFilters();
@@ -1558,14 +1291,12 @@
                 renderMarkers();
             });
 
-            // 新增类型弹窗
             $('btnManageTypes').addEventListener('click', openTypeModal);
             $('btnCloseTypeModal').addEventListener('click', closeTypeModal);
             $('typeModal').addEventListener('click', (e) => {
                 if (e.target === $('typeModal')) closeTypeModal();
             });
 
-            // 颜色选择器联动
             $('nt-color').addEventListener('input', (e) => {
                 $('nt-color-text').value = e.target.value.toLowerCase();
             });
@@ -1579,34 +1310,28 @@
                 if (e.key === 'Enter') handleAddType();
             });
 
-            // 添加标点
             $('btnAddMode').addEventListener('click', toggleAddMode);
             map.on('click', handleMapClick);
 
-            /* ---------- 移动端：类型面板开关 ---------- */
             $('btnToggleTypesM').addEventListener('click', (e) => {
                 e.stopPropagation();
                 setMobilePanelOpen(!isMobilePanelOpen());
             });
 
-            // 点击面板外部自动收起（移动端）
             document.addEventListener('click', (e) => {
                 if (!isMobileLayout() || !isMobilePanelOpen()) return;
                 if ($('panel').contains(e.target)) return;
                 if ($('btnToggleTypesM').contains(e.target)) return;
-                if ($('typeModal').classList.contains('show')) return;
+                if (!$('typeModal').classList.contains('hidden')) return;
                 setMobilePanelOpen(false);
             });
 
-            // 跨越移动端 / 桌面端断点时的处理
             const onMQChange = (e) => {
                 if (e.matches) {
-                    // 进入移动端布局：收起面板，交给「类型」按钮控制
                     setMobilePanelOpen(false);
                 } else {
-                    // 进入桌面端布局：面板常显，按钮回到初始态
-                    $('panel').style.display = 'block';
-                    $('btnToggleTypesM').classList.remove('active');
+                    $('panel').classList.remove('hidden');
+                    $('btnToggleTypesM').dataset.active = 'false';
                 }
             };
             if (mobileMQ.addEventListener) mobileMQ.addEventListener('change', onMQChange);
@@ -1627,18 +1352,16 @@
 
             setStatus('loading', '加载中...');
 
-            // 并行：IP 定位 + 类型 + 标点
             const ipPromise = CONFIG.USE_IP_LOCATION ? fetchIpLocation() : Promise.resolve(null);
             const [typesRes, markersRes] = await Promise.allSettled([
                 Types.load(),
                 Markers.load()
             ]);
 
-            // ---------- 类型 ----------
             if (typesRes.status === 'fulfilled') {
                 const lockedType = resolveUrlLockedType();
                 if (lockedType) {
-                    applyTypeLockUI(lockedType); // 内部已对移动端按钮保持隐藏
+                    applyTypeLockUI(lockedType);
                 } else {
                     const raw = getUrlTypeParam();
                     if (raw) showToast(`未找到类型「${raw}」，已显示全部标点`, 'error');
@@ -1650,16 +1373,10 @@
                 state.activeTypeIds = new Set();
             }
 
-            // 类型加载完毕（无论成功失败）：
-            // 1) 桌面端常显左侧面板；移动端默认收起，由顶部「类型」按钮展开
-            $('panel').style.display = isMobileLayout() ? 'none' : 'block';
-
-            // 2) 移动端「类型」按钮此时才显示（锁定类型时保持隐藏）
             if (!state.lockedTypeId) {
                 $('btnToggleTypesM').classList.remove('hidden');
             }
 
-            // ---------- 标点 ----------
             if (markersRes.status === 'fulfilled') {
                 state.geojson = markersRes.value;
                 renderTypeFilters();
@@ -1670,7 +1387,6 @@
                 renderTypeFilters();
             }
 
-            // ---------- IP 定位 ----------
             const ipLoc = await ipPromise;
             if (ipLoc) {
                 map.flyTo(ipLoc, CONFIG.IP_ZOOM, { duration: 1.5 });
@@ -1678,7 +1394,6 @@
                 console.warn('IP 定位失败，使用默认中心点');
             }
 
-            // ---------- 事件绑定 ----------
             bindEvents();
         })();
     </script>
