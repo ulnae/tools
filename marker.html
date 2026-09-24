@@ -769,7 +769,6 @@
             typesSha: null,
             addMode: false,
             tempMarker: null,
-            currentPopup: null,
             geoLayer: null
         };
 
@@ -1149,13 +1148,23 @@
         }
 
         function clearTempMarker() {
-            if (state.currentPopup) {
-                map.closePopup(state.currentPopup);
-                state.currentPopup = null;
+            const marker = state.tempMarker;
+            // 先置空状态，保证函数可重入、幂等
+            state.tempMarker = null;
+            if (!marker) return;
+
+            // 1) 弹窗还开着 -> 先正常关闭
+            if (marker.isPopupOpen && marker.isPopupOpen()) {
+                marker.closePopup();
             }
-            if (state.tempMarker) {
-                map.removeLayer(state.tempMarker);
-                state.tempMarker = null;
+            // 2) 解绑弹窗：这会移除 Leaflet 自动挂的 remove:closePopup 回调，
+            //    避免移除 marker 时再次触发 popup.close()
+            if (marker.getPopup && marker.getPopup()) {
+                marker.unbindPopup();
+            }
+            // 3) 最后安全移除图层
+            if (map.hasLayer(marker)) {
+                map.removeLayer(marker);
             }
         }
 
@@ -1172,7 +1181,8 @@
             const titleInput = document.getElementById('f-title');
             if (titleInput) titleInput.focus();
 
-            document.getElementById('f-cancel')?.addEventListener('click', () => {
+            document.getElementById('f-cancel')?.addEventListener('click', (e) => {
+                e.stopPropagation();
                 clearTempMarker();
             });
 
@@ -1251,17 +1261,16 @@
 
             const { lat, lng } = e.latlng;
 
-            // 先清理上一次的临时标记与弹窗，避免残留 / 叠加
+            // 清理上一次的临时标记（幂等，已关闭也不会报错）
             clearTempMarker();
 
-            // 临时标记使用自定义图标（默认 Leaflet 图标与站点风格不符，且会与弹窗重叠）
             state.tempMarker = L.marker([lat, lng], {
                 icon: makeTempIcon(),
                 zIndexOffset: 1000,
                 keyboard: false
             }).addTo(map);
 
-            state.currentPopup = state.tempMarker.bindPopup(buildAddPopupHtml(lat, lng), {
+            state.tempMarker.bindPopup(buildAddPopupHtml(lat, lng), {
                 maxWidth: 300,
                 minWidth: 260,
                 closeOnClick: false,
