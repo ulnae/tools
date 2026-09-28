@@ -497,8 +497,10 @@
             GITHUB_OWNER: 'ulnae',
             GITHUB_REPO: 'tools',
             GITHUB_BRANCH: 'master',
-            DATA_FILE: 'data/markers.geojson',
-            TYPES_FILE: 'data/types.json',
+
+            DATA_DIR: 'data',                                 // 数据目录
+            TYPES_FILE: 'data/types.json',                    // 类型清单
+
             GITHUB_TOKEN: '',
 
             MAP_CENTER: [34.75, 113.62],
@@ -529,6 +531,25 @@
         };
 
         const genId = () => 't_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+
+        const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+        /** 某个类型的数据文件路径 */
+        const markerFilePath = typeId => `${CONFIG.DATA_DIR}/${typeId}.geojson`;
+
+        const emptyFC = () => ({ type: 'FeatureCollection', features: [] });
+
+        function normalizeFC(content) {
+            if (content && content.type === 'FeatureCollection' && Array.isArray(content.features)) {
+                return content;
+            }
+            return emptyFC();
+        }
+
+        function normalizeTypes(content) {
+            if (content && Array.isArray(content.types)) return content;
+            return { types: [] };
+        }
 
         function normalizeHex(v) {
             v = (v || '').trim();
@@ -736,12 +757,19 @@
             return res.json();
         }
 
+        /** 读取 JSON 文件：永远返回 { content, sha }，不存在/解析失败时 content 为 null */
         async function ghGetFile(path) {
             try {
                 const data = await ghApi(path);
                 const raw = atob((data.content || '').replace(/\s/g, ''));
+                if (!raw) return { content: null, sha: data.sha };
                 const text = decodeURIComponent(escape(raw));
-                return { content: JSON.parse(text), sha: data.sha };
+                try {
+                    return { content: JSON.parse(text), sha: data.sha };
+                } catch (e) {
+                    console.warn(`文件 ${path} 不是合法 JSON，按空数据处理`);
+                    return { content: null, sha: data.sha };
+                }
             } catch (e) {
                 if (/not found|404/i.test(e.message)) return { content: null, sha: null };
                 throw e;
@@ -756,17 +784,57 @@
             return ghApi(path, { method: 'PUT', body: JSON.stringify(body) });
         }
 
+        /**
+         * 安全写文件：每次提交前都重新拉取「最新内容 + 最新 sha」，
+         * 冲突时自动重试，确保不会覆盖其他人的改动。
+         *
+         * @param {string} path      文件路径
+         * @param {Function} mutate  (latestContent, latestSha) => newContent | null
+         *                           返回 null 表示"无需修改"，直接跳过写入
+         * @param {string} message   提交信息
+         * @param {number} maxAttempts 最大尝试次数
+         */
+        async function updateJsonFile(path, mutate, message, maxAttempts = 3) {
+            let lastErr = null;
+
+            for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+                // ① 始终拿最新数据
+                const { content, sha } = await ghGetFile(path);
+
+                // ② 在最新数据上做变更（mutate 内部可 throw 业务错误）
+                const next = await mutate(content, sha);
+
+                // ③ 无变更 → 跳过
+                if (next === null || next === undefined) {
+                    return { content, sha, skipped: true };
+                }
+
+                try {
+                    const res = await ghPutFile(path, next, message, sha);
+                    return { content: next, sha: res.content.sha, skipped: false };
+                } catch (err) {
+                    lastErr = err;
+                    console.warn(`写入 ${path} 第 ${attempt} 次失败：${err.message}`);
+                    if (attempt < maxAttempts) await sleep(350 * attempt);
+                }
+            }
+
+            throw lastErr || new Error('保存失败');
+        }
+
         /* ============================================================
            全局状态
            ============================================================ */
         const state = {
-            geojson: { type: 'FeatureCollection', features: [] },
-            types: { types: [] },
+            types: { types: [] },        // types.json 内容
+            typesSha: null,
+
+            typeData: {},                // typeId -> { geojson, sha }
+
             activeTypeIds: new Set(),
             searchKeyword: '',
             lockedTypeId: null,
-            fileSha: null,
-            typesSha: null,
+
             addMode: false,
             tempMarker: null,
             geoLayer: null
@@ -800,53 +868,89 @@
             allIds() {
                 return state.types.types.map(t => t.id);
             },
+            /** 某类型已加载的标点要素 */
+            featuresOf(typeId) {
+                const d = state.typeData[typeId];
+                return (d && d.geojson && Array.isArray(d.geojson.features)) ? d.geojson.features : [];
+            },
             countByType() {
                 const counts = {};
-                (state.geojson.features || []).forEach(f => {
-                    const t = this.getForFeature(f.properties || {});
-                    if (!t) return;
-                    counts[t.id] = (counts[t.id] || 0) + 1;
+                state.types.types.forEach(t => {
+                    counts[t.id] = this.featuresOf(t.id).length;
                 });
                 return counts;
             },
             async load() {
                 const { content, sha } = await ghGetFile(CONFIG.TYPES_FILE);
-                state.types = (content && Array.isArray(content.types)) ? content : { types: [] };
+                state.types = normalizeTypes(content);
                 state.typesSha = sha;
-            },
-            async save() {
-                const res = await ghPutFile(
-                    CONFIG.TYPES_FILE,
-                    state.types,
-                    `更新类型数据 - ${new Date().toLocaleString('zh-CN')}`,
-                    state.typesSha
-                );
-                state.typesSha = res.content.sha;
             }
         };
 
         /* ============================================================
-           标点数据操作
+           各类型标点数据：加载 / 创建 / 追加
            ============================================================ */
-        const Markers = {
-            async load() {
-                const { content, sha } = await ghGetFile(CONFIG.DATA_FILE);
-                state.fileSha = sha;
-                if (content && content.type === 'FeatureCollection' && Array.isArray(content.features)) {
-                    return content;
+        async function loadTypeData(typeId) {
+            const path = markerFilePath(typeId);
+            const { content, sha } = await ghGetFile(path);
+            const geojson = normalizeFC(content);
+
+            // 统一归属：文件内的要素一律标记为该文件对应的类型
+            geojson.features.forEach(f => {
+                if (!f.properties) f.properties = {};
+                f.properties.type = typeId;
+            });
+
+            state.typeData[typeId] = { geojson, sha };
+            return geojson;
+        }
+
+        async function loadAllTypeData(typeIds) {
+            const results = await Promise.allSettled(typeIds.map(id => loadTypeData(id)));
+            const failed = [];
+            results.forEach((r, i) => {
+                if (r.status === 'rejected') {
+                    failed.push(typeIds[i]);
+                    console.warn(`类型 ${typeIds[i]} 的标点数据加载失败:`, r.reason);
                 }
-                return { type: 'FeatureCollection', features: [] };
-            },
-            async save() {
-                const res = await ghPutFile(
-                    CONFIG.DATA_FILE,
-                    state.geojson,
-                    `更新标点数据 - ${new Date().toLocaleString('zh-CN')}`,
-                    state.fileSha
-                );
-                state.fileSha = res.content.sha;
-            }
-        };
+            });
+            return failed;
+        }
+
+        /** 确保某类型的数据文件存在（不存在则创建空 FeatureCollection） */
+        async function ensureTypeDataFile(typeId) {
+            const path = markerFilePath(typeId);
+            const res = await updateJsonFile(path, (content) => {
+                if (content && Array.isArray(content.features)) return null; // 已存在，不动它
+                return emptyFC();
+            }, `初始化类型数据文件 ${typeId}.geojson - ${new Date().toLocaleString('zh-CN')}`);
+
+            const geojson = normalizeFC(res.content);
+            state.typeData[typeId] = { geojson, sha: res.sha };
+            return state.typeData[typeId];
+        }
+
+        /**
+         * 向指定类型的数据文件追加一个标点。
+         * 内部会重新拉取远端最新数据再追加，避免覆盖别人新增的标点。
+         */
+        async function appendMarkerToType(typeId, feature) {
+            const path = markerFilePath(typeId);
+
+            const res = await updateJsonFile(path, (content) => {
+                const fc = normalizeFC(content);
+                fc.features.push(feature);
+                return fc;
+            }, `新增标点「${feature.properties.title}」 - ${new Date().toLocaleString('zh-CN')}`);
+
+            const geojson = normalizeFC(res.content);
+            geojson.features.forEach(f => {
+                if (!f.properties) f.properties = {};
+                f.properties.type = typeId;
+            });
+            state.typeData[typeId] = { geojson, sha: res.sha };
+            return geojson;
+        }
 
         /* ============================================================
            渲染：类型筛选器
@@ -913,22 +1017,27 @@
             });
         }
 
+        /** 收集当前应显示的标点要素（来自各类型文件） */
         function getVisibleFeatures() {
             const kw = state.searchKeyword.trim().toLowerCase();
-            return (state.geojson.features || []).filter(f => {
-                const props = f.properties || {};
-                const t = Types.getForFeature(props);
+            const out = [];
 
-                if (state.lockedTypeId) {
-                    if (!t || t.id !== state.lockedTypeId) return false;
-                } else {
-                    if (t && !state.activeTypeIds.has(t.id)) return false;
-                }
+            const typeIds = state.lockedTypeId ? [state.lockedTypeId] : Types.allIds();
 
-                if (!kw) return true;
-                const hay = `${props.title || ''}\n${props.description || ''}`.toLowerCase();
-                return hay.includes(kw);
+            typeIds.forEach(tid => {
+                if (!state.lockedTypeId && !state.activeTypeIds.has(tid)) return;
+
+                Types.featuresOf(tid).forEach(f => {
+                    if (kw) {
+                        const props = f.properties || {};
+                        const hay = `${props.title || ''}\n${props.description || ''}`.toLowerCase();
+                        if (!hay.includes(kw)) return;
+                    }
+                    out.push(f);
+                });
             });
+
+            return out;
         }
 
         /* ---------- 详情弹窗（固定 CSS 类，无坐标/时间/图标） ---------- */
@@ -967,15 +1076,13 @@
                 }
             }).addTo(map);
 
-            let total;
+            let total = 0;
             if (state.lockedTypeId) {
-                total = (state.geojson.features || []).filter(f => {
-                    const t = Types.getForFeature(f.properties || {});
-                    return t && t.id === state.lockedTypeId;
-                }).length;
+                total = Types.featuresOf(state.lockedTypeId).length;
             } else {
-                total = (state.geojson.features || []).length;
+                state.types.types.forEach(t => { total += Types.featuresOf(t.id).length; });
             }
+
             setStatus('ok', `显示 ${features.length} / ${total} 个标点`);
         }
 
@@ -1070,16 +1177,7 @@
             if (!name) return showToast('请输入类型名称', 'error');
             if (!colorText && !pickerColor) return showToast('请选择类型颜色', 'error');
             if (!color) return showToast('颜色格式不正确，应为 #RRGGBB', 'error');
-
-            if (state.types.types.some(t => t.name.toLowerCase() === name.toLowerCase())) {
-                return showToast('类型名称已存在', 'error');
-            }
-            if (RESERVED_COLORS.includes(color)) {
-                return showToast('该颜色为系统保留色，请更换', 'error');
-            }
-            if (state.types.types.some(t => t.color.toLowerCase() === color)) {
-                return showToast('该颜色已被其他类型使用，请更换', 'error');
-            }
+            if (RESERVED_COLORS.includes(color)) return showToast('该颜色为系统保留色，请更换', 'error');
 
             const btn = $('btnSaveType');
             btn.disabled = true;
@@ -1091,10 +1189,32 @@
                 color,
                 created_at: new Date().toISOString()
             };
-            state.types.types.push(newType);
 
             try {
-                await Types.save();
+                /* ① 基于最新的 types.json 追加类型（含重复校验 + 冲突重试） */
+                const res = await updateJsonFile(CONFIG.TYPES_FILE, (content) => {
+                    const data = normalizeTypes(content);
+
+                    if (data.types.some(t => (t.name || '').toLowerCase() === name.toLowerCase())) {
+                        throw new Error('类型名称已存在');
+                    }
+                    if (data.types.some(t => (t.color || '').toLowerCase() === color)) {
+                        throw new Error('该颜色已被其他类型使用，请更换');
+                    }
+                    if (data.types.some(t => t.id === newType.id)) {
+                        throw new Error('类型 ID 冲突，请重试');
+                    }
+
+                    data.types.push(newType);
+                    return data;
+                }, `新增类型「${name}」 - ${new Date().toLocaleString('zh-CN')}`);
+
+                state.types = normalizeTypes(res.content);
+                state.typesSha = res.sha;
+
+                /* ② 在 types.json 同级目录创建「类型id.geojson」 */
+                await ensureTypeDataFile(newType.id);
+
                 state.activeTypeIds.add(newType.id);
                 $('nt-name').value = '';
                 setColorInput('#007AFF');
@@ -1103,8 +1223,7 @@
                 showToast(`类型「${name}」已创建`, 'success');
                 closeTypeModal();
             } catch (err) {
-                state.types.types.pop();
-                showToast('保存失败: ' + err.message, 'error');
+                showToast(err.message || '保存失败', 'error');
             } finally {
                 btn.disabled = false;
                 btn.textContent = '保存类型';
@@ -1209,15 +1328,14 @@
                     }
                 };
 
-                state.geojson.features.push(newFeature);
                 try {
-                    await Markers.save();
+                    // 写入「类型id.geojson」（内部会合并远端最新数据，不会覆盖他人新增）
+                    await appendMarkerToType(typeId, newFeature);
                     renderMarkers();
                     renderTypeFilters();
                     exitAddMode();
                     showToast('标点已保存', 'success');
                 } catch (err) {
-                    state.geojson.features.pop();
                     showToast('保存失败: ' + err.message, 'error');
                     saveBtn.textContent = '保存';
                     saveBtn.disabled = false;
@@ -1386,40 +1504,54 @@
             setStatus('loading', '加载中...');
 
             const ipPromise = CONFIG.USE_IP_LOCATION ? fetchIpLocation() : Promise.resolve(null);
-            const [typesRes, markersRes] = await Promise.allSettled([
-                Types.load(),
-                Markers.load()
-            ]);
 
-            if (typesRes.status === 'fulfilled') {
+            /* ---------- ① 读取 types.json ---------- */
+            let typesLoaded = false;
+            try {
+                await Types.load();
+                typesLoaded = true;
+            } catch (err) {
+                console.warn('类型加载失败:', err);
+                showToast('类型数据加载失败：' + err.message, 'error');
+                state.types = { types: [] };
+                state.activeTypeIds = new Set();
+            }
+
+            /* ---------- ② 决定要加载哪些类型的数据文件 ---------- */
+            let typeIdsToLoad = [];
+
+            if (typesLoaded) {
                 const lockedType = resolveUrlLockedType();
+
                 if (lockedType) {
+                    // 地址栏指定了类型：只请求该类型的 geojson
                     applyTypeLockUI(lockedType);
+                    typeIdsToLoad = [lockedType.id];
                 } else {
                     const raw = getUrlTypeParam();
                     if (raw) showToast(`未找到类型「${raw}」，已显示全部标点`, 'error');
                     state.activeTypeIds = new Set(Types.allIds());
+                    typeIdsToLoad = Types.allIds();
                 }
-            } else {
-                console.warn('类型加载失败:', typesRes.reason);
-                showToast('类型数据加载失败：' + typesRes.reason.message, 'error');
-                state.activeTypeIds = new Set();
             }
 
             if (!state.lockedTypeId) {
                 $('btnToggleTypesM').classList.remove('hidden');
             }
 
-            if (markersRes.status === 'fulfilled') {
-                state.geojson = markersRes.value;
-                renderTypeFilters();
-                renderMarkers();
-            } else {
-                setStatus('err', '加载失败: ' + markersRes.reason.message);
-                showToast('数据加载失败：' + markersRes.reason.message, 'error');
-                renderTypeFilters();
+            /* ---------- ③ 加载各类型标点数据 ---------- */
+            if (typeIdsToLoad.length > 0) {
+                const failed = await loadAllTypeData(typeIdsToLoad);
+                if (failed.length > 0) {
+                    showToast(`${failed.length} 个类型的标点数据加载失败`, 'error');
+                }
             }
 
+            /* ---------- ④ 渲染 ---------- */
+            renderTypeFilters();
+            renderMarkers();
+
+            /* ---------- ⑤ 定位 ---------- */
             const ipLoc = await ipPromise;
             if (ipLoc) {
                 map.flyTo(ipLoc, CONFIG.IP_ZOOM, { duration: 1.5 });
