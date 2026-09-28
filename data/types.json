@@ -23,6 +23,12 @@
       "name": "避雷",
       "color": "#ef4444",
       "created_at": "2026-09-22T06:38:51.939Z"
+    },
+    {
+      "id": "t_mukvv6w3ugna",
+      "name": "测试",
+      "color": "#007aff",
+      "created_at": "2026-09-28T06:45:27.075Z"
     }
   ]
 }
