@@ -11,10 +11,11 @@
         ]
       },
       "properties": {
-        "title": "测试点",
+        "title": "测试点22",
         "description": "666",
         "type": "t_mukvv6w3ugna",
-        "created_at": "2026-09-28T06:45:42.068Z"
+        "created_at": "2026-09-28T06:45:42.068Z",
+        "updated_at": "2026-09-28T06:45:56.347Z"
       }
     }
   ]
