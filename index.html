@@ -75,8 +75,8 @@
   <!-- 氛围背景 -->
   <div class="aurora pointer-events-none fixed inset-0 -z-10" aria-hidden="true"></div>
 
-  <!-- 页头 -->
-  <header class="animate__animated animate__fadeInDown mx-auto mb-8 max-w-[620px] text-center">
+  <!-- 页头（淡入效果） -->
+  <header class="animate__animated animate__fadeIn mx-auto mb-8 max-w-[620px] text-center">
     <h1 class="mb-2 text-[clamp(34px,7vw,44px)] font-extrabold leading-[1.1] tracking-[-0.03em]">
       工具箱
     </h1>
@@ -89,7 +89,8 @@
   <main class="mx-auto grid w-full max-w-[620px] gap-3.5 md:max-w-[980px] md:grid-cols-2 lg:grid-cols-3">
 
     <!-- 文件传输助手 -->
-    <a href="./transfer.html"
+    <a href="./transfer"
+       target="_blank" rel="noopener noreferrer"
        style="--glow: rgba(0, 122, 255, .55); animation-delay: .08s"
        class="animate__animated animate__fadeInUp group relative flex min-h-[86px] items-center gap-4 rounded-[22px] border border-black/[0.07] bg-white/[0.78] p-4 shadow-[0_1px_2px_rgba(0,0,0,.05),0_10px_28px_-16px_rgba(0,0,0,.35)] backdrop-blur-xl backdrop-saturate-150 transition duration-300 ease-out before:pointer-events-none before:absolute before:inset-0 before:rounded-[inherit] before:shadow-[inset_0_1px_0_rgba(255,255,255,.7)] hover:-translate-y-[3px] hover:shadow-[0_2px_6px_rgba(0,0,0,.06),0_26px_52px_-26px_rgba(0,0,0,.45),0_18px_38px_-20px_var(--glow)] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[#007AFF]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#F2F2F7] active:scale-[0.975] active:duration-100 dark:border-white/[0.08] dark:bg-[#1C1C1E]/[0.76] dark:before:shadow-[inset_0_1px_0_rgba(255,255,255,.07)] dark:focus-visible:ring-offset-black">
 
@@ -110,7 +111,8 @@
     </a>
 
     <!-- 小说阅读器 -->
-    <a href="./reader.html"
+    <a href="./reader"
+       target="_blank" rel="noopener noreferrer"
        style="--glow: rgba(88, 86, 214, .55); animation-delay: .16s"
        class="animate__animated animate__fadeInUp group relative flex min-h-[86px] items-center gap-4 rounded-[22px] border border-black/[0.07] bg-white/[0.78] p-4 shadow-[0_1px_2px_rgba(0,0,0,.05),0_10px_28px_-16px_rgba(0,0,0,.35)] backdrop-blur-xl backdrop-saturate-150 transition duration-300 ease-out before:pointer-events-none before:absolute before:inset-0 before:rounded-[inherit] before:shadow-[inset_0_1px_0_rgba(255,255,255,.7)] hover:-translate-y-[3px] hover:shadow-[0_2px_6px_rgba(0,0,0,.06),0_26px_52px_-26px_rgba(0,0,0,.45),0_18px_38px_-20px_var(--glow)] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[#5856D6]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#F2F2F7] active:scale-[0.975] active:duration-100 dark:border-white/[0.08] dark:bg-[#1C1C1E]/[0.76] dark:before:shadow-[inset_0_1px_0_rgba(255,255,255,.07)] dark:focus-visible:ring-offset-black">
 
@@ -131,7 +133,8 @@
     </a>
 
     <!-- 共享标点 -->
-    <a href="./marker.html"
+    <a href="./marker"
+       target="_blank" rel="noopener noreferrer"
        style="--glow: rgba(52, 199, 89, .50); animation-delay: .24s"
        class="animate__animated animate__fadeInUp group relative flex min-h-[86px] items-center gap-4 rounded-[22px] border border-black/[0.07] bg-white/[0.78] p-4 shadow-[0_1px_2px_rgba(0,0,0,.05),0_10px_28px_-16px_rgba(0,0,0,.35)] backdrop-blur-xl backdrop-saturate-150 transition duration-300 ease-out before:pointer-events-none before:absolute before:inset-0 before:rounded-[inherit] before:shadow-[inset_0_1px_0_rgba(255,255,255,.7)] hover:-translate-y-[3px] hover:shadow-[0_2px_6px_rgba(0,0,0,.06),0_26px_52px_-26px_rgba(0,0,0,.45),0_18px_38px_-20px_var(--glow)] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[#34C759]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#F2F2F7] active:scale-[0.975] active:duration-100 dark:border-white/[0.08] dark:bg-[#1C1C1E]/[0.76] dark:before:shadow-[inset_0_1px_0_rgba(255,255,255,.07)] dark:focus-visible:ring-offset-black">
 
@@ -155,17 +158,10 @@
 
   </main>
 
-  <!-- 页脚 -->
-  <footer class="animate__animated animate__fadeIn mx-auto mt-10 max-w-[620px] text-center text-[13px] leading-relaxed text-black/30 dark:text-white/25"
-          style="animation-delay: .42s">
-    © <span id="year">2025</span> 工具箱 · 持续更新中
-  </footer>
-
   <!-- Lucide 图标：把 <i data-lucide> 渲染为 SVG -->
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.454.0/dist/umd/lucide.min.js"></script>
   <script>
     lucide.createIcons();
-    document.getElementById('year').textContent = new Date().getFullYear();
   </script>
 
 </body>
