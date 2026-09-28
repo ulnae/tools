@@ -18,7 +18,18 @@
             --ios-bg: #F2F2F7;
         }
 
+        html,
         body {
+            height: 100%;
+        }
+
+        /* ---------- 整页 Shell：禁止纵向滚动 ---------- */
+        body.app-shell {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            height: 100dvh;
+            overflow: hidden;
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue",
                 "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
             -webkit-font-smoothing: antialiased;
@@ -40,6 +51,39 @@
         .no-sb {
             -ms-overflow-style: none;
             scrollbar-width: none;
+        }
+
+        /* ---------- 表格滚动区：细滚动条 ---------- */
+        .scroll-area {
+            overflow: auto;
+            overscroll-behavior: contain;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(0, 0, 0, .18) transparent;
+        }
+
+        .scroll-area::-webkit-scrollbar {
+            width: 9px;
+            height: 9px;
+        }
+
+        .scroll-area::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .scroll-area::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, .16);
+            border-radius: 8px;
+            border: 2px solid transparent;
+            background-clip: content-box;
+        }
+
+        .scroll-area::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 0, 0, .3);
+            background-clip: content-box;
+        }
+
+        .scroll-area::-webkit-scrollbar-corner {
+            background: transparent;
         }
 
         /* ---------- 输入框 ---------- */
@@ -127,6 +171,56 @@
             background: rgba(255, 59, 48, .2);
         }
 
+        /* ---------- 分页控件 ---------- */
+        .pager-select {
+            appearance: none;
+            -webkit-appearance: none;
+            background-color: rgba(120, 120, 128, .1);
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path fill='%238E8E93' d='M2 4l4 4 4-4z'/></svg>");
+            background-repeat: no-repeat;
+            background-position: right 9px center;
+            border: none;
+            border-radius: 10px;
+            padding: 6px 26px 6px 11px;
+            font-size: 12px;
+            font-weight: 600;
+            font-family: inherit;
+            color: #1c1c1e;
+            outline: none;
+            cursor: pointer;
+            transition: box-shadow .18s;
+        }
+
+        .pager-select:focus {
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, .18);
+        }
+
+        .btn-pager {
+            padding: 6px 13px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            font-family: inherit;
+            color: #007AFF;
+            background: rgba(0, 122, 255, .1);
+            border: none;
+            cursor: pointer;
+            transition: background .18s, transform .12s, opacity .18s;
+        }
+
+        .btn-pager:hover:not(:disabled) {
+            background: rgba(0, 122, 255, .2);
+        }
+
+        .btn-pager:active:not(:disabled) {
+            transform: scale(.96);
+        }
+
+        .btn-pager:disabled {
+            opacity: .32;
+            cursor: not-allowed;
+        }
+
         /* ---------- 色板 ---------- */
         .swatch {
             width: 26px;
@@ -190,6 +284,10 @@
 
         thead th {
             white-space: nowrap;
+            position: sticky;
+            top: 0;
+            z-index: 5;
+            background-color: #F7F7F9;
         }
 
         /* ---------- 加载旋转 ---------- */
@@ -205,10 +303,10 @@
     </style>
 </head>
 
-<body class="min-h-screen">
+<body class="app-shell">
 
     <!-- ===================== 顶部栏 ===================== -->
-    <header class="glass sticky top-0 z-30">
+    <header class="glass flex-none z-30">
         <div class="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3 flex-wrap">
             <h1 class="text-[16px] font-bold text-[#1c1c1e] tracking-tight">标点数据管理</h1>
 
@@ -230,18 +328,20 @@
     </header>
 
     <!-- ===================== 主体 ===================== -->
-    <main class="max-w-6xl mx-auto px-4 py-5">
+    <main class="flex-1 min-h-0 w-full max-w-6xl mx-auto px-4 py-5 flex flex-col">
 
         <!-- 标签切换 -->
-        <div class="inline-flex gap-1 p-1 rounded-full bg-black/5 mb-4">
+        <div class="flex-none self-start flex gap-1 p-1 rounded-full bg-black/5 mb-4">
             <button data-tab="markers">标点数据</button>
             <button data-tab="types">类型数据</button>
         </div>
 
         <!-- ---------- 标点数据 ---------- -->
-        <section id="panel-markers">
-            <div class="glass rounded-2xl overflow-hidden">
-                <div class="px-3 py-3 flex items-center gap-2 flex-wrap border-b border-black/[0.05]">
+        <section id="panel-markers" class="flex-1 min-h-0 flex flex-col">
+            <div class="glass rounded-2xl overflow-hidden flex flex-col flex-1 min-h-0">
+
+                <!-- 工具条 -->
+                <div class="flex-none px-3 py-3 flex items-center gap-2 flex-wrap border-b border-black/[0.05]">
                     <input id="searchMarker" class="ios-input !w-auto flex-1 min-w-[160px]" type="text"
                         placeholder="搜索标题或描述">
                     <select id="filterType" class="ios-input !w-auto min-w-[140px]"></select>
@@ -250,10 +350,11 @@
                     </span>
                 </div>
 
-                <div class="overflow-x-auto no-sb">
+                <!-- 表格滚动区 -->
+                <div class="flex-1 min-h-0 scroll-area">
                     <table class="w-full text-[13px] min-w-[940px]">
                         <thead>
-                            <tr class="bg-black/[0.03] text-[#8E8E93] text-[12px]">
+                            <tr class="text-[#8E8E93] text-[12px]">
                                 <th class="text-left font-semibold px-3 py-2.5 w-[52px]">#</th>
                                 <th class="text-left font-semibold px-3 py-2.5 w-[190px]">标题</th>
                                 <th class="text-left font-semibold px-3 py-2.5 w-[130px]">类型</th>
@@ -266,13 +367,34 @@
                         <tbody id="markerTbody"></tbody>
                     </table>
                 </div>
+
+                <!-- 分页条 -->
+                <div
+                    class="flex-none px-3 py-2.5 flex items-center gap-2 flex-wrap border-t border-black/[0.05] bg-black/[0.015]">
+                    <span class="text-[12px] text-[#8E8E93] whitespace-nowrap">
+                        第 <b id="markerPageNow" class="text-[#1c1c1e] tabular-nums">1</b> /
+                        <b id="markerPageTotal" class="text-[#1c1c1e] tabular-nums">1</b> 页
+                    </span>
+                    <select id="markerPageSize" class="pager-select">
+                        <option value="10">10 条/页</option>
+                        <option value="20" selected>20 条/页</option>
+                        <option value="50">50 条/页</option>
+                        <option value="100">100 条/页</option>
+                    </select>
+                    <div class="ml-auto flex items-center gap-1.5">
+                        <button id="markerPrev" class="btn-pager">上一页</button>
+                        <button id="markerNext" class="btn-pager">下一页</button>
+                    </div>
+                </div>
             </div>
         </section>
 
         <!-- ---------- 类型数据 ---------- -->
-        <section id="panel-types" class="hidden">
-            <div class="glass rounded-2xl overflow-hidden">
-                <div class="px-3 py-3 flex items-center gap-2 border-b border-black/[0.05]">
+        <section id="panel-types" class="hidden flex-1 min-h-0 flex-col">
+            <div class="glass rounded-2xl overflow-hidden flex flex-col flex-1 min-h-0">
+
+                <!-- 工具条 -->
+                <div class="flex-none px-3 py-3 flex items-center gap-2 flex-wrap border-b border-black/[0.05]">
                     <span class="text-[13px] font-semibold text-[#1c1c1e]">类型列表</span>
                     <span class="text-[12px] text-[#8E8E93]">
                         共 <b id="typeCount" class="text-[#1c1c1e] tabular-nums">0</b> 个
@@ -282,10 +404,11 @@
                     </span>
                 </div>
 
-                <div class="overflow-x-auto no-sb">
+                <!-- 表格滚动区 -->
+                <div class="flex-1 min-h-0 scroll-area">
                     <table class="w-full text-[13px] min-w-[780px]">
                         <thead>
-                            <tr class="bg-black/[0.03] text-[#8E8E93] text-[12px]">
+                            <tr class="text-[#8E8E93] text-[12px]">
                                 <th class="text-left font-semibold px-3 py-2.5 w-[90px]">颜色</th>
                                 <th class="text-left font-semibold px-3 py-2.5 w-[180px]">名称</th>
                                 <th class="text-left font-semibold px-3 py-2.5">ID</th>
@@ -296,6 +419,25 @@
                         </thead>
                         <tbody id="typeTbody"></tbody>
                     </table>
+                </div>
+
+                <!-- 分页条 -->
+                <div
+                    class="flex-none px-3 py-2.5 flex items-center gap-2 flex-wrap border-t border-black/[0.05] bg-black/[0.015]">
+                    <span class="text-[12px] text-[#8E8E93] whitespace-nowrap">
+                        第 <b id="typePageNow" class="text-[#1c1c1e] tabular-nums">1</b> /
+                        <b id="typePageTotal" class="text-[#1c1c1e] tabular-nums">1</b> 页
+                    </span>
+                    <select id="typePageSize" class="pager-select">
+                        <option value="10" selected>10 条/页</option>
+                        <option value="20">20 条/页</option>
+                        <option value="50">50 条/页</option>
+                        <option value="100">100 条/页</option>
+                    </select>
+                    <div class="ml-auto flex items-center gap-1.5">
+                        <button id="typePrev" class="btn-pager">上一页</button>
+                        <button id="typeNext" class="btn-pager">下一页</button>
+                    </div>
                 </div>
             </div>
         </section>
@@ -627,7 +769,13 @@
             typeData: {},        // typeId -> { geojson, sha }
             keyword: '',
             filterTypeId: '',
-            tab: 'markers'
+            tab: 'markers',
+
+            /* 分页状态 */
+            markerPage: 1,
+            markerPageSize: 20,
+            typePage: 1,
+            typePageSize: 10
         };
 
         const Types = {
@@ -696,6 +844,35 @@
         }
 
         /* ============================================================
+           分页工具
+           ============================================================ */
+        function paginate(list, page, size) {
+            const total = list.length;
+            const totalPages = Math.max(1, Math.ceil(total / size));
+            const p = Math.min(Math.max(1, Math.floor(page) || 1), totalPages);
+            const start = (p - 1) * size;
+            return {
+                rows: list.slice(start, start + size),
+                page: p,
+                totalPages,
+                total,
+                start
+            };
+        }
+
+        /** 更新分页条 UI；prefix 为 'marker' 或 'type' */
+        function updatePager(prefix, pg) {
+            $(prefix + 'PageNow').textContent = pg.page;
+            $(prefix + 'PageTotal').textContent = pg.totalPages;
+            $(prefix + 'Prev').disabled = pg.page <= 1;
+            $(prefix + 'Next').disabled = pg.page >= pg.totalPages;
+
+            const sel = $(prefix + 'PageSize');
+            const want = String(state[prefix + 'PageSize']);
+            if (sel.value !== want) sel.value = want;
+        }
+
+        /* ============================================================
            渲染
            ============================================================ */
         const TAB_BASE = 'px-4 py-1.5 rounded-full text-[13px] font-semibold transition';
@@ -707,8 +884,14 @@
             document.querySelectorAll('[data-tab]').forEach(b => {
                 b.className = b.dataset.tab === tab ? TAB_ON : TAB_OFF;
             });
-            $('panel-markers').classList.toggle('hidden', tab !== 'markers');
-            $('panel-types').classList.toggle('hidden', tab !== 'types');
+
+            const showMarkers = tab === 'markers';
+            const mp = $('panel-markers'), tp = $('panel-types');
+
+            mp.classList.toggle('hidden', !showMarkers);
+            mp.classList.toggle('flex', showMarkers);
+            tp.classList.toggle('hidden', showMarkers);
+            tp.classList.toggle('flex', !showMarkers);
         }
 
         function renderAll() {
@@ -727,7 +910,7 @@
         }
 
         /* ---------- 标点表格 ---------- */
-        let markerRows = [];
+        let markerRows = [];   // 当前页显示的行
 
         function getFilteredMarkers() {
             const kw = state.keyword.trim().toLowerCase();
@@ -749,23 +932,26 @@
         }
 
         function renderMarkerTable() {
-            markerRows = getFilteredMarkers();
+            const all = getFilteredMarkers();
+            $('markerCount').textContent = all.length;
+
+            const pg = paginate(all, state.markerPage, state.markerPageSize);
+            state.markerPage = pg.page;
+            markerRows = pg.rows;
+
             const tbody = $('markerTbody');
-            $('markerCount').textContent = markerRows.length;
 
             if (!markerRows.length) {
-                tbody.innerHTML = `<tr><td colspan="7" class="py-14 text-center text-[#AEAEB2] text-[13px]">
+                tbody.innerHTML = `<tr><td colspan="7" class="py-16 text-center text-[#AEAEB2] text-[13px]">
                     暂无标点数据</td></tr>`;
-                return;
-            }
-
-            tbody.innerHTML = markerRows.map((row, i) => {
-                const p = row.feature.properties || {};
-                const c = (row.feature.geometry && row.feature.geometry.coordinates) || [];
-                const color = row.color || FALLBACK_COLOR;
-                return `
+            } else {
+                tbody.innerHTML = markerRows.map((row, i) => {
+                    const p = row.feature.properties || {};
+                    const c = (row.feature.geometry && row.feature.geometry.coordinates) || [];
+                    const color = row.color || FALLBACK_COLOR;
+                    return `
                 <tr class="border-b border-black/[0.04] hover:bg-black/[0.02] align-top">
-                    <td class="px-3 py-2.5 text-[#C7C7CC] tabular-nums">${i + 1}</td>
+                    <td class="px-3 py-2.5 text-[#C7C7CC] tabular-nums">${pg.start + i + 1}</td>
                     <td class="px-3 py-2.5 font-medium text-[#1c1c1e] break-words">${escapeHtml(p.title || '未命名')}</td>
                     <td class="px-3 py-2.5">
                         <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold whitespace-nowrap"
@@ -782,25 +968,33 @@
                         <button class="btn-mini btn-del ml-1.5" data-act="del" data-i="${i}">删除</button>
                     </td>
                 </tr>`;
-            }).join('');
+                }).join('');
+            }
+
+            updatePager('marker', pg);
         }
 
         /* ---------- 类型表格 ---------- */
+        let typeRows = [];
+
         function renderTypeTable() {
-            const tbody = $('typeTbody');
             const list = Types.all();
             $('typeCount').textContent = list.length;
 
-            if (!list.length) {
-                tbody.innerHTML = `<tr><td colspan="6" class="py-14 text-center text-[#AEAEB2] text-[13px]">
-                    暂无类型数据</td></tr>`;
-                return;
-            }
+            const pg = paginate(list, state.typePage, state.typePageSize);
+            state.typePage = pg.page;
+            typeRows = pg.rows;
 
-            tbody.innerHTML = list.map(t => {
-                const color = t.color || FALLBACK_COLOR;
-                const count = Types.featuresOf(t.id).length;
-                return `
+            const tbody = $('typeTbody');
+
+            if (!typeRows.length) {
+                tbody.innerHTML = `<tr><td colspan="6" class="py-16 text-center text-[#AEAEB2] text-[13px]">
+                    暂无类型数据</td></tr>`;
+            } else {
+                tbody.innerHTML = typeRows.map(t => {
+                    const color = t.color || FALLBACK_COLOR;
+                    const count = Types.featuresOf(t.id).length;
+                    return `
                 <tr class="border-b border-black/[0.04] hover:bg-black/[0.02]">
                     <td class="px-3 py-2.5">
                         <span class="inline-flex items-center gap-2">
@@ -817,7 +1011,10 @@
                         <button class="btn-mini btn-del ml-1.5" data-act="del" data-id="${t.id}">删除</button>
                     </td>
                 </tr>`;
-            }).join('');
+                }).join('');
+            }
+
+            updatePager('type', pg);
         }
 
         /* ============================================================
@@ -1085,6 +1282,28 @@
         }
 
         /* ============================================================
+           分页事件绑定
+           ============================================================ */
+        function bindPager(prefix, render) {
+            $(prefix + 'Prev').addEventListener('click', () => {
+                state[prefix + 'Page'] = Math.max(1, state[prefix + 'Page'] - 1);
+                render();
+            });
+
+            $(prefix + 'Next').addEventListener('click', () => {
+                /* 越界值会在 render → paginate 内被夹紧 */
+                state[prefix + 'Page'] = state[prefix + 'Page'] + 1;
+                render();
+            });
+
+            $(prefix + 'PageSize').addEventListener('change', (e) => {
+                state[prefix + 'PageSize'] = Number(e.target.value) || 20;
+                state[prefix + 'Page'] = 1;
+                render();
+            });
+        }
+
+        /* ============================================================
            事件绑定
            ============================================================ */
         function bindEvents() {
@@ -1103,6 +1322,7 @@
                 const val = e.target.value;
                 searchTimer = setTimeout(() => {
                     state.keyword = val;
+                    state.markerPage = 1;      // 搜索后回到第一页
                     renderMarkerTable();
                 }, 180);
             });
@@ -1110,6 +1330,7 @@
             /* 类型筛选 */
             $('filterType').addEventListener('change', (e) => {
                 state.filterTypeId = e.target.value;
+                state.markerPage = 1;          // 筛选后回到第一页
                 renderMarkerTable();
             });
 
@@ -1131,6 +1352,10 @@
                 if (btn.dataset.act === 'edit') openTypeModal(id);
                 else if (btn.dataset.act === 'del') deleteType(id);
             });
+
+            /* 分页 */
+            bindPager('marker', renderMarkerTable);
+            bindPager('type', renderTypeTable);
 
             /* 标点弹窗 */
             $('btnCloseMarkerModal').addEventListener('click', () => {
