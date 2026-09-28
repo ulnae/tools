@@ -1,0 +1,1217 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>标点数据管理</title>
+    <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23007AFF'/%3E%3Cpath d='M16 6c-3.9 0-7 3.1-7 7 0 5.3 7 13 7 13s7-7.7 7-13c0-3.9-3.1-7-7-7z' fill='%23fff'/%3E%3Ccircle cx='16' cy='13' r='2.6' fill='%23007AFF'/%3E%3C/svg%3E">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --ios-blue: #007AFF;
+            --ios-red: #FF3B30;
+            --ios-green: #34C759;
+            --ios-orange: #FF9500;
+            --ios-gray: #8E8E93;
+            --ios-bg: #F2F2F7;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue",
+                "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -webkit-tap-highlight-color: transparent;
+            background: var(--ios-bg);
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, .86);
+            backdrop-filter: saturate(180%) blur(20px);
+            -webkit-backdrop-filter: saturate(180%) blur(20px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, .08), 0 0 0 .5px rgba(0, 0, 0, .04);
+        }
+
+        .no-sb::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-sb {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* ---------- 输入框 ---------- */
+        .ios-input {
+            width: 100%;
+            box-sizing: border-box;
+            background: rgba(120, 120, 128, .1);
+            border: none;
+            border-radius: 12px;
+            padding: 10px 14px;
+            font-size: 14px;
+            font-family: inherit;
+            color: #1c1c1e;
+            outline: none;
+            transition: box-shadow .18s;
+        }
+
+        .ios-input::placeholder {
+            color: #AEAEB2;
+        }
+
+        .ios-input:focus {
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, .18);
+        }
+
+        select.ios-input {
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path fill='%238E8E93' d='M2 4l4 4 4-4z'/></svg>");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 32px;
+            cursor: pointer;
+        }
+
+        textarea.ios-input {
+            resize: none;
+            line-height: 1.5;
+        }
+
+        .f-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: #8E8E93;
+            margin-bottom: 6px;
+            margin-top: 14px;
+        }
+
+        .f-label:first-child {
+            margin-top: 0;
+        }
+
+        /* ---------- 小按钮 ---------- */
+        .btn-mini {
+            padding: 5px 12px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: background .18s, transform .12s;
+            border: none;
+        }
+
+        .btn-mini:active {
+            transform: scale(.96);
+        }
+
+        .btn-edit {
+            background: rgba(0, 122, 255, .1);
+            color: #007AFF;
+        }
+
+        .btn-edit:hover {
+            background: rgba(0, 122, 255, .2);
+        }
+
+        .btn-del {
+            background: rgba(255, 59, 48, .1);
+            color: #FF3B30;
+        }
+
+        .btn-del:hover {
+            background: rgba(255, 59, 48, .2);
+        }
+
+        /* ---------- 色板 ---------- */
+        .swatch {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: transform .14s;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, .18);
+        }
+
+        .swatch:hover {
+            transform: scale(1.15);
+        }
+
+        input[type="color"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 46px;
+            height: 42px;
+            padding: 0;
+            border: none;
+            border-radius: 12px;
+            background: none;
+            cursor: pointer;
+            overflow: hidden;
+            flex: none;
+        }
+
+        input[type="color"]::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+
+        input[type="color"]::-webkit-color-swatch {
+            border: 1px solid rgba(0, 0, 0, .1);
+            border-radius: 12px;
+        }
+
+        /* ---------- 弹窗动画 ---------- */
+        @keyframes pop-in {
+            from {
+                transform: scale(.94) translateY(12px);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1) translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .anim-pop {
+            animation: pop-in .24s cubic-bezier(.32, .72, 0, 1);
+        }
+
+        /* ---------- 表格 ---------- */
+        table {
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        thead th {
+            white-space: nowrap;
+        }
+
+        /* ---------- 加载旋转 ---------- */
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .spin {
+            animation: spin .8s linear infinite;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen">
+
+    <!-- ===================== 顶部栏 ===================== -->
+    <header class="glass sticky top-0 z-30">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3 flex-wrap">
+            <h1 class="text-[16px] font-bold text-[#1c1c1e] tracking-tight">标点数据管理</h1>
+
+            <div class="hidden sm:flex items-center gap-1.5">
+                <span id="statusDot" class="w-2 h-2 rounded-full bg-[#FF9500] animate-pulse"></span>
+                <span id="statusText" class="text-[12px] text-[#8E8E93] whitespace-nowrap">加载中...</span>
+            </div>
+
+            <button id="btnRefresh"
+                class="ml-auto flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-semibold text-white bg-[#007AFF] active:scale-95 transition shadow-[0_4px_14px_rgba(0,122,255,.32)] disabled:opacity-50">
+                <svg id="refreshIcon" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+                    <path d="M21 3v6h-6" />
+                </svg>
+                刷新
+            </button>
+        </div>
+    </header>
+
+    <!-- ===================== 主体 ===================== -->
+    <main class="max-w-6xl mx-auto px-4 py-5">
+
+        <!-- 标签切换 -->
+        <div class="inline-flex gap-1 p-1 rounded-full bg-black/5 mb-4">
+            <button data-tab="markers">标点数据</button>
+            <button data-tab="types">类型数据</button>
+        </div>
+
+        <!-- ---------- 标点数据 ---------- -->
+        <section id="panel-markers">
+            <div class="glass rounded-2xl overflow-hidden">
+                <div class="px-3 py-3 flex items-center gap-2 flex-wrap border-b border-black/[0.05]">
+                    <input id="searchMarker" class="ios-input !w-auto flex-1 min-w-[160px]" type="text"
+                        placeholder="搜索标题或描述">
+                    <select id="filterType" class="ios-input !w-auto min-w-[140px]"></select>
+                    <span class="text-[12px] text-[#8E8E93] whitespace-nowrap">
+                        共 <b id="markerCount" class="text-[#1c1c1e] tabular-nums">0</b> 条
+                    </span>
+                </div>
+
+                <div class="overflow-x-auto no-sb">
+                    <table class="w-full text-[13px] min-w-[940px]">
+                        <thead>
+                            <tr class="bg-black/[0.03] text-[#8E8E93] text-[12px]">
+                                <th class="text-left font-semibold px-3 py-2.5 w-[52px]">#</th>
+                                <th class="text-left font-semibold px-3 py-2.5 w-[190px]">标题</th>
+                                <th class="text-left font-semibold px-3 py-2.5 w-[130px]">类型</th>
+                                <th class="text-left font-semibold px-3 py-2.5">描述</th>
+                                <th class="text-left font-semibold px-3 py-2.5 w-[200px]">坐标（经, 纬）</th>
+                                <th class="text-left font-semibold px-3 py-2.5 w-[160px]">创建时间</th>
+                                <th class="text-right font-semibold px-3 py-2.5 w-[130px]">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="markerTbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ---------- 类型数据 ---------- -->
+        <section id="panel-types" class="hidden">
+            <div class="glass rounded-2xl overflow-hidden">
+                <div class="px-3 py-3 flex items-center gap-2 border-b border-black/[0.05]">
+                    <span class="text-[13px] font-semibold text-[#1c1c1e]">类型列表</span>
+                    <span class="text-[12px] text-[#8E8E93]">
+                        共 <b id="typeCount" class="text-[#1c1c1e] tabular-nums">0</b> 个
+                    </span>
+                    <span class="ml-auto text-[11.5px] text-[#AEAEB2] hidden sm:block">
+                        删除类型会同时删除对应的 geojson 数据文件
+                    </span>
+                </div>
+
+                <div class="overflow-x-auto no-sb">
+                    <table class="w-full text-[13px] min-w-[780px]">
+                        <thead>
+                            <tr class="bg-black/[0.03] text-[#8E8E93] text-[12px]">
+                                <th class="text-left font-semibold px-3 py-2.5 w-[90px]">颜色</th>
+                                <th class="text-left font-semibold px-3 py-2.5 w-[180px]">名称</th>
+                                <th class="text-left font-semibold px-3 py-2.5">ID</th>
+                                <th class="text-left font-semibold px-3 py-2.5 w-[90px]">标点数</th>
+                                <th class="text-left font-semibold px-3 py-2.5 w-[170px]">创建时间</th>
+                                <th class="text-right font-semibold px-3 py-2.5 w-[130px]">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="typeTbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ===================== 标点编辑弹窗 ===================== -->
+    <div id="markerModal"
+        class="hidden fixed inset-0 z-[9998] items-center justify-center p-4 bg-black/40 backdrop-blur-[2px]">
+        <div
+            class="anim-pop w-full max-w-[440px] max-h-[90vh] overflow-y-auto no-sb bg-white rounded-[24px] shadow-[0_24px_64px_rgba(0,0,0,.28)]">
+            <div class="flex items-center justify-between px-5 pt-5 pb-2">
+                <h2 class="text-[17px] font-bold text-[#1c1c1e] tracking-tight">编辑标点</h2>
+                <button id="btnCloseMarkerModal"
+                    class="w-7 h-7 rounded-full bg-black/5 text-[#8E8E93] text-[15px] leading-none flex items-center justify-center active:scale-90 transition">✕</button>
+            </div>
+
+            <div class="px-5 pb-5">
+                <label class="f-label">标题 <span class="text-[#FF3B30]">*</span></label>
+                <input id="m-title" class="ios-input" type="text" maxlength="50" placeholder="标点名称">
+
+                <label class="f-label">类型 <span class="text-[#FF3B30]">*</span></label>
+                <select id="m-type" class="ios-input"></select>
+
+                <label class="f-label">描述</label>
+                <textarea id="m-desc" class="ios-input" rows="3" maxlength="500" placeholder="补充说明..."></textarea>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="f-label">经度 <span class="text-[#FF3B30]">*</span></label>
+                        <input id="m-lng" class="ios-input" type="number" step="0.000001" inputmode="decimal">
+                    </div>
+                    <div>
+                        <label class="f-label">纬度 <span class="text-[#FF3B30]">*</span></label>
+                        <input id="m-lat" class="ios-input" type="number" step="0.000001" inputmode="decimal">
+                    </div>
+                </div>
+
+                <div class="flex gap-2.5 mt-6">
+                    <button id="btnCancelMarker"
+                        class="flex-1 py-3 rounded-2xl text-[15px] font-semibold text-[#007AFF] bg-black/[0.06] active:scale-[.98] transition">
+                        取消
+                    </button>
+                    <button id="btnSaveMarker"
+                        class="flex-1 py-3 rounded-2xl text-[15px] font-semibold text-white bg-[#007AFF] active:scale-[.98] transition shadow-[0_6px_20px_rgba(0,122,255,.32)] disabled:opacity-50">
+                        保存
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================== 类型编辑弹窗 ===================== -->
+    <div id="typeModal"
+        class="hidden fixed inset-0 z-[9998] items-center justify-center p-4 bg-black/40 backdrop-blur-[2px]">
+        <div
+            class="anim-pop w-full max-w-[400px] max-h-[90vh] overflow-y-auto no-sb bg-white rounded-[24px] shadow-[0_24px_64px_rgba(0,0,0,.28)]">
+            <div class="flex items-center justify-between px-5 pt-5 pb-2">
+                <h2 class="text-[17px] font-bold text-[#1c1c1e] tracking-tight">编辑类型</h2>
+                <button id="btnCloseTypeModal"
+                    class="w-7 h-7 rounded-full bg-black/5 text-[#8E8E93] text-[15px] leading-none flex items-center justify-center active:scale-90 transition">✕</button>
+            </div>
+
+            <div class="px-5 pb-5">
+                <label class="f-label">类型名称 <span class="text-[#FF3B30]">*</span></label>
+                <input id="t-name" class="ios-input" type="text" maxlength="20" placeholder="例如：餐厅 / 景区 / 钓点">
+
+                <label class="f-label">类型颜色 <span class="text-[#FF3B30]">*</span></label>
+                <div class="flex gap-2 items-center">
+                    <input type="color" id="t-color" value="#007AFF">
+                    <input id="t-color-text" class="ios-input flex-1" type="text" maxlength="7" value="#007AFF"
+                        placeholder="#007AFF">
+                </div>
+                <div id="swatches" class="flex flex-wrap gap-2.5 mt-3.5"></div>
+
+                <div class="flex gap-2.5 mt-6">
+                    <button id="btnCancelType"
+                        class="flex-1 py-3 rounded-2xl text-[15px] font-semibold text-[#007AFF] bg-black/[0.06] active:scale-[.98] transition">
+                        取消
+                    </button>
+                    <button id="btnSaveType"
+                        class="flex-1 py-3 rounded-2xl text-[15px] font-semibold text-white bg-[#007AFF] active:scale-[.98] transition shadow-[0_6px_20px_rgba(0,122,255,.32)] disabled:opacity-50">
+                        保存
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* ============================================================
+           配置（与主页面保持一致）
+           ============================================================ */
+        const CONFIG = {
+            GITHUB_OWNER: 'ulnae',
+            GITHUB_REPO: 'tools',
+            GITHUB_BRANCH: 'master',
+
+            DATA_DIR: 'data',
+            TYPES_FILE: 'data/types.json',
+
+            GITHUB_TOKEN: '',
+
+            TOKEN_CIPHER: 'pN0DLAO2zEwTMKZlJZw+6zd4GAXI0t3mCX/iAqiGWY6ddaYNpX4u6LdZ7eeflYz7RaSCt6hCUYSPbhbejCY7lVChS9u3YaVWhiU38RWdMQf0iRo4UwUZ5kmnzZXBiZlDVIgWBVNPoxeFveABj02UVh8IFBBix/Bz+AOD9DIdlN8Jbh3s3olHlPs=',
+            TOKEN_PASS: 'ulnae'
+        };
+
+        const FALLBACK_COLOR = '#9ca3af';
+        const RESERVED_COLORS = ['#9ca3af'];
+        const PRESET_COLORS = [
+            '#FF3B30', '#FF9500', '#FFCC00', '#34C759', '#00C7BE', '#30B0C7',
+            '#007AFF', '#5856D6', '#AF52DE', '#FF2D55', '#A2845E', '#8E8E93'
+        ];
+
+        /* ============================================================
+           通用工具
+           ============================================================ */
+        const $ = id => document.getElementById(id);
+
+        const escapeHtml = str => {
+            const div = document.createElement('div');
+            div.textContent = str == null ? '' : String(str);
+            return div.innerHTML;
+        };
+
+        const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+        const markerFilePath = typeId => `${CONFIG.DATA_DIR}/${typeId}.geojson`;
+
+        const emptyFC = () => ({ type: 'FeatureCollection', features: [] });
+
+        function normalizeFC(content) {
+            if (content && content.type === 'FeatureCollection' && Array.isArray(content.features)) return content;
+            return emptyFC();
+        }
+
+        function normalizeTypes(content) {
+            if (content && Array.isArray(content.types)) return content;
+            return { types: [] };
+        }
+
+        function normalizeHex(v) {
+            v = (v || '').trim();
+            if (!v) return null;
+            if (v[0] !== '#') v = '#' + v;
+            if (/^#[0-9a-fA-F]{3}$/.test(v)) v = '#' + v[1] + v[1] + v[2] + v[2] + v[3] + v[3];
+            return /^#[0-9a-fA-F]{6}$/.test(v) ? v.toLowerCase() : null;
+        }
+
+        function hexToRgba(hex, a) {
+            const h = (hex || FALLBACK_COLOR).replace('#', '');
+            const r = parseInt(h.substring(0, 2), 16);
+            const g = parseInt(h.substring(2, 4), 16);
+            const b = parseInt(h.substring(4, 6), 16);
+            return `rgba(${r},${g},${b},${a})`;
+        }
+
+        function formatDateTime(input) {
+            if (!input) return '';
+            const d = new Date(input);
+            if (isNaN(d.getTime())) return '';
+            const p = n => String(n).padStart(2, '0');
+            return `${d.getFullYear()}/${p(d.getMonth() + 1)}/${p(d.getDate())} ` +
+                `${p(d.getHours())}:${p(d.getMinutes())}`;
+        }
+
+        function fmtCoord(c) {
+            if (!Array.isArray(c) || c.length < 2) return '—';
+            const lng = Number(c[0]), lat = Number(c[1]);
+            if (!isFinite(lng) || !isFinite(lat)) return '—';
+            return `${lng.toFixed(6)}, ${lat.toFixed(6)}`;
+        }
+
+        /** 判断两个 feature 是否为同一条（用于在最新数据中定位） */
+        function sameFeature(a, b) {
+            const pa = a.properties || {}, pb = b.properties || {};
+            const ca = (a.geometry && a.geometry.coordinates) || [];
+            const cb = (b.geometry && b.geometry.coordinates) || [];
+            return (pa.title || '') === (pb.title || '')
+                && (pa.created_at || '') === (pb.created_at || '')
+                && ca[0] === cb[0] && ca[1] === cb[1];
+        }
+
+        /* ---------- Toast ---------- */
+        const TOAST_BG = {
+            success: 'linear-gradient(135deg,#34C759,#28A745)',
+            error: 'linear-gradient(135deg,#FF3B30,#D92D20)',
+            info: 'linear-gradient(135deg,#007AFF,#0062CC)'
+        };
+
+        function toast(msg, type = 'info') {
+            const el = document.createElement('div');
+            el.className = 'fixed left-1/2 bottom-8 z-[9999] px-5 py-3 rounded-2xl text-white text-[13px] ' +
+                'font-medium shadow-2xl transition-all duration-300 -translate-x-1/2 opacity-0 translate-y-3 ' +
+                'max-w-[82vw] text-center pointer-events-none';
+            el.style.background = TOAST_BG[type] || TOAST_BG.info;
+            el.textContent = msg;
+            document.body.appendChild(el);
+            requestAnimationFrame(() => el.classList.remove('opacity-0', 'translate-y-3'));
+            setTimeout(() => {
+                el.classList.add('opacity-0', 'translate-y-3');
+                setTimeout(() => el.remove(), 320);
+            }, 2200);
+        }
+
+        /* ---------- 状态指示 ---------- */
+        const STATUS_DOT = {
+            ok: 'w-2 h-2 rounded-full bg-[#34C759]',
+            err: 'w-2 h-2 rounded-full bg-[#FF3B30]',
+            loading: 'w-2 h-2 rounded-full bg-[#FF9500] animate-pulse'
+        };
+
+        function setStatus(state, text) {
+            $('statusDot').className = STATUS_DOT[state] || STATUS_DOT.loading;
+            $('statusText').textContent = text;
+        }
+
+        /* ============================================================
+           加解密
+           ============================================================ */
+        async function decrypt(cipherText, password) {
+            const binary = atob(cipherText.trim());
+            const data = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) data[i] = binary.charCodeAt(i);
+            const salt = data.subarray(0, 16);
+            const iv = data.subarray(16, 28);
+            const encrypted = data.subarray(28);
+            const enc = new TextEncoder();
+            const baseKey = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']);
+            const key = await crypto.subtle.deriveKey(
+                { name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' },
+                baseKey, { name: 'AES-GCM', length: 256 }, false, ['decrypt']
+            );
+            const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, encrypted);
+            return new TextDecoder().decode(decrypted);
+        }
+
+        /* ============================================================
+           GitHub API
+           ============================================================ */
+        async function ghApi(path, options = {}) {
+            const url = `https://api.github.com/repos/${CONFIG.GITHUB_OWNER}/${CONFIG.GITHUB_REPO}/contents/${path}`;
+            const res = await fetch(url, {
+                ...options,
+                headers: {
+                    'Accept': 'application/vnd.github+json',
+                    'Authorization': `Bearer ${CONFIG.GITHUB_TOKEN}`,
+                    'Content-Type': 'application/json',
+                    ...(options.headers || {})
+                }
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.message || `GitHub API 错误 (${res.status})`);
+            }
+            const text = await res.text();
+            return text ? JSON.parse(text) : {};
+        }
+
+        async function ghGetFile(path) {
+            try {
+                const data = await ghApi(path);
+                const raw = atob((data.content || '').replace(/\s/g, ''));
+                if (!raw) return { content: null, sha: data.sha };
+                const text = decodeURIComponent(escape(raw));
+                try {
+                    return { content: JSON.parse(text), sha: data.sha };
+                } catch (e) {
+                    console.warn(`文件 ${path} 不是合法 JSON，按空数据处理`);
+                    return { content: null, sha: data.sha };
+                }
+            } catch (e) {
+                if (/not found|404/i.test(e.message)) return { content: null, sha: null };
+                throw e;
+            }
+        }
+
+        async function ghPutFile(path, obj, message, sha) {
+            const jsonStr = JSON.stringify(obj, null, 2);
+            const content = btoa(unescape(encodeURIComponent(jsonStr)));
+            const body = { message, content, branch: CONFIG.GITHUB_BRANCH };
+            if (sha) body.sha = sha;
+            return ghApi(path, { method: 'PUT', body: JSON.stringify(body) });
+        }
+
+        /** 删除文件（不存在时静默返回 false） */
+        async function ghDeleteFile(path, message) {
+            let sha = null;
+            try {
+                const data = await ghApi(path);
+                sha = data.sha;
+            } catch (e) {
+                if (/not found|404/i.test(e.message)) return false;
+                throw e;
+            }
+            await ghApi(path, {
+                method: 'DELETE',
+                body: JSON.stringify({ message, sha, branch: CONFIG.GITHUB_BRANCH })
+            });
+            return true;
+        }
+
+        /** 安全写：每次提交前重新拉取最新内容与 sha，冲突自动重试 */
+        async function updateJsonFile(path, mutate, message, maxAttempts = 3) {
+            let lastErr = null;
+            for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+                const { content, sha } = await ghGetFile(path);
+                const next = await mutate(content, sha);
+                if (next === null || next === undefined) {
+                    return { content, sha, skipped: true };
+                }
+                try {
+                    const res = await ghPutFile(path, next, message, sha);
+                    return { content: next, sha: res.content.sha, skipped: false };
+                } catch (err) {
+                    lastErr = err;
+                    console.warn(`写入 ${path} 第 ${attempt} 次失败：${err.message}`);
+                    if (attempt < maxAttempts) await sleep(350 * attempt);
+                }
+            }
+            throw lastErr || new Error('保存失败');
+        }
+
+        /* ============================================================
+           全局状态
+           ============================================================ */
+        const state = {
+            types: { types: [] },
+            typesSha: null,
+            typeData: {},        // typeId -> { geojson, sha }
+            keyword: '',
+            filterTypeId: '',
+            tab: 'markers'
+        };
+
+        const Types = {
+            all() { return state.types.types; },
+            getById(id) { return state.types.types.find(t => t.id === id) || null; },
+            allIds() { return state.types.types.map(t => t.id); },
+            featuresOf(id) {
+                const d = state.typeData[id];
+                return (d && d.geojson && Array.isArray(d.geojson.features)) ? d.geojson.features : [];
+            },
+            async load() {
+                const { content, sha } = await ghGetFile(CONFIG.TYPES_FILE);
+                state.types = normalizeTypes(content);
+                state.typesSha = sha;
+            }
+        };
+
+        /* ============================================================
+           数据加载
+           ============================================================ */
+        async function loadTypeData(typeId) {
+            const { content, sha } = await ghGetFile(markerFilePath(typeId));
+            const geojson = normalizeFC(content);
+            geojson.features.forEach(f => {
+                if (!f.properties) f.properties = {};
+                if (!f.geometry) f.geometry = { type: 'Point', coordinates: [] };
+                f.properties.type = typeId;
+            });
+            state.typeData[typeId] = { geojson, sha };
+            return geojson;
+        }
+
+        async function loadAllTypeData(ids) {
+            const results = await Promise.allSettled(ids.map(id => loadTypeData(id)));
+            return results.map((r, i) => r.status === 'rejected' ? ids[i] : null).filter(Boolean);
+        }
+
+        async function refreshAll(silent = true) {
+            setStatus('loading', '加载中...');
+            const icon = $('refreshIcon');
+            icon.classList.add('spin');
+            $('btnRefresh').disabled = true;
+
+            try {
+                await Types.load();
+                state.typeData = {};
+                const ids = Types.allIds();
+                const failed = await loadAllTypeData(ids);
+                renderAll();
+
+                if (failed.length) {
+                    setStatus('err', `${failed.length} 个类型数据加载失败`);
+                    toast(`${failed.length} 个类型的数据文件加载失败`, 'error');
+                } else {
+                    setStatus('ok', `已加载 ${ids.length} 个类型`);
+                    if (!silent) toast('数据已刷新', 'success');
+                }
+            } catch (e) {
+                console.error(e);
+                setStatus('err', '加载失败');
+                toast(e.message || '加载失败', 'error');
+            } finally {
+                icon.classList.remove('spin');
+                $('btnRefresh').disabled = false;
+            }
+        }
+
+        /* ============================================================
+           渲染
+           ============================================================ */
+        const TAB_BASE = 'px-4 py-1.5 rounded-full text-[13px] font-semibold transition';
+        const TAB_ON = TAB_BASE + ' bg-white text-[#1c1c1e] shadow-[0_1px_4px_rgba(0,0,0,.1)]';
+        const TAB_OFF = TAB_BASE + ' text-[#8E8E93] hover:text-[#1c1c1e]';
+
+        function setTab(tab) {
+            state.tab = tab;
+            document.querySelectorAll('[data-tab]').forEach(b => {
+                b.className = b.dataset.tab === tab ? TAB_ON : TAB_OFF;
+            });
+            $('panel-markers').classList.toggle('hidden', tab !== 'markers');
+            $('panel-types').classList.toggle('hidden', tab !== 'types');
+        }
+
+        function renderAll() {
+            renderTypeFilterOptions();
+            renderMarkerTable();
+            renderTypeTable();
+        }
+
+        function renderTypeFilterOptions() {
+            const sel = $('filterType');
+            const cur = state.filterTypeId;
+            sel.innerHTML = `<option value="">全部类型</option>` +
+                Types.all().map(t => `<option value="${t.id}">${escapeHtml(t.name)}</option>`).join('');
+            if (cur && Types.getById(cur)) sel.value = cur;
+            else { state.filterTypeId = ''; sel.value = ''; }
+        }
+
+        /* ---------- 标点表格 ---------- */
+        let markerRows = [];
+
+        function getFilteredMarkers() {
+            const kw = state.keyword.trim().toLowerCase();
+            const out = [];
+            Types.all().forEach(t => {
+                if (state.filterTypeId && t.id !== state.filterTypeId) return;
+                Types.featuresOf(t.id).forEach(f => {
+                    const p = f.properties || {};
+                    if (kw) {
+                        const hay = `${p.title || ''} ${p.description || ''}`.toLowerCase();
+                        if (!hay.includes(kw)) return;
+                    }
+                    out.push({ typeId: t.id, typeName: t.name, color: t.color, feature: f });
+                });
+            });
+            out.sort((a, b) => String(b.feature.properties?.created_at || '')
+                .localeCompare(String(a.feature.properties?.created_at || '')));
+            return out;
+        }
+
+        function renderMarkerTable() {
+            markerRows = getFilteredMarkers();
+            const tbody = $('markerTbody');
+            $('markerCount').textContent = markerRows.length;
+
+            if (!markerRows.length) {
+                tbody.innerHTML = `<tr><td colspan="7" class="py-14 text-center text-[#AEAEB2] text-[13px]">
+                    暂无标点数据</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = markerRows.map((row, i) => {
+                const p = row.feature.properties || {};
+                const c = (row.feature.geometry && row.feature.geometry.coordinates) || [];
+                const color = row.color || FALLBACK_COLOR;
+                return `
+                <tr class="border-b border-black/[0.04] hover:bg-black/[0.02] align-top">
+                    <td class="px-3 py-2.5 text-[#C7C7CC] tabular-nums">${i + 1}</td>
+                    <td class="px-3 py-2.5 font-medium text-[#1c1c1e] break-words">${escapeHtml(p.title || '未命名')}</td>
+                    <td class="px-3 py-2.5">
+                        <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold whitespace-nowrap"
+                              style="color:${color};background:${hexToRgba(color, .12)}">
+                            <span class="w-1.5 h-1.5 rounded-full flex-none" style="background:${color}"></span>
+                            ${escapeHtml(row.typeName)}
+                        </span>
+                    </td>
+                    <td class="px-3 py-2.5 text-[#48484A] break-words whitespace-pre-wrap max-w-[320px]">${escapeHtml(p.description || '—')}</td>
+                    <td class="px-3 py-2.5 text-[#8E8E93] tabular-nums whitespace-nowrap font-mono text-[12px]">${fmtCoord(c)}</td>
+                    <td class="px-3 py-2.5 text-[#8E8E93] tabular-nums whitespace-nowrap text-[12px]">${formatDateTime(p.created_at) || '—'}</td>
+                    <td class="px-3 py-2.5 whitespace-nowrap text-right">
+                        <button class="btn-mini btn-edit" data-act="edit" data-i="${i}">编辑</button>
+                        <button class="btn-mini btn-del ml-1.5" data-act="del" data-i="${i}">删除</button>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        /* ---------- 类型表格 ---------- */
+        function renderTypeTable() {
+            const tbody = $('typeTbody');
+            const list = Types.all();
+            $('typeCount').textContent = list.length;
+
+            if (!list.length) {
+                tbody.innerHTML = `<tr><td colspan="6" class="py-14 text-center text-[#AEAEB2] text-[13px]">
+                    暂无类型数据</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = list.map(t => {
+                const color = t.color || FALLBACK_COLOR;
+                const count = Types.featuresOf(t.id).length;
+                return `
+                <tr class="border-b border-black/[0.04] hover:bg-black/[0.02]">
+                    <td class="px-3 py-2.5">
+                        <span class="inline-flex items-center gap-2">
+                            <span class="w-4 h-4 rounded-full flex-none ring-1 ring-black/10" style="background:${color}"></span>
+                            <span class="font-mono text-[11.5px] text-[#8E8E93]">${escapeHtml(color)}</span>
+                        </span>
+                    </td>
+                    <td class="px-3 py-2.5 font-medium text-[#1c1c1e] break-words">${escapeHtml(t.name || '未命名')}</td>
+                    <td class="px-3 py-2.5 font-mono text-[11.5px] text-[#8E8E93] break-all">${escapeHtml(t.id)}</td>
+                    <td class="px-3 py-2.5 text-[#1c1c1e] tabular-nums">${count}</td>
+                    <td class="px-3 py-2.5 text-[#8E8E93] tabular-nums whitespace-nowrap text-[12px]">${formatDateTime(t.created_at) || '—'}</td>
+                    <td class="px-3 py-2.5 whitespace-nowrap text-right">
+                        <button class="btn-mini btn-edit" data-act="edit" data-id="${t.id}">编辑</button>
+                        <button class="btn-mini btn-del ml-1.5" data-act="del" data-id="${t.id}">删除</button>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        /* ============================================================
+           弹窗控制
+           ============================================================ */
+        function showModal(id) {
+            const m = $(id);
+            m.classList.remove('hidden');
+            m.classList.add('flex');
+        }
+
+        function hideModal(id) {
+            const m = $(id);
+            m.classList.add('hidden');
+            m.classList.remove('flex');
+        }
+
+        /* ============================================================
+           标点：编辑 / 保存 / 删除
+           ============================================================ */
+        let editing = null;   // { typeId, original }
+
+        function openMarkerModal(row) {
+            editing = { typeId: row.typeId, original: row.feature };
+
+            const p = row.feature.properties || {};
+            const c = (row.feature.geometry && row.feature.geometry.coordinates) || [];
+
+            $('m-title').value = p.title || '';
+            $('m-desc').value = p.description || '';
+            $('m-lng').value = isFinite(Number(c[0])) ? Number(c[0]) : '';
+            $('m-lat').value = isFinite(Number(c[1])) ? Number(c[1]) : '';
+            $('m-type').innerHTML = Types.all().map(t =>
+                `<option value="${t.id}" ${t.id === row.typeId ? 'selected' : ''}>${escapeHtml(t.name)}</option>`
+            ).join('');
+
+            showModal('markerModal');
+            setTimeout(() => $('m-title').focus(), 80);
+        }
+
+        async function saveMarker() {
+            if (!editing) return;
+
+            const title = $('m-title').value.trim();
+            const typeId = $('m-type').value;
+            const desc = $('m-desc').value.trim();
+            const lng = parseFloat($('m-lng').value);
+            const lat = parseFloat($('m-lat').value);
+
+            if (!title) return toast('请填写标题', 'error');
+            if (!typeId) return toast('请选择类型', 'error');
+            if (!isFinite(lng) || !isFinite(lat)) return toast('经纬度无效', 'error');
+            if (lng < -180 || lng > 180) return toast('经度应在 -180 ~ 180 之间', 'error');
+            if (lat < -90 || lat > 90) return toast('纬度应在 -90 ~ 90 之间', 'error');
+
+            const btn = $('btnSaveMarker');
+            btn.disabled = true;
+            btn.textContent = '保存中...';
+
+            const { typeId: oldTypeId, original } = editing;
+
+            const newFeature = {
+                type: 'Feature',
+                geometry: { type: 'Point', coordinates: [lng, lat] },
+                properties: {
+                    ...(original.properties || {}),
+                    title,
+                    description: desc,
+                    type: typeId,
+                    updated_at: new Date().toISOString()
+                }
+            };
+
+            const stamp = new Date().toLocaleString('zh-CN');
+
+            try {
+                if (typeId === oldTypeId) {
+                    /* 同类型内更新 */
+                    await updateJsonFile(markerFilePath(typeId), (content) => {
+                        const fc = normalizeFC(content);
+                        const idx = fc.features.findIndex(f => sameFeature(f, original));
+                        if (idx === -1) throw new Error('该标点已不存在，可能已被其他人删除');
+                        fc.features[idx] = newFeature;
+                        return fc;
+                    }, `更新标点「${title}」 - ${stamp}`);
+                } else {
+                    /* 先追加到新类型 */
+                    await updateJsonFile(markerFilePath(typeId), (content) => {
+                        const fc = normalizeFC(content);
+                        fc.features.push(newFeature);
+                        return fc;
+                    }, `移动标点「${title}」至新类型 - ${stamp}`);
+
+                    /* 再从原类型移除 */
+                    await updateJsonFile(markerFilePath(oldTypeId), (content) => {
+                        const fc = normalizeFC(content);
+                        const idx = fc.features.findIndex(f => sameFeature(f, original));
+                        if (idx === -1) return null;
+                        fc.features.splice(idx, 1);
+                        return fc;
+                    }, `从原类型移除标点「${title}」 - ${stamp}`);
+                }
+
+                hideModal('markerModal');
+                editing = null;
+                await refreshAll();
+                toast('保存成功', 'success');
+            } catch (e) {
+                console.error(e);
+                toast(e.message || '保存失败', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '保存';
+            }
+        }
+
+        async function deleteMarker(row) {
+            const p = row.feature.properties || {};
+            const title = p.title || '未命名';
+            if (!confirm(`确定要删除标点「${title}」吗？\n\n此操作不可撤销。`)) return;
+
+            try {
+                await updateJsonFile(markerFilePath(row.typeId), (content) => {
+                    const fc = normalizeFC(content);
+                    const idx = fc.features.findIndex(f => sameFeature(f, row.feature));
+                    if (idx === -1) throw new Error('该标点已不存在，可能已被其他人删除');
+                    fc.features.splice(idx, 1);
+                    return fc;
+                }, `删除标点「${title}」 - ${new Date().toLocaleString('zh-CN')}`);
+
+                await refreshAll();
+                toast('标点已删除', 'success');
+            } catch (e) {
+                console.error(e);
+                toast(e.message || '删除失败', 'error');
+            }
+        }
+
+        /* ============================================================
+           类型：编辑 / 保存 / 删除
+           ============================================================ */
+        let editingTypeId = null;
+
+        function renderSwatches() {
+            const wrap = $('swatches');
+            wrap.innerHTML = PRESET_COLORS.map(c =>
+                `<span class="swatch" data-color="${c}" style="background:${c}" title="${c}"></span>`
+            ).join('');
+            wrap.querySelectorAll('.swatch').forEach(el => {
+                el.addEventListener('click', () => setColorInput(el.dataset.color));
+            });
+        }
+
+        function setColorInput(color) {
+            const hex = normalizeHex(color) || '#007AFF';
+            $('t-color').value = hex;
+            $('t-color-text').value = hex;
+        }
+
+        function openTypeModal(typeId) {
+            const t = Types.getById(typeId);
+            if (!t) return toast('类型不存在', 'error');
+
+            editingTypeId = typeId;
+            $('t-name').value = t.name || '';
+            setColorInput(t.color || '#007AFF');
+            renderSwatches();
+            showModal('typeModal');
+            setTimeout(() => $('t-name').focus(), 80);
+        }
+
+        async function saveType() {
+            if (!editingTypeId) return;
+
+            const name = $('t-name').value.trim();
+            const color = normalizeHex($('t-color-text').value.trim()) || normalizeHex($('t-color').value);
+            const typeId = editingTypeId;
+
+            if (!name) return toast('请输入类型名称', 'error');
+            if (!color) return toast('颜色格式不正确，应为 #RRGGBB', 'error');
+            if (RESERVED_COLORS.includes(color)) return toast('该颜色为系统保留色，请更换', 'error');
+
+            const btn = $('btnSaveType');
+            btn.disabled = true;
+            btn.textContent = '保存中...';
+
+            try {
+                await updateJsonFile(CONFIG.TYPES_FILE, (content) => {
+                    const data = normalizeTypes(content);
+                    const t = data.types.find(x => x.id === typeId);
+                    if (!t) throw new Error('该类型已不存在，可能已被其他人删除');
+
+                    if (data.types.some(x => x.id !== typeId &&
+                        (x.name || '').toLowerCase() === name.toLowerCase())) {
+                        throw new Error('类型名称已存在');
+                    }
+                    if (data.types.some(x => x.id !== typeId &&
+                        (x.color || '').toLowerCase() === color)) {
+                        throw new Error('该颜色已被其他类型使用，请更换');
+                    }
+
+                    t.name = name;
+                    t.color = color;
+                    t.updated_at = new Date().toISOString();
+                    return data;
+                }, `更新类型「${name}」 - ${new Date().toLocaleString('zh-CN')}`);
+
+                hideModal('typeModal');
+                editingTypeId = null;
+                await refreshAll();
+                toast('类型已更新', 'success');
+            } catch (e) {
+                console.error(e);
+                toast(e.message || '保存失败', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '保存';
+            }
+        }
+
+        async function deleteType(typeId) {
+            const t = Types.getById(typeId);
+            if (!t) return toast('类型不存在', 'error');
+
+            const count = Types.featuresOf(typeId).length;
+            const msg = count > 0
+                ? `类型「${t.name}」下还有 ${count} 个标点。\n\n删除该类型会同时删除对应的 geojson 数据文件（其中所有标点将一并丢失）。\n\n确定继续吗？`
+                : `确定要删除类型「${t.name}」及其数据文件 ${typeId}.geojson 吗？`;
+
+            if (!confirm(msg)) return;
+
+            const stamp = new Date().toLocaleString('zh-CN');
+
+            try {
+                /* ① 从 types.json 移除 */
+                await updateJsonFile(CONFIG.TYPES_FILE, (content) => {
+                    const data = normalizeTypes(content);
+                    const idx = data.types.findIndex(x => x.id === typeId);
+                    if (idx === -1) return null;   // 已不存在，跳过写入
+                    data.types.splice(idx, 1);
+                    return data;
+                }, `删除类型「${t.name}」 - ${stamp}`);
+
+                /* ② 删除对应的 geojson 文件 */
+                let fileDeleted = false;
+                try {
+                    fileDeleted = await ghDeleteFile(
+                        markerFilePath(typeId),
+                        `删除类型数据文件 ${typeId}.geojson - ${stamp}`
+                    );
+                } catch (err) {
+                    console.error('删除数据文件失败:', err);
+                    toast('类型已移除，但数据文件删除失败：' + err.message, 'error');
+                }
+
+                if (state.filterTypeId === typeId) state.filterTypeId = '';
+                delete state.typeData[typeId];
+
+                await refreshAll();
+                toast(fileDeleted ? '类型与数据文件已删除' : '类型已删除', 'success');
+            } catch (e) {
+                console.error(e);
+                toast(e.message || '删除失败', 'error');
+            }
+        }
+
+        /* ============================================================
+           事件绑定
+           ============================================================ */
+        function bindEvents() {
+            /* 标签切换 */
+            document.querySelectorAll('[data-tab]').forEach(btn => {
+                btn.addEventListener('click', () => setTab(btn.dataset.tab));
+            });
+
+            /* 刷新 */
+            $('btnRefresh').addEventListener('click', () => refreshAll(false));
+
+            /* 搜索（防抖） */
+            let searchTimer = null;
+            $('searchMarker').addEventListener('input', (e) => {
+                clearTimeout(searchTimer);
+                const val = e.target.value;
+                searchTimer = setTimeout(() => {
+                    state.keyword = val;
+                    renderMarkerTable();
+                }, 180);
+            });
+
+            /* 类型筛选 */
+            $('filterType').addEventListener('change', (e) => {
+                state.filterTypeId = e.target.value;
+                renderMarkerTable();
+            });
+
+            /* 标点表格操作 */
+            $('markerTbody').addEventListener('click', (e) => {
+                const btn = e.target.closest('button[data-act]');
+                if (!btn) return;
+                const row = markerRows[Number(btn.dataset.i)];
+                if (!row) return;
+                if (btn.dataset.act === 'edit') openMarkerModal(row);
+                else if (btn.dataset.act === 'del') deleteMarker(row);
+            });
+
+            /* 类型表格操作 */
+            $('typeTbody').addEventListener('click', (e) => {
+                const btn = e.target.closest('button[data-act]');
+                if (!btn) return;
+                const id = btn.dataset.id;
+                if (btn.dataset.act === 'edit') openTypeModal(id);
+                else if (btn.dataset.act === 'del') deleteType(id);
+            });
+
+            /* 标点弹窗 */
+            $('btnCloseMarkerModal').addEventListener('click', () => {
+                hideModal('markerModal');
+                editing = null;
+            });
+            $('btnCancelMarker').addEventListener('click', () => {
+                hideModal('markerModal');
+                editing = null;
+            });
+            $('btnSaveMarker').addEventListener('click', saveMarker);
+            $('markerModal').addEventListener('click', (e) => {
+                if (e.target === $('markerModal')) {
+                    hideModal('markerModal');
+                    editing = null;
+                }
+            });
+
+            /* 类型弹窗 */
+            $('btnCloseTypeModal').addEventListener('click', () => {
+                hideModal('typeModal');
+                editingTypeId = null;
+            });
+            $('btnCancelType').addEventListener('click', () => {
+                hideModal('typeModal');
+                editingTypeId = null;
+            });
+            $('btnSaveType').addEventListener('click', saveType);
+            $('typeModal').addEventListener('click', (e) => {
+                if (e.target === $('typeModal')) {
+                    hideModal('typeModal');
+                    editingTypeId = null;
+                }
+            });
+
+            /* 颜色输入联动 */
+            $('t-color').addEventListener('input', (e) => {
+                $('t-color-text').value = e.target.value.toLowerCase();
+            });
+            $('t-color-text').addEventListener('input', (e) => {
+                const hex = normalizeHex(e.target.value);
+                if (hex) $('t-color').value = hex;
+            });
+
+            /* 键盘 */
+            $('t-name').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') saveType();
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    if (!$('markerModal').classList.contains('hidden')) {
+                        hideModal('markerModal');
+                        editing = null;
+                    }
+                    if (!$('typeModal').classList.contains('hidden')) {
+                        hideModal('typeModal');
+                        editingTypeId = null;
+                    }
+                }
+            });
+        }
+
+        /* ============================================================
+           启动
+           ============================================================ */
+        (async function init() {
+            setTab('markers');
+
+            try {
+                CONFIG.GITHUB_TOKEN = await decrypt(CONFIG.TOKEN_CIPHER, CONFIG.TOKEN_PASS);
+            } catch (e) {
+                console.error(e);
+                setStatus('err', 'Token 解密失败');
+                toast('Token 解密失败，无法读写数据', 'error');
+                return;
+            }
+
+            bindEvents();
+            await refreshAll();
+        })();
+    </script>
+</body>
+
+</html>
