@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>二维码生成器</title>
+
+    <!-- ===== ICO / Favicon（内联 SVG，无需额外请求） ===== -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23007AFF'/%3E%3Cg fill='%23fff'%3E%3Crect x='12' y='12' width='16' height='16' rx='3'/%3E%3Crect x='36' y='12' width='16' height='16' rx='3'/%3E%3Crect x='12' y='36' width='16' height='16' rx='3'/%3E%3Crect x='36' y='36' width='8' height='8'/%3E%3Crect x='46' y='36' width='6' height='6'/%3E%3Crect x='36' y='46' width='6' height='6'/%3E%3Crect x='46' y='46' width='6' height='6'/%3E%3C/g%3E%3Cg fill='%23007AFF'%3E%3Crect x='18' y='18' width='4' height='4'/%3E%3Crect x='42' y='18' width='4' height='4'/%3E%3Crect x='18' y='42' width='4' height='4'/%3E%3C/g%3E%3C/svg%3E">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23007AFF'/%3E%3Cg fill='%23fff'%3E%3Crect x='12' y='12' width='16' height='16' rx='3'/%3E%3Crect x='36' y='12' width='16' height='16' rx='3'/%3E%3Crect x='12' y='36' width='16' height='16' rx='3'/%3E%3Crect x='36' y='36' width='8' height='8'/%3E%3Crect x='46' y='36' width='6' height='6'/%3E%3Crect x='36' y='46' width='6' height='6'/%3E%3Crect x='46' y='46' width='6' height='6'/%3E%3C/g%3E%3Cg fill='%23007AFF'%3E%3Crect x='18' y='18' width='4' height='4'/%3E%3Crect x='42' y='18' width='4' height='4'/%3E%3Crect x='18' y='42' width='4' height='4'/%3E%3C/g%3E%3C/svg%3E">
+    <meta name="theme-color" content="#f2f2f7">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!--
+      ===== 关键修复 =====
+      原方案使用 qrcodejs@1.0.0，该库存在两个致命缺陷：
+        1. QR8bitByte 内部自行处理 UTF-8 时，只要出现多字节字符（中文/日文/emoji），
+           就会在字节流最前面插入 EF BB BF（BOM），导致部分扫码器解析出多余字符；
+        2. 旧版构建的 getLength() / write() 在字符数与字节数不一致时会错位，
+           直接抛出 "code length overflow"，表现为"一输入中文就报错、无法渲染"。
+      现改用 qrcode-generator@1.4.4（业界成熟实现，自动选择版本号），
+      并在下面显式接管 stringToBytes，保证 UTF-8 编码 100% 正确。
+    -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+
+    <style>
+        /* iPhone 风格字体与底色 */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif;
+            background-color: #f2f2f7; /* iOS 系统背景灰 */
+            -webkit-tap-highlight-color: transparent;
+        }
+        /* 卡片圆角与阴影 */
+        .ios-card {
+            background: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 2px 16px rgba(0, 0, 0, 0.04), 0 1px 4px rgba(0, 0, 0, 0.02);
+            transition: box-shadow 0.2s ease;
+        }
+        .ios-card:hover {
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06), 0 2px 8px rgba(0, 0, 0, 0.03);
+        }
+        /* iOS 风格输入框 */
+        .ios-input {
+            background: #f2f2f7;
+            border: none;
+            border-radius: 12px;
+            padding: 12px 16px;
+            font-size: 16px;
+            width: 100%;
+            outline: none;
+            transition: background 0.2s ease, box-shadow 0.2s ease;
+            color: #1c1c1e;
+            -webkit-appearance: none;
+        }
+        .ios-input:focus {
+            background: #e8e8ed;
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15);
+        }
+        .ios-input::placeholder {
+            color: #8e8e93;
+        }
+        /* iOS 风格分段控件 */
+        .segmented-control {
+            display: flex;
+            background: #e8e8ed;
+            border-radius: 10px;
+            padding: 3px;
+            overflow-x: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        .segmented-control::-webkit-scrollbar {
+            display: none;
+        }
+        .segmented-control button {
+            flex: 0 0 auto;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #1c1c1e;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            -webkit-appearance: none;
+        }
+        .segmented-control button.active {
+            background: #ffffff;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+            font-weight: 600;
+        }
+        .segmented-control button:not(.active):hover {
+            color: #007aff;
+        }
+        /* 二维码容器 */
+        #qrcode-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 24px;
+            background: #ffffff;
+            border-radius: 20px;
+            min-height: 260px;
+        }
+        #qrcode-container canvas,
+        #qrcode-container img {
+            border-radius: 12px;
+            max-width: 100%;
+            height: auto;
+        }
+        /* 按钮 */
+        .ios-btn {
+            background: #007aff;
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            -webkit-appearance: none;
+        }
+        .ios-btn:hover {
+            background: #0066d6;
+        }
+        .ios-btn:active {
+            transform: scale(0.98);
+            opacity: 0.9;
+        }
+        .ios-btn-secondary {
+            background: #e8e8ed;
+            color: #1c1c1e;
+        }
+        .ios-btn-secondary:hover {
+            background: #dcdce1;
+        }
+        /* 表单字段标签 */
+        .field-label {
+            font-size: 13px;
+            font-weight: 500;
+            color: #8e8e93;
+            margin-bottom: 6px;
+            display: block;
+            letter-spacing: 0.02em;
+        }
+        /* 二维码预览区 */
+        .qr-preview-card {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 300px;
+            box-shadow: 0 2px 16px rgba(0, 0, 0, 0.04);
+        }
+        /* 错误提示 */
+        .qr-error {
+            color: #ff3b30;
+            font-size: 14px;
+            line-height: 1.6;
+            text-align: center;
+            padding: 0 12px;
+        }
+        .qr-error small {
+            display: block;
+            margin-top: 6px;
+            color: #8e8e93;
+            font-size: 12px;
+        }
+        /* 页面过渡 */
+        .form-panel {
+            animation: fadeIn 0.25s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            .segmented-control button {
+                padding: 7px 12px;
+                font-size: 13px;
+            }
+            .ios-card {
+                border-radius: 16px;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen py-6 px-4 md:py-10">
+
+    <div class="max-w-6xl mx-auto">
+
+        <!-- 标题 -->
+        <div class="text-center mb-8">
+            <h1 class="text-2xl md:text-3xl font-semibold text-gray-900 tracking-tight">二维码生成器</h1>
+            <p class="text-sm text-gray-500 mt-1">输入内容，实时生成</p>
+        </div>
+
+        <!-- 主布局：左表单 + 右预览 -->
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+
+            <!-- 左侧：类型选择 + 表单 -->
+            <div class="lg:col-span-3 space-y-5">
+
+                <!-- 类型分段控件 -->
+                <div class="ios-card p-4">
+                    <div class="segmented-control" id="type-tabs">
+                        <button class="active" data-type="text">文本</button>
+                        <button data-type="url">网址</button>
+                        <button data-type="vcard">名片</button>
+                        <button data-type="wifi">WiFi</button>
+                        <button data-type="sms">短信</button>
+                        <button data-type="tel">电话</button>
+                        <button data-type="email">邮件</button>
+                    </div>
+                </div>
+
+                <!-- 表单区域 -->
+                <div class="ios-card p-6">
+                    <div id="form-area">
+                        <!-- 表单通过 JS 动态渲染 -->
+                    </div>
+                </div>
+
+                <!-- 操作按钮 -->
+                <div class="flex gap-3">
+                    <button class="ios-btn flex-1" id="download-btn">保存二维码</button>
+                    <button class="ios-btn ios-btn-secondary px-5" id="reset-btn">重置</button>
+                </div>
+
+            </div>
+
+            <!-- 右侧：二维码预览 -->
+            <div class="lg:col-span-2">
+                <div class="qr-preview-card sticky top-6">
+                    <div id="qrcode-container">
+                        <p class="text-gray-400 text-sm">输入内容后自动生成</p>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-4 text-center" id="qr-hint">实时预览</p>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- 页脚 -->
+        <p class="text-center text-xs text-gray-400 mt-10 mb-4">
+            二维码内容在本地生成，不会上传服务器
+        </p>
+
+    </div>
+
+    <script>
+        (function() {
+            'use strict';
+
+            // ============ 状态管理 ============
+            let currentType = 'text';
+            let debounceTimer = null;
+
+            // 各类型默认表单数据
+            const defaultData = {
+                text: { text: '' },
+                url: { url: '' },
+                vcard: { lastName: '', firstName: '', phone: '', email: '', company: '', title: '' },
+                wifi: { ssid: '', password: '', encryption: 'WPA', hidden: false },
+                sms: { phone: '', message: '' },
+                tel: { phone: '' },
+                email: { address: '', subject: '', body: '' }
+            };
+
+            // 当前表单数据
+            let formData = JSON.parse(JSON.stringify(defaultData));
+
+            // ============ 二维码容量上限（字节，UTF-8） ============
+            const MAX_BYTES = { L: 2953, M: 2331, Q: 1663, H: 1273 };
+
+            // ============ DOM 引用 ============
+            const formArea = document.getElementById('form-area');
+            const qrContainer = document.getElementById('qrcode-container');
+            const qrHint = document.getElementById('qr-hint');
+            const typeTabs = document.getElementById('type-tabs');
+            const downloadBtn = document.getElementById('download-btn');
+            const resetBtn = document.getElementById('reset-btn');
+
+            // ============ 工具函数 ============
+            function escapeHtml(str) {
+                if (!str) return '';
+                return String(str)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+            }
+
+            function encodeParam(val) {
+                return encodeURIComponent(val || '');
+            }
+
+            // 精确计算 UTF-8 字节长度
+            function utf8Length(str) {
+                if (typeof TextEncoder !== 'undefined') {
+                    try {
+                        return new TextEncoder().encode(str).length;
+                    } catch (e) { /* 降级到手动计算 */ }
+                }
+                let len = 0;
+                for (let i = 0; i < str.length; i++) {
+                    const c = str.charCodeAt(i);
+                    if (c < 0x80) {
+                        len += 1;
+                    } else if (c < 0x800) {
+                        len += 2;
+                    } else if (c >= 0xd800 && c <= 0xdbff && i + 1 < str.length) {
+                        len += 4; // 代理对（emoji 等）
+                        i++;
+                    } else {
+                        len += 3;
+                    }
+                }
+                return len;
+            }
+
+            // ============ 【关键修复】接管 qrcode-generator 的字节编码 ============
+            // 默认实现按 Latin-1 处理，中文会被截断成乱码；
+            // 这里替换为标准 UTF-8 编码（含 emoji 代理对支持），无 BOM。
+            if (typeof qrcode === 'function') {
+                qrcode.stringToBytes = function(str) {
+                    const bytes = [];
+                    for (let i = 0; i < str.length; i++) {
+                        const code = str.charCodeAt(i);
+
+                        if (code < 0x80) {
+                            bytes.push(code);
+                        } else if (code < 0x800) {
+                            bytes.push(0xC0 | (code >> 6), 0x80 | (code & 0x3F));
+                        } else if (code >= 0xD800 && code <= 0xDBFF && i + 1 < str.length) {
+                            // 高代理项：与后面的低代理项组合成 4 字节
+                            const next = str.charCodeAt(++i);
+                            const cp = 0x10000 + ((code - 0xD800) << 10) + (next - 0xDC00);
+                            bytes.push(
+                                0xF0 | (cp >> 18),
+                                0x80 | ((cp >> 12) & 0x3F),
+                                0x80 | ((cp >> 6) & 0x3F),
+                                0x80 | (cp & 0x3F)
+                            );
+                        } else {
+                            bytes.push(
+                                0xE0 | (code >> 12),
+                                0x80 | ((code >> 6) & 0x3F),
+                                0x80 | (code & 0x3F)
+                            );
+                        }
+                    }
+                    return bytes;
+                };
+            }
+
+            // ============ 表单渲染 ============
+            function renderForm() {
+                const type = currentType;
+                const d = formData[type];
+                let html = '';
+
+                switch (type) {
+                    case 'text':
+                        html = `
+                            <label class="field-label">文本内容</label>
+                            <textarea class="ios-input" rows="5" data-field="text" placeholder="输入任意文本内容...">${escapeHtml(d.text)}</textarea>
+                            <p class="text-xs text-gray-400 mt-2">支持任意文本、符号和链接</p>
+                        `;
+                        break;
+
+                    case 'url':
+                        html = `
+                            <label class="field-label">网址</label>
+                            <input class="ios-input" type="url" data-field="url" value="${escapeHtml(d.url)}" placeholder="https://example.com" autocomplete="url">
+                            <p class="text-xs text-gray-400 mt-2">输入完整的网址，包含 http:// 或 https://</p>
+                        `;
+                        break;
+
+                    case 'vcard':
+                        html = `
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="field-label">姓氏</label>
+                                    <input class="ios-input" data-field="lastName" value="${escapeHtml(d.lastName)}" placeholder="张">
+                                </div>
+                                <div>
+                                    <label class="field-label">名字</label>
+                                    <input class="ios-input" data-field="firstName" value="${escapeHtml(d.firstName)}" placeholder="三">
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <label class="field-label">电话</label>
+                                <input class="ios-input" type="tel" data-field="phone" value="${escapeHtml(d.phone)}" placeholder="+86 138 0000 0000">
+                            </div>
+                            <div class="mt-4">
+                                <label class="field-label">邮箱</label>
+                                <input class="ios-input" type="email" data-field="email" value="${escapeHtml(d.email)}" placeholder="name@example.com">
+                            </div>
+                            <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="field-label">公司</label>
+                                    <input class="ios-input" data-field="company" value="${escapeHtml(d.company)}" placeholder="公司名称">
+                                </div>
+                                <div>
+                                    <label class="field-label">职位</label>
+                                    <input class="ios-input" data-field="title" value="${escapeHtml(d.title)}" placeholder="职位">
+                                </div>
+                            </div>
+                        `;
+                        break;
+
+                    case 'wifi':
+                        html = `
+                            <label class="field-label">网络名称 (SSID)</label>
+                            <input class="ios-input" data-field="ssid" value="${escapeHtml(d.ssid)}" placeholder="WiFi 名称" autocomplete="off">
+                            <div class="mt-4">
+                                <label class="field-label">密码</label>
+                                <input class="ios-input" type="password" data-field="password" value="${escapeHtml(d.password)}" placeholder="WiFi 密码" autocomplete="new-password">
+                            </div>
+                            <div class="mt-4">
+                                <label class="field-label">加密方式</label>
+                                <select class="ios-input" data-field="encryption">
+                                    <option value="WPA" ${d.encryption === 'WPA' ? 'selected' : ''}>WPA/WPA2</option>
+                                    <option value="WEP" ${d.encryption === 'WEP' ? 'selected' : ''}>WEP</option>
+                                    <option value="nopass" ${d.encryption === 'nopass' ? 'selected' : ''}>无密码</option>
+                                </select>
+                            </div>
+                            <div class="mt-4 flex items-center gap-3">
+                                <input type="checkbox" id="wifi-hidden" data-field="hidden" ${d.hidden ? 'checked' : ''} class="w-5 h-5 rounded-md border-gray-300 text-blue-500 focus:ring-blue-500">
+                                <label for="wifi-hidden" class="text-sm text-gray-600">隐藏网络</label>
+                            </div>
+                        `;
+                        break;
+
+                    case 'sms':
+                        html = `
+                            <label class="field-label">手机号</label>
+                            <input class="ios-input" type="tel" data-field="phone" value="${escapeHtml(d.phone)}" placeholder="+86 138 0000 0000">
+                            <div class="mt-4">
+                                <label class="field-label">短信内容（可选）</label>
+                                <textarea class="ios-input" rows="3" data-field="message" placeholder="预填充的短信内容...">${escapeHtml(d.message)}</textarea>
+                            </div>
+                        `;
+                        break;
+
+                    case 'tel':
+                        html = `
+                            <label class="field-label">电话号码</label>
+                            <input class="ios-input" type="tel" data-field="phone" value="${escapeHtml(d.phone)}" placeholder="+86 138 0000 0000">
+                            <p class="text-xs text-gray-400 mt-2">建议使用国际格式（+国家代码）</p>
+                        `;
+                        break;
+
+                    case 'email':
+                        html = `
+                            <label class="field-label">邮箱地址</label>
+                            <input class="ios-input" type="email" data-field="address" value="${escapeHtml(d.address)}" placeholder="name@example.com">
+                            <div class="mt-4">
+                                <label class="field-label">邮件主题（可选）</label>
+                                <input class="ios-input" data-field="subject" value="${escapeHtml(d.subject)}" placeholder="主题">
+                            </div>
+                            <div class="mt-4">
+                                <label class="field-label">邮件正文（可选）</label>
+                                <textarea class="ios-input" rows="3" data-field="body" placeholder="正文内容...">${escapeHtml(d.body)}</textarea>
+                            </div>
+                        `;
+                        break;
+                }
+
+                formArea.innerHTML = `<div class="form-panel">${html}</div>`;
+
+                // 绑定输入事件
+                formArea.querySelectorAll('[data-field]').forEach(el => {
+                    const eventName = (el.type === 'checkbox' || el.tagName === 'SELECT') ? 'change' : 'input';
+                    el.addEventListener(eventName, function() {
+                        const field = this.dataset.field;
+                        if (this.type === 'checkbox') {
+                            formData[currentType][field] = this.checked;
+                        } else {
+                            formData[currentType][field] = this.value;
+                        }
+                        scheduleUpdate();
+                    });
+                });
+
+                // 立即生成一次
+                updateQRCode();
+            }
+
+            // ============ 生成二维码数据 ============
+            function buildQRData() {
+                const type = currentType;
+                const d = formData[type];
+
+                switch (type) {
+                    case 'text':
+                        return d.text || '';
+
+                    case 'url':
+                        return d.url || '';
+
+                    case 'vcard': {
+                        const lines = ['BEGIN:VCARD', 'VERSION:3.0'];
+                        const lastName = d.lastName || '';
+                        const firstName = d.firstName || '';
+                        lines.push(`N:${lastName};${firstName};;;`);
+                        const fullName = [lastName, firstName].filter(Boolean).join(' ');
+                        if (fullName) lines.push(`FN:${fullName}`);
+                        if (d.company) lines.push(`ORG:${d.company}`);
+                        if (d.title) lines.push(`TITLE:${d.title}`);
+                        if (d.phone) lines.push(`TEL;TYPE=CELL:${d.phone}`);
+                        if (d.email) lines.push(`EMAIL;TYPE=INTERNET:${d.email}`);
+                        lines.push('END:VCARD');
+                        return lines.join('\n');
+                    }
+
+                    case 'wifi': {
+                        const ssid = d.ssid || '';
+                        const enc = d.encryption || 'WPA';
+                        const pwd = d.password || '';
+                        const hidden = d.hidden ? 'H:true;' : 'H:false;';
+                        const escapeWifi = (s) => s.replace(/([\\;,":])/g, '\\$1');
+                        return `WIFI:S:${escapeWifi(ssid)};T:${enc};P:${escapeWifi(pwd)};${hidden};`;
+                    }
+
+                    case 'sms': {
+                        const phone = d.phone || '';
+                        const msg = d.message || '';
+                        return msg ? `SMSTO:${phone}:${msg}` : `SMSTO:${phone}`;
+                    }
+
+                    case 'tel':
+                        return `tel:${d.phone || ''}`;
+
+                    case 'email': {
+                        const addr = d.address || '';
+                        if (!addr) return '';
+                        let result = `mailto:${addr}`;
+                        const params = [];
+                        if (d.subject) params.push(`subject=${encodeParam(d.subject)}`);
+                        if (d.body) params.push(`body=${encodeParam(d.body)}`);
+                        if (params.length) result += '?' + params.join('&');
+                        return result;
+                    }
+
+                    default:
+                        return '';
+                }
+            }
+
+            // ============ 显示错误 ============
+            function showQRError(title, detail) {
+                qrContainer.innerHTML =
+                    '<p class="qr-error">' + escapeHtml(title) +
+                    (detail ? '<small>' + escapeHtml(detail) + '</small>' : '') +
+                    '</p>';
+            }
+
+            // ============ 渲染二维码到 canvas（UTF-8 安全） ============
+            function renderQRToCanvas(text, level) {
+                // 0 表示让库自动选择最小可用版本号
+                const qr = qrcode(0, level);
+                qr.addData(text);   // 默认 Byte 模式，走我们自定义的 UTF-8 编码
+                qr.make();          // 数据超长时抛出异常，由调用方捕获
+
+                const count = qr.getModuleCount();
+                const margin = 4;                                    // 静区宽度（模块数）
+                const cellSize = Math.max(2, Math.floor(260 / (count + margin * 2)));
+                const size = (count + margin * 2) * cellSize;
+
+                const canvas = document.createElement('canvas');
+                canvas.width = size;
+                canvas.height = size;
+
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, size, size);
+
+                ctx.fillStyle = '#1c1c1e';
+                for (let r = 0; r < count; r++) {
+                    for (let c = 0; c < count; c++) {
+                        if (qr.isDark(r, c)) {
+                            ctx.fillRect(
+                                (c + margin) * cellSize,
+                                (r + margin) * cellSize,
+                                cellSize,
+                                cellSize
+                            );
+                        }
+                    }
+                }
+                return canvas;
+            }
+
+            // ============ 更新二维码 ============
+            function updateQRCode() {
+                const data = buildQRData();
+
+                qrContainer.innerHTML = '';
+
+                if (!data) {
+                    qrContainer.innerHTML = '<p class="text-gray-400 text-sm">输入内容后自动生成</p>';
+                    qrHint.textContent = '实时预览';
+                    return;
+                }
+
+                // 依赖检查
+                if (typeof qrcode !== 'function') {
+                    showQRError('二维码组件加载失败', '请检查网络后刷新页面重试');
+                    qrHint.textContent = '组件未加载';
+                    return;
+                }
+
+                const bytes = utf8Length(data);
+                const charCount = data.length;
+
+                // 依次尝试：M（更耐污损）→ L（容量更大）
+                const levels = ['M', 'L'];
+                let canvas = null;
+                let usedLevel = '';
+                let lastError = null;
+
+                for (let i = 0; i < levels.length; i++) {
+                    try {
+                        canvas = renderQRToCanvas(data, levels[i]);
+                        usedLevel = levels[i];
+                        break;
+                    } catch (err) {
+                        lastError = err;
+                        canvas = null;
+                    }
+                }
+
+                if (!canvas) {
+                    console.warn('[QRCode] 生成失败：', lastError);
+
+                    if (bytes > MAX_BYTES.L) {
+                        showQRError(
+                            '内容过长，无法生成二维码',
+                            `当前 ${bytes} 字节，单个二维码最多约 ${MAX_BYTES.L} 字节`
+                        );
+                        qrHint.textContent = `类型：${getTypeLabel(currentType)} · ${bytes} 字节 · 超出容量`;
+                    } else {
+                        showQRError('二维码生成失败', '请尝试精简内容或删除特殊字符');
+                        qrHint.textContent = `类型：${getTypeLabel(currentType)} · ${bytes} 字节 · 生成失败`;
+                    }
+                    return;
+                }
+
+                qrContainer.appendChild(canvas);
+                qrHint.textContent =
+                    `类型：${getTypeLabel(currentType)} · ${charCount} 字符 / ${bytes} 字节` +
+                    (usedLevel === 'L' ? ' · 已降低纠错级别' : '');
+            }
+
+            function getTypeLabel(type) {
+                const map = { text: '文本', url: '网址', vcard: '名片', wifi: 'WiFi', sms: '短信', tel: '电话', email: '邮件' };
+                return map[type] || type;
+            }
+
+            // ============ 防抖更新 ============
+            function scheduleUpdate() {
+                if (debounceTimer) clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => {
+                    updateQRCode();
+                }, 180);
+            }
+
+            // ============ 类型切换 ============
+            typeTabs.addEventListener('click', function(e) {
+                const btn = e.target.closest('button[data-type]');
+                if (!btn) return;
+                const newType = btn.dataset.type;
+                if (newType === currentType) return;
+
+                typeTabs.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+
+                currentType = newType;
+                renderForm();
+            });
+
+            // ============ 保存二维码 ============
+            downloadBtn.addEventListener('click', function() {
+                const canvas = qrContainer.querySelector('canvas');
+
+                if (!canvas) {
+                    alert('请先输入内容生成二维码');
+                    return;
+                }
+
+                const link = document.createElement('a');
+                link.download = `qrcode-${currentType}-${Date.now()}.png`;
+                link.href = canvas.toDataURL('image/png');
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+
+            // ============ 重置 ============
+            resetBtn.addEventListener('click', function() {
+                formData[currentType] = JSON.parse(JSON.stringify(defaultData[currentType]));
+                renderForm();
+            });
+
+            // ============ 初始化 ============
+            renderForm();
+
+        })();
+    </script>
+
+</body>
+</html>

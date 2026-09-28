@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 <meta name="description" content="工具箱 —— 文件传输、小说阅读、共享标点等常用工具的集中入口。">
-<title>工具箱 · 导航中心</title>
+<title>工具箱</title>
 
 <!-- 站点图标：内联 SVG（渐变圆角底 + 2×2 方块，呼应“工具箱”） -->
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%230A84FF'/%3E%3Cstop offset='1' stop-color='%230060DF'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='15' fill='url(%23g)'/%3E%3Crect x='14' y='14' width='16' height='16' rx='5' fill='%23FFFFFF'/%3E%3Crect x='34' y='14' width='16' height='16' rx='5' fill='%23FFFFFF' fill-opacity='.72'/%3E%3Crect x='14' y='34' width='16' height='16' rx='5' fill='%23FFFFFF' fill-opacity='.72'/%3E%3Crect x='34' y='34' width='16' height='16' rx='5' fill='%23FFFFFF' fill-opacity='.45'/%3E%3C/svg%3E">
@@ -28,38 +28,51 @@
   };
 </script>
 
-<!-- 入场动画 -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@4.1.1/animate.min.css">
-
 <style>
-  /* ---- 仅保留 Tailwind 无法表达的部分 ---- */
-
-  html { -webkit-text-size-adjust: 100%; }
-
-  body {
-    padding-top: clamp(48px, 9vh, 92px);
-    padding-bottom: calc(48px + env(safe-area-inset-bottom));
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  /* iOS 风格氛围光晕 */
-  .aurora {
-    background:
-      radial-gradient(900px 520px at 12% -12%, rgba(10, 132, 255, .16), transparent 62%),
-      radial-gradient(760px 460px at 102% 4%, rgba(175, 82, 222, .14), transparent 62%);
+  html {
+    -webkit-text-size-adjust: 100%;
+    background: #F2F2F7;
   }
   @media (prefers-color-scheme: dark) {
-    .aurora {
+    html { background: #000; }
+  }
+
+  body {
+    -webkit-tap-highlight-color: transparent;
+    overflow-x: hidden;
+  }
+
+  /* ── iOS 主屏幕壁纸：多层柔和光晕 ───────────────────────── */
+  .wallpaper {
+    background:
+      radial-gradient(52% 38% at 14% 10%, rgba(10, 132, 255, .26), transparent 72%),
+      radial-gradient(48% 34% at 88% 6%,  rgba(175, 82, 222, .22), transparent 72%),
+      radial-gradient(52% 38% at 86% 88%, rgba(255, 159, 10, .18), transparent 72%),
+      radial-gradient(52% 38% at 8% 92%,  rgba(48, 209, 88, .18), transparent 72%),
+      radial-gradient(120% 70% at 50% -18%, #FFFFFF, transparent 62%),
+      #F2F2F7;
+  }
+  @media (prefers-color-scheme: dark) {
+    .wallpaper {
       background:
-        radial-gradient(900px 520px at 12% -12%, rgba(10, 132, 255, .22), transparent 62%),
-        radial-gradient(760px 460px at 102% 4%, rgba(191, 90, 242, .18), transparent 62%);
+        radial-gradient(52% 38% at 14% 10%, rgba(10, 132, 255, .42), transparent 72%),
+        radial-gradient(48% 34% at 88% 6%,  rgba(191, 90, 242, .36), transparent 72%),
+        radial-gradient(52% 38% at 86% 88%, rgba(255, 159, 10, .24), transparent 72%),
+        radial-gradient(52% 38% at 8% 92%,  rgba(48, 209, 88, .22), transparent 72%),
+        #000;
     }
   }
 
-  /* 动画结束后释放 transform，保证 hover 位移 / 按压缩放不被填充帧锁死 */
-  .animate__animated { animation-fill-mode: backwards; }
+  /* ── 图标入场：轻微回弹，结束后不锁死 transform ─────────── */
+  @keyframes iconPop {
+    from { opacity: 0; transform: scale(.84) translateY(12px); }
+    to   { opacity: 1; transform: scale(1)   translateY(0); }
+  }
+  .icon-pop {
+    animation: iconPop .56s cubic-bezier(.22, 1, .36, 1) backwards;
+  }
 
-  /* 无障碍：尊重「减弱动态效果」 */
+  /* ── 无障碍：尊重「减弱动态效果」 ───────────────────────── */
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
       animation-duration: .001ms !important;
@@ -70,93 +83,88 @@
 </style>
 </head>
 
-<body class="min-h-screen bg-[#F2F2F7] px-5 font-sans text-black antialiased selection:bg-[#007AFF]/25 dark:bg-black dark:text-white">
+<body class="min-h-screen font-sans text-black antialiased selection:bg-[#007AFF]/25 dark:text-white">
 
-  <!-- 氛围背景 -->
-  <div class="aurora pointer-events-none fixed inset-0 -z-10" aria-hidden="true"></div>
+  <!-- 壁纸 -->
+  <div class="wallpaper pointer-events-none fixed inset-0 -z-10" aria-hidden="true"></div>
 
-  <!-- 页头（淡入效果） -->
-  <header class="animate__animated animate__fadeIn mx-auto mb-8 max-w-[620px] text-center">
-    <h1 class="mb-2 text-[clamp(34px,7vw,44px)] font-extrabold leading-[1.1] tracking-[-0.03em]">
-      工具箱
-    </h1>
-    <p class="text-base leading-relaxed text-black/60 dark:text-white/60">
-      常用工具集中管理 · 选择一个立即开始
-    </p>
-  </header>
+  <div class="mx-auto flex min-h-screen w-full max-w-[560px] flex-col px-6">
 
-  <!-- 工具卡片 -->
-  <main class="mx-auto grid w-full max-w-[620px] gap-3.5 md:max-w-[980px] md:grid-cols-2 lg:grid-cols-3">
+    <!-- 页头 -->
+    <header class="icon-pop pb-10 pt-[calc(env(safe-area-inset-top)+58px)] text-center sm:pt-[calc(env(safe-area-inset-top)+76px)]"
+            style="animation-delay:.02s">
+      <h1 class="text-[clamp(30px,8vw,36px)] font-bold leading-none tracking-[-0.035em]">
+        工具箱
+      </h1>
+      <p class="mt-2.5 text-[14px] leading-relaxed text-black/45 dark:text-white/45">
+        常用工具集中管理 · 点按图标立即开始
+      </p>
+    </header>
 
-    <!-- 文件传输助手 -->
-    <a href="./transfer"
-       target="_blank" rel="noopener noreferrer"
-       style="--glow: rgba(0, 122, 255, .55); animation-delay: .08s"
-       class="animate__animated animate__fadeInUp group relative flex min-h-[86px] items-center gap-4 rounded-[22px] border border-black/[0.07] bg-white/[0.78] p-4 shadow-[0_1px_2px_rgba(0,0,0,.05),0_10px_28px_-16px_rgba(0,0,0,.35)] backdrop-blur-xl backdrop-saturate-150 transition duration-300 ease-out before:pointer-events-none before:absolute before:inset-0 before:rounded-[inherit] before:shadow-[inset_0_1px_0_rgba(255,255,255,.7)] hover:-translate-y-[3px] hover:shadow-[0_2px_6px_rgba(0,0,0,.06),0_26px_52px_-26px_rgba(0,0,0,.45),0_18px_38px_-20px_var(--glow)] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[#007AFF]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#F2F2F7] active:scale-[0.975] active:duration-100 dark:border-white/[0.08] dark:bg-[#1C1C1E]/[0.76] dark:before:shadow-[inset_0_1px_0_rgba(255,255,255,.07)] dark:focus-visible:ring-offset-black">
+    <!-- 工具图标网格 -->
+    <main class="grid grid-cols-4 gap-x-1 gap-y-8 sm:gap-x-3">
 
-      <span class="grid h-[52px] w-[52px] shrink-0 place-items-center rounded-[15px] bg-gradient-to-b from-[#0A84FF] to-[#0060DF] text-white shadow-[0_8px_18px_-9px_var(--glow),inset_0_1px_0_rgba(255,255,255,.35)] transition-transform duration-300 ease-out group-hover:-rotate-3 group-hover:scale-[1.06]">
-        <i data-lucide="arrow-up-down" class="h-[26px] w-[26px]"></i>
-      </span>
+      <!-- 文件传输助手 -->
+      <a href="./transfer" target="_blank" rel="noopener noreferrer"
+         class="icon-pop group flex flex-col items-center gap-2.5 rounded-2xl py-1 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[#007AFF]/60 focus-visible:ring-offset-4 focus-visible:ring-offset-transparent dark:focus-visible:ring-offset-transparent"
+         style="animation-delay:.06s">
+        <span class="grid aspect-square w-full max-w-[68px] place-items-center rounded-[22.5%] bg-gradient-to-b from-[#4DA2FF] to-[#0060DF] text-white shadow-[0_12px_22px_-10px_rgba(0,96,223,.85),inset_0_1px_0_rgba(255,255,255,.45)] transition-transform duration-300 ease-out group-hover:-translate-y-1 group-active:scale-[0.88] group-active:duration-100 sm:max-w-[76px]">
+          <i data-lucide="arrow-up-down" class="h-7 w-7 sm:h-8 sm:w-8"></i>
+        </span>
+        <span class="text-center text-[11px] font-medium leading-[1.3] tracking-[-0.01em] text-black/80 transition-opacity duration-200 group-active:opacity-60 dark:text-white/85 sm:text-[12.5px]">
+          文件传输助手
+        </span>
+      </a>
 
-      <div class="min-w-0 flex-1">
-        <h2 class="text-[17px] font-semibold leading-snug tracking-[-0.01em]">文件传输助手</h2>
-        <p class="mt-[3px] text-[13.5px] leading-[1.55] text-black/60 dark:text-white/60">
-          设备间快速互传文件，支持拖拽上传、链接分享与历史记录查看。
-        </p>
-      </div>
+      <!-- 小说阅读器 -->
+      <a href="./reader" target="_blank" rel="noopener noreferrer"
+         class="icon-pop group flex flex-col items-center gap-2.5 rounded-2xl py-1 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[#5856D6]/60 focus-visible:ring-offset-4 focus-visible:ring-offset-transparent dark:focus-visible:ring-offset-transparent"
+         style="animation-delay:.13s">
+        <span class="grid aspect-square w-full max-w-[68px] place-items-center rounded-[22.5%] bg-gradient-to-b from-[#9B8AFF] to-[#5E5CE6] text-white shadow-[0_12px_22px_-10px_rgba(94,92,230,.85),inset_0_1px_0_rgba(255,255,255,.45)] transition-transform duration-300 ease-out group-hover:-translate-y-1 group-active:scale-[0.88] group-active:duration-100 sm:max-w-[76px]">
+          <i data-lucide="book-open" class="h-7 w-7 sm:h-8 sm:w-8"></i>
+        </span>
+        <span class="text-center text-[11px] font-medium leading-[1.3] tracking-[-0.01em] text-black/80 transition-opacity duration-200 group-active:opacity-60 dark:text-white/85 sm:text-[12.5px]">
+          小说阅读器
+        </span>
+      </a>
 
-      <span class="grid shrink-0 place-items-center text-black/30 transition duration-300 ease-out group-hover:translate-x-[3px] group-hover:text-black/60 dark:text-white/25 dark:group-hover:text-white/60">
-        <i data-lucide="chevron-right" class="h-5 w-5"></i>
-      </span>
-    </a>
+      <!-- 共享标点 -->
+      <a href="./marker" target="_blank" rel="noopener noreferrer"
+         class="icon-pop group flex flex-col items-center gap-2.5 rounded-2xl py-1 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[#34C759]/60 focus-visible:ring-offset-4 focus-visible:ring-offset-transparent dark:focus-visible:ring-offset-transparent"
+         style="animation-delay:.20s">
+        <span class="grid aspect-square w-full max-w-[68px] place-items-center rounded-[22.5%] bg-gradient-to-b from-[#5BD96B] to-[#1E9E3E] text-white shadow-[0_12px_22px_-10px_rgba(30,158,62,.85),inset_0_1px_0_rgba(255,255,255,.45)] transition-transform duration-300 ease-out group-hover:-translate-y-1 group-active:scale-[0.88] group-active:duration-100 sm:max-w-[76px]">
+          <i data-lucide="map-pin" class="h-7 w-7 sm:h-8 sm:w-8"></i>
+        </span>
+        <span class="text-center text-[11px] font-medium leading-[1.3] tracking-[-0.01em] text-black/80 transition-opacity duration-200 group-active:opacity-60 dark:text-white/85 sm:text-[12.5px]">
+          共享标点
+        </span>
+      </a>
 
-    <!-- 小说阅读器 -->
-    <a href="./reader"
-       target="_blank" rel="noopener noreferrer"
-       style="--glow: rgba(88, 86, 214, .55); animation-delay: .16s"
-       class="animate__animated animate__fadeInUp group relative flex min-h-[86px] items-center gap-4 rounded-[22px] border border-black/[0.07] bg-white/[0.78] p-4 shadow-[0_1px_2px_rgba(0,0,0,.05),0_10px_28px_-16px_rgba(0,0,0,.35)] backdrop-blur-xl backdrop-saturate-150 transition duration-300 ease-out before:pointer-events-none before:absolute before:inset-0 before:rounded-[inherit] before:shadow-[inset_0_1px_0_rgba(255,255,255,.7)] hover:-translate-y-[3px] hover:shadow-[0_2px_6px_rgba(0,0,0,.06),0_26px_52px_-26px_rgba(0,0,0,.45),0_18px_38px_-20px_var(--glow)] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[#5856D6]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#F2F2F7] active:scale-[0.975] active:duration-100 dark:border-white/[0.08] dark:bg-[#1C1C1E]/[0.76] dark:before:shadow-[inset_0_1px_0_rgba(255,255,255,.07)] dark:focus-visible:ring-offset-black">
+      <!-- 二维码生成器 -->
+      <a href="./qrcode" target="_blank" rel="noopener noreferrer"
+         class="icon-pop group flex flex-col items-center gap-2.5 rounded-2xl py-1 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[#FF9F0A]/60 focus-visible:ring-offset-4 focus-visible:ring-offset-transparent dark:focus-visible:ring-offset-transparent"
+         style="animation-delay:.27s">
+        <span class="grid aspect-square w-full max-w-[68px] place-items-center rounded-[22.5%] bg-gradient-to-b from-[#FFC65C] to-[#F08C00] text-white shadow-[0_12px_22px_-10px_rgba(240,140,0,.85),inset_0_1px_0_rgba(255,255,255,.45)] transition-transform duration-300 ease-out group-hover:-translate-y-1 group-active:scale-[0.88] group-active:duration-100 sm:max-w-[76px]">
+          <i data-lucide="qr-code" class="h-7 w-7 sm:h-8 sm:w-8"></i>
+        </span>
+        <span class="text-center text-[11px] font-medium leading-[1.3] tracking-[-0.01em] text-black/80 transition-opacity duration-200 group-active:opacity-60 dark:text-white/85 sm:text-[12.5px]">
+          二维码生成器
+        </span>
+      </a>
 
-      <span class="grid h-[52px] w-[52px] shrink-0 place-items-center rounded-[15px] bg-gradient-to-b from-[#7A79F5] to-[#4B49C8] text-white shadow-[0_8px_18px_-9px_var(--glow),inset_0_1px_0_rgba(255,255,255,.35)] transition-transform duration-300 ease-out group-hover:-rotate-3 group-hover:scale-[1.06]">
-        <i data-lucide="book-open" class="h-[26px] w-[26px]"></i>
-      </span>
+      <!-- 新增工具时，复制上面任意一个 <a> 卡片，改 href / 图标 / 文案 / 渐变配色即可 -->
 
-      <div class="min-w-0 flex-1">
-        <h2 class="text-[17px] font-semibold leading-snug tracking-[-0.01em]">小说阅读器</h2>
-        <p class="mt-[3px] text-[13.5px] leading-[1.55] text-black/60 dark:text-white/60">
-          沉浸式阅读，支持书架管理、章节跳转与字号背景调节，自动记录进度。
-        </p>
-      </div>
+    </main>
 
-      <span class="grid shrink-0 place-items-center text-black/30 transition duration-300 ease-out group-hover:translate-x-[3px] group-hover:text-black/60 dark:text-white/25 dark:group-hover:text-white/60">
-        <i data-lucide="chevron-right" class="h-5 w-5"></i>
-      </span>
-    </a>
+    <!-- 页脚 -->
+    <footer class="icon-pop mt-auto pb-[calc(env(safe-area-inset-bottom)+26px)] pt-14 text-center"
+            style="animation-delay:.36s">
+      <!-- Home Indicator 视觉暗示 -->
+      <span class="mx-auto mt-6 block h-[5px] w-[134px] rounded-full bg-black/15 dark:bg-white/25"
+            aria-hidden="true"></span>
+    </footer>
 
-    <!-- 共享标点 -->
-    <a href="./marker"
-       target="_blank" rel="noopener noreferrer"
-       style="--glow: rgba(52, 199, 89, .50); animation-delay: .24s"
-       class="animate__animated animate__fadeInUp group relative flex min-h-[86px] items-center gap-4 rounded-[22px] border border-black/[0.07] bg-white/[0.78] p-4 shadow-[0_1px_2px_rgba(0,0,0,.05),0_10px_28px_-16px_rgba(0,0,0,.35)] backdrop-blur-xl backdrop-saturate-150 transition duration-300 ease-out before:pointer-events-none before:absolute before:inset-0 before:rounded-[inherit] before:shadow-[inset_0_1px_0_rgba(255,255,255,.7)] hover:-translate-y-[3px] hover:shadow-[0_2px_6px_rgba(0,0,0,.06),0_26px_52px_-26px_rgba(0,0,0,.45),0_18px_38px_-20px_var(--glow)] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[#34C759]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#F2F2F7] active:scale-[0.975] active:duration-100 dark:border-white/[0.08] dark:bg-[#1C1C1E]/[0.76] dark:before:shadow-[inset_0_1px_0_rgba(255,255,255,.07)] dark:focus-visible:ring-offset-black">
-
-      <span class="grid h-[52px] w-[52px] shrink-0 place-items-center rounded-[15px] bg-gradient-to-b from-[#4CD964] to-[#248A3D] text-white shadow-[0_8px_18px_-9px_var(--glow),inset_0_1px_0_rgba(255,255,255,.35)] transition-transform duration-300 ease-out group-hover:-rotate-3 group-hover:scale-[1.06]">
-        <i data-lucide="map-pin" class="h-[26px] w-[26px]"></i>
-      </span>
-
-      <div class="min-w-0 flex-1">
-        <h2 class="text-[17px] font-semibold leading-snug tracking-[-0.01em]">共享标点</h2>
-        <p class="mt-[3px] text-[13.5px] leading-[1.55] text-black/60 dark:text-white/60">
-          在地图上标记并共享位置，点击即可一键导航，适合收藏与行程规划。
-        </p>
-      </div>
-
-      <span class="grid shrink-0 place-items-center text-black/30 transition duration-300 ease-out group-hover:translate-x-[3px] group-hover:text-black/60 dark:text-white/25 dark:group-hover:text-white/60">
-        <i data-lucide="chevron-right" class="h-5 w-5"></i>
-      </span>
-    </a>
-
-    <!-- 新增工具时，复制上面任意一张卡片，改 href / 图标 / 文案 / --glow 配色即可 -->
-
-  </main>
+  </div>
 
   <!-- Lucide 图标：把 <i data-lucide> 渲染为 SVG -->
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.454.0/dist/umd/lucide.min.js"></script>
