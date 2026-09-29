@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>意见反馈</title>
+    <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23007AFF'/%3E%3Cpath d='M7 9a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3h-6l-5 4v-4H10a3 3 0 0 1-3-3z' fill='%23fff'/%3E%3C/svg%3E">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.10/dayjs.min.js"></script>
+    <style>
+        :root {
+            --ios-blue: #007AFF;
+            --ios-red: #FF3B30;
+            --ios-green: #34C759;
+            --ios-orange: #FF9500;
+            --ios-gray: #8E8E93;
+            --ios-bg: #F2F2F7;
+        }
+
+        html,
+        body {
+            height: 100%;
+        }
+
+        body.app-shell {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            height: 100dvh;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue",
+                "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -webkit-tap-highlight-color: transparent;
+            background: var(--ios-bg);
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, .86);
+            backdrop-filter: saturate(180%) blur(20px);
+            -webkit-backdrop-filter: saturate(180%) blur(20px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, .08), 0 0 0 .5px rgba(0, 0, 0, .04);
+        }
+
+        .no-sb::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-sb {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .scroll-area {
+            overflow: auto;
+            overscroll-behavior: contain;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(0, 0, 0, .18) transparent;
+        }
+
+        .scroll-area::-webkit-scrollbar {
+            width: 9px;
+            height: 9px;
+        }
+
+        .scroll-area::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .scroll-area::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, .16);
+            border-radius: 8px;
+            border: 2px solid transparent;
+            background-clip: content-box;
+        }
+
+        .ios-input {
+            width: 100%;
+            box-sizing: border-box;
+            background: rgba(120, 120, 128, .1);
+            border: none;
+            border-radius: 12px;
+            padding: 11px 14px;
+            font-size: 14px;
+            font-family: inherit;
+            color: #1c1c1e;
+            outline: none;
+            transition: box-shadow .18s;
+        }
+
+        .ios-input::placeholder {
+            color: #AEAEB2;
+        }
+
+        .ios-input:focus {
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, .18);
+        }
+
+        textarea.ios-input {
+            resize: none;
+            line-height: 1.55;
+        }
+
+        .f-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: #8E8E93;
+            margin: 16px 0 6px;
+        }
+
+        .f-label.first {
+            margin-top: 0;
+        }
+
+        .seg-btn {
+            flex: 1;
+            padding: 9px 0;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            font-family: inherit;
+            color: #8E8E93;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: all .18s;
+        }
+
+        .seg-btn:active {
+            transform: scale(.96);
+        }
+
+        .seg-btn.on {
+            background: #fff;
+            color: #1c1c1e;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, .12);
+        }
+
+        @keyframes pop-in {
+            from {
+                transform: scale(.94) translateY(12px);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1) translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .anim-pop {
+            animation: pop-in .3s cubic-bezier(.32, .72, 0, 1);
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .spin {
+            animation: spin .8s linear infinite;
+        }
+    </style>
+</head>
+
+<body class="app-shell">
+
+    <!-- ===================== 顶部栏 ===================== -->
+    <header class="glass flex-none z-30">
+        <div class="max-w-[560px] mx-auto px-4 py-3 flex items-center gap-3">
+            <h1 class="text-[16px] font-bold text-[#1c1c1e] tracking-tight">意见反馈</h1>
+            <div class="ml-auto flex items-center gap-1.5">
+                <span id="statusDot" class="w-2 h-2 rounded-full bg-[#FF9500] animate-pulse"></span>
+                <span id="statusText" class="text-[12px] text-[#8E8E93] whitespace-nowrap">初始化中...</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- ===================== 主体 ===================== -->
+    <main class="flex-1 min-h-0 overflow-y-auto scroll-area">
+        <div class="max-w-[560px] mx-auto px-4 py-5 pb-12">
+
+            <div id="formCard" class="glass rounded-[22px] p-5 anim-pop">
+                <p class="text-[13px] text-[#8E8E93] leading-relaxed">
+                    你的每一条反馈都会被认真阅读，感谢你帮助我们变得更好。
+                </p>
+
+                <!-- 类型 -->
+                <label class="f-label">反馈类型</label>
+                <div id="typeSeg" class="flex gap-1 p-1 rounded-2xl bg-black/5">
+                    <button type="button" class="seg-btn on" data-type="建议">建议</button>
+                    <button type="button" class="seg-btn" data-type="问题">问题</button>
+                    <button type="button" class="seg-btn" data-type="其他">其他</button>
+                </div>
+
+                <!-- 内容 -->
+                <label class="f-label">反馈内容 <span class="text-[#FF3B30]">*</span></label>
+                <textarea id="fb-content" class="ios-input" rows="6" maxlength="500"
+                    placeholder="请尽量描述清楚，比如：在哪个页面、做了什么操作、出现了什么情况..."></textarea>
+                <div class="text-right text-[11.5px] text-[#AEAEB2] mt-1.5">
+                    <span id="fbCount" class="tabular-nums">0</span> / 500
+                </div>
+
+                <!-- 联系方式 -->
+                <label class="f-label">联系方式 <span class="text-[#AEAEB2] font-normal">（选填）</span></label>
+                <input id="fb-contact" class="ios-input" type="text" maxlength="50"
+                    placeholder="邮箱 / 微信 / 手机号，便于我们回复你">
+
+                <!-- 提交 -->
+                <button id="btnSubmit"
+                    class="mt-6 w-full py-3.5 rounded-2xl text-[16px] font-semibold text-white bg-[#007AFF] active:scale-[.98] transition shadow-[0_8px_24px_rgba(0,122,255,.32)] disabled:opacity-50">
+                    提交反馈
+                </button>
+
+                <p class="text-[11.5px] text-[#AEAEB2] text-center mt-3.5">
+                    提交即表示同意我们记录该内容用于产品改进
+                </p>
+            </div>
+
+            <!-- 提交成功提示卡 -->
+            <div id="doneCard"
+                class="hidden glass rounded-[22px] p-8 mt-0 flex-col items-center text-center anim-pop">
+                <div class="w-14 h-14 rounded-full flex items-center justify-center mb-4"
+                    style="background:rgba(52,199,89,.12)">
+                    <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="#34C759" stroke-width="2.4"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 6 9 17l-5-5" />
+                    </svg>
+                </div>
+                <h2 class="text-[17px] font-bold text-[#1c1c1e]">提交成功</h2>
+                <p class="text-[13px] text-[#8E8E93] mt-1.5 leading-relaxed">感谢你的反馈，我们会尽快处理。</p>
+                <button id="btnAgain"
+                    class="mt-6 px-6 py-3 rounded-2xl text-[15px] font-semibold text-[#007AFF] bg-black/[0.06] active:scale-[.98] transition">
+                    再提一条
+                </button>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        /* ============================================================
+           配置（与主页面保持一致）
+           ============================================================ */
+        const CONFIG = {
+            GITHUB_OWNER: 'ulnae',
+            GITHUB_REPO: 'tools',
+            GITHUB_BRANCH: 'master',
+
+            DATA_DIR: 'data',
+            FEEDBACK_FILE: 'data/feedback.json',
+
+            GITHUB_TOKEN: '',
+
+            TOKEN_CIPHER: 'pN0DLAO2zEwTMKZlJZw+6zd4GAXI0t3mCX/iAqiGWY6ddaYNpX4u6LdZ7eeflYz7RaSCt6hCUYSPbhbejCY7lVChS9u3YaVWhiU38RWdMQf0iRo4UwUZ5kmnzZXBiZlDVIgWBVNPoxeFveABj02UVh8IFBBix/Bz+AOD9DIdlN8Jbh3s3olHlPs=',
+            TOKEN_PASS: 'ulnae'
+        };
+
+        /* ============================================================
+           通用工具
+           ============================================================ */
+        const $ = id => document.getElementById(id);
+        const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+        const escapeHtml = str => {
+            const div = document.createElement('div');
+            div.textContent = str == null ? '' : String(str);
+            return div.innerHTML;
+        };
+
+        const now = () => dayjs().format('YYYY/MM/DD HH:mm');
+
+        function normalizeFeedback(content) {
+            if (content && Array.isArray(content.feedback)) return content;
+            return { feedback: [] };
+        }
+
+        /* ---------- Toast ---------- */
+        const TOAST_BG = {
+            success: 'linear-gradient(135deg,#34C759,#28A745)',
+            error: 'linear-gradient(135deg,#FF3B30,#D92D20)',
+            info: 'linear-gradient(135deg,#007AFF,#0062CC)'
+        };
+
+        function toast(msg, type = 'info') {
+            const el = document.createElement('div');
+            el.className = 'fixed left-1/2 bottom-8 z-[9999] px-5 py-3 rounded-2xl text-white text-[13px] ' +
+                'font-medium shadow-2xl transition-all duration-300 -translate-x-1/2 opacity-0 translate-y-3 ' +
+                'max-w-[82vw] text-center pointer-events-none';
+            el.style.background = TOAST_BG[type] || TOAST_BG.info;
+            el.textContent = msg;
+            document.body.appendChild(el);
+            requestAnimationFrame(() => el.classList.remove('opacity-0', 'translate-y-3'));
+            setTimeout(() => {
+                el.classList.add('opacity-0', 'translate-y-3');
+                setTimeout(() => el.remove(), 320);
+            }, 2200);
+        }
+
+        /* ---------- 状态指示 ---------- */
+        const STATUS_DOT = {
+            ok: 'w-2 h-2 rounded-full bg-[#34C759]',
+            err: 'w-2 h-2 rounded-full bg-[#FF3B30]',
+            loading: 'w-2 h-2 rounded-full bg-[#FF9500] animate-pulse'
+        };
+
+        function setStatus(state, text) {
+            $('statusDot').className = STATUS_DOT[state] || STATUS_DOT.loading;
+            $('statusText').textContent = text;
+        }
+
+        /* ============================================================
+           Token 解密（AES-GCM + PBKDF2）
+           ============================================================ */
+        async function decrypt(cipherText, password) {
+            const binary = atob(cipherText.trim());
+            const data = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) data[i] = binary.charCodeAt(i);
+            const salt = data.subarray(0, 16);
+            const iv = data.subarray(16, 28);
+            const encrypted = data.subarray(28);
+            const enc = new TextEncoder();
+            const baseKey = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']);
+            const key = await crypto.subtle.deriveKey(
+                { name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' },
+                baseKey, { name: 'AES-GCM', length: 256 }, false, ['decrypt']
+            );
+            const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, encrypted);
+            return new TextDecoder().decode(decrypted);
+        }
+
+        /* ============================================================
+           GitHub API
+           ============================================================ */
+        async function ghApi(path, options = {}) {
+            const url = `https://api.github.com/repos/${CONFIG.GITHUB_OWNER}/${CONFIG.GITHUB_REPO}/contents/${path}`;
+            const res = await fetch(url, {
+                ...options,
+                headers: {
+                    'Accept': 'application/vnd.github+json',
+                    'Authorization': `Bearer ${CONFIG.GITHUB_TOKEN}`,
+                    'Content-Type': 'application/json',
+                    ...(options.headers || {})
+                }
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.message || `GitHub API 错误 (${res.status})`);
+            }
+            const text = await res.text();
+            return text ? JSON.parse(text) : {};
+        }
+
+        async function ghGetFile(path) {
+            try {
+                const data = await ghApi(path);
+                const raw = atob((data.content || '').replace(/\s/g, ''));
+                if (!raw) return { content: null, sha: data.sha };
+                const text = decodeURIComponent(escape(raw));
+                try {
+                    return { content: JSON.parse(text), sha: data.sha };
+                } catch (e) {
+                    console.warn(`文件 ${path} 不是合法 JSON，按空数据处理`);
+                    return { content: null, sha: data.sha };
+                }
+            } catch (e) {
+                if (/not found|404/i.test(e.message)) return { content: null, sha: null };
+                throw e;
+            }
+        }
+
+        async function ghPutFile(path, obj, message, sha) {
+            const jsonStr = JSON.stringify(obj, null, 2);
+            const content = btoa(unescape(encodeURIComponent(jsonStr)));
+            const body = { message, content, branch: CONFIG.GITHUB_BRANCH };
+            if (sha) body.sha = sha;
+            return ghApi(path, { method: 'PUT', body: JSON.stringify(body) });
+        }
+
+        /** 安全写：每次提交前重新拉取最新内容与 sha，冲突自动重试 */
+        async function updateJsonFile(path, mutate, message, maxAttempts = 4) {
+            let lastErr = null;
+            for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+                const { content, sha } = await ghGetFile(path);
+                const next = await mutate(content, sha);
+                if (next === null || next === undefined) {
+                    return { content, sha, skipped: true };
+                }
+                try {
+                    const res = await ghPutFile(path, next, message, sha);
+                    return { content: next, sha: res.content.sha, skipped: false };
+                } catch (err) {
+                    lastErr = err;
+                    console.warn(`写入 ${path} 第 ${attempt} 次失败：${err.message}`);
+                    if (attempt < maxAttempts) await sleep(350 * attempt);
+                }
+            }
+            throw lastErr || new Error('保存失败');
+        }
+
+        /* ============================================================
+           页面状态
+           ============================================================ */
+        const state = { type: '建议', submitting: false };
+
+        /* ============================================================
+           分段控件
+           ============================================================ */
+        function initSeg() {
+            const btns = document.querySelectorAll('#typeSeg .seg-btn');
+            btns.forEach(b => {
+                b.addEventListener('click', () => {
+                    state.type = b.dataset.type;
+                    btns.forEach(x => x.classList.toggle('on', x === b));
+                });
+            });
+        }
+
+        /* ============================================================
+           提交
+           ============================================================ */
+        function setSubmitting(on) {
+            const btn = $('btnSubmit');
+            btn.disabled = on;
+            btn.textContent = on ? '提交中...' : '提交反馈';
+        }
+
+        async function submitFeedback() {
+            if (state.submitting) return;
+
+            const content = $('fb-content').value.trim();
+            const contact = $('fb-contact').value.trim();
+
+            if (!content) return toast('请填写反馈内容', 'error');
+            if (content.length < 5) return toast('内容太短了，请至少写 5 个字', 'error');
+
+            state.submitting = true;
+            setSubmitting(true);
+
+            const item = {
+                id: (crypto.randomUUID ? crypto.randomUUID()
+                    : `${Date.now()}-${Math.random().toString(16).slice(2)}`),
+                type: state.type,
+                content,
+                contact,
+                created_at: new Date().toISOString()
+            };
+
+            try {
+                await updateJsonFile(CONFIG.FEEDBACK_FILE, (c) => {
+                    const data = normalizeFeedback(c);
+                    data.feedback.push(item);
+                    return data;
+                }, `新增意见反馈（${item.type}） - ${now()}`);
+
+                $('fb-content').value = '';
+                $('fb-contact').value = '';
+                $('fbCount').textContent = '0';
+
+                setStatus('ok', '已连接');
+                showDone();
+                toast('提交成功，感谢你的反馈！', 'success');
+            } catch (e) {
+                console.error(e);
+                setStatus('err', '提交失败');
+                toast(e.message || '提交失败，请稍后重试', 'error');
+            } finally {
+                state.submitting = false;
+                setSubmitting(false);
+            }
+        }
+
+        function showDone() {
+            $('formCard').classList.add('hidden');
+            const d = $('doneCard');
+            d.classList.remove('hidden');
+            d.classList.add('flex');
+        }
+
+        function showForm() {
+            const d = $('doneCard');
+            d.classList.add('hidden');
+            d.classList.remove('flex');
+            $('formCard').classList.remove('hidden');
+            setTimeout(() => $('fb-content').focus(), 100);
+        }
+
+        /* ============================================================
+           事件绑定
+           ============================================================ */
+        function bindEvents() {
+            initSeg();
+
+            $('fb-content').addEventListener('input', (e) => {
+                $('fbCount').textContent = e.target.value.length;
+            });
+
+            $('btnSubmit').addEventListener('click', submitFeedback);
+            $('btnAgain').addEventListener('click', showForm);
+
+            /* Ctrl / Cmd + Enter 快捷提交 */
+            document.addEventListener('keydown', (e) => {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') submitFeedback();
+            });
+        }
+
+        /* ============================================================
+           启动
+           ============================================================ */
+        (async function init() {
+            bindEvents();
+
+            try {
+                CONFIG.GITHUB_TOKEN = await decrypt(CONFIG.TOKEN_CIPHER, CONFIG.TOKEN_PASS);
+                setStatus('ok', '已连接');
+            } catch (e) {
+                console.error(e);
+                setStatus('err', 'Token 解密失败');
+                toast('Token 解密失败，暂时无法提交反馈', 'error');
+                $('btnSubmit').disabled = true;
+                return;
+            }
+
+            setTimeout(() => $('fb-content').focus(), 200);
+        })();
+    </script>
+</body>
+
+</html>

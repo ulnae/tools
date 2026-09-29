@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>意见反馈处理</title>
+    <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23FF9500'/%3E%3Cpath d='M7 9a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3h-6l-5 4v-4H10a3 3 0 0 1-3-3z' fill='%23fff'/%3E%3C/svg%3E">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.10/dayjs.min.js"></script>
+    <style>
+        :root {
+            --ios-blue: #007AFF;
+            --ios-red: #FF3B30;
+            --ios-green: #34C759;
+            --ios-orange: #FF9500;
+            --ios-gray: #8E8E93;
+            --ios-bg: #F2F2F7;
+        }
+
+        html,
+        body {
+            height: 100%;
+        }
+
+        body.app-shell {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            height: 100dvh;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue",
+                "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -webkit-tap-highlight-color: transparent;
+            background: var(--ios-bg);
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, .86);
+            backdrop-filter: saturate(180%) blur(20px);
+            -webkit-backdrop-filter: saturate(180%) blur(20px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, .08), 0 0 0 .5px rgba(0, 0, 0, .04);
+        }
+
+        .no-sb::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-sb {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* ---------- 表格滚动区 ---------- */
+        .scroll-area {
+            overflow: auto;
+            overscroll-behavior: contain;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(0, 0, 0, .18) transparent;
+        }
+
+        .scroll-area::-webkit-scrollbar {
+            width: 9px;
+            height: 9px;
+        }
+
+        .scroll-area::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .scroll-area::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, .16);
+            border-radius: 8px;
+            border: 2px solid transparent;
+            background-clip: content-box;
+        }
+
+        .scroll-area::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 0, 0, .3);
+            background-clip: content-box;
+        }
+
+        .scroll-area::-webkit-scrollbar-corner {
+            background: transparent;
+        }
+
+        /* ---------- 输入框 ---------- */
+        .ios-input {
+            width: 100%;
+            box-sizing: border-box;
+            background: rgba(120, 120, 128, .1);
+            border: none;
+            border-radius: 12px;
+            padding: 10px 14px;
+            font-size: 14px;
+            font-family: inherit;
+            color: #1c1c1e;
+            outline: none;
+            transition: box-shadow .18s;
+        }
+
+        .ios-input::placeholder {
+            color: #AEAEB2;
+        }
+
+        .ios-input:focus {
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, .18);
+        }
+
+        select.ios-input {
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path fill='%238E8E93' d='M2 4l4 4 4-4z'/></svg>");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 32px;
+            cursor: pointer;
+        }
+
+        /* ---------- 小按钮 ---------- */
+        .btn-mini {
+            padding: 5px 12px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: background .18s, transform .12s;
+            border: none;
+        }
+
+        .btn-mini:active {
+            transform: scale(.96);
+        }
+
+        .btn-view {
+            background: rgba(0, 122, 255, .1);
+            color: #007AFF;
+        }
+
+        .btn-view:hover {
+            background: rgba(0, 122, 255, .2);
+        }
+
+        .btn-del {
+            background: rgba(255, 59, 48, .1);
+            color: #FF3B30;
+        }
+
+        .btn-del:hover {
+            background: rgba(255, 59, 48, .2);
+        }
+
+        /* ---------- 分页控件 ---------- */
+        .pager-select {
+            appearance: none;
+            -webkit-appearance: none;
+            background-color: rgba(120, 120, 128, .1);
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path fill='%238E8E93' d='M2 4l4 4 4-4z'/></svg>");
+            background-repeat: no-repeat;
+            background-position: right 9px center;
+            border: none;
+            border-radius: 10px;
+            padding: 6px 26px 6px 11px;
+            font-size: 12px;
+            font-weight: 600;
+            font-family: inherit;
+            color: #1c1c1e;
+            outline: none;
+            cursor: pointer;
+            transition: box-shadow .18s;
+        }
+
+        .pager-select:focus {
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, .18);
+        }
+
+        .btn-pager {
+            padding: 6px 13px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            font-family: inherit;
+            color: #007AFF;
+            background: rgba(0, 122, 255, .1);
+            border: none;
+            cursor: pointer;
+            transition: background .18s, transform .12s, opacity .18s;
+        }
+
+        .btn-pager:hover:not(:disabled) {
+            background: rgba(0, 122, 255, .2);
+        }
+
+        .btn-pager:active:not(:disabled) {
+            transform: scale(.96);
+        }
+
+        .btn-pager:disabled {
+            opacity: .32;
+            cursor: not-allowed;
+        }
+
+        /* ---------- 复选框 ---------- */
+        input[type="checkbox"].cb {
+            width: 17px;
+            height: 17px;
+            accent-color: #007AFF;
+            cursor: pointer;
+            vertical-align: middle;
+        }
+
+        /* ---------- 弹窗动画 ---------- */
+        @keyframes pop-in {
+            from {
+                transform: scale(.94) translateY(12px);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1) translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .anim-pop {
+            animation: pop-in .24s cubic-bezier(.32, .72, 0, 1);
+        }
+
+        /* ---------- 表格 ---------- */
+        table {
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        thead th {
+            white-space: nowrap;
+            position: sticky;
+            top: 0;
+            z-index: 5;
+            background-color: #F7F7F9;
+        }
+
+        /* ---------- 加载旋转 ---------- */
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .spin {
+            animation: spin .8s linear infinite;
+        }
+    </style>
+</head>
+
+<body class="app-shell">
+
+    <!-- ===================== 顶部栏 ===================== -->
+    <header class="glass flex-none z-30">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3 flex-wrap">
+            <h1 class="text-[16px] font-bold text-[#1c1c1e] tracking-tight">意见反馈处理</h1>
+
+            <div class="hidden sm:flex items-center gap-1.5">
+                <span id="statusDot" class="w-2 h-2 rounded-full bg-[#FF9500] animate-pulse"></span>
+                <span id="statusText" class="text-[12px] text-[#8E8E93] whitespace-nowrap">加载中...</span>
+            </div>
+
+            <button id="btnRefresh"
+                class="ml-auto flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-semibold text-white bg-[#007AFF] active:scale-95 transition shadow-[0_4px_14px_rgba(0,122,255,.32)] disabled:opacity-50">
+                <svg id="refreshIcon" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+                    <path d="M21 3v6h-6" />
+                </svg>
+                刷新
+            </button>
+        </div>
+    </header>
+
+    <!-- ===================== 主体 ===================== -->
+    <main class="flex-1 min-h-0 w-full max-w-6xl mx-auto px-4 py-5 flex flex-col">
+        <div class="glass rounded-2xl overflow-hidden flex flex-col flex-1 min-h-0">
+
+            <!-- 工具条 -->
+            <div class="flex-none px-3 py-3 flex items-center gap-2 flex-wrap border-b border-black/[0.05]">
+                <input id="searchInput" class="ios-input !w-auto flex-1 min-w-[160px]" type="text"
+                    placeholder="搜索内容或联系方式">
+                <select id="filterType" class="ios-input !w-auto min-w-[130px]">
+                    <option value="">全部类型</option>
+                </select>
+                <span class="text-[12px] text-[#8E8E93] whitespace-nowrap">
+                    共 <b id="totalCount" class="text-[#1c1c1e] tabular-nums">0</b> 条
+                </span>
+
+                <div id="bulkBar" class="hidden items-center gap-2 ml-auto">
+                    <span class="text-[12px] text-[#8E8E93] whitespace-nowrap">
+                        已选 <b id="bulkCount" class="text-[#FF3B30] tabular-nums">0</b> 条
+                    </span>
+                    <button id="btnBulkDelete" class="btn-mini btn-del">删除选中</button>
+                </div>
+            </div>
+
+            <!-- 表格滚动区 -->
+            <div class="flex-1 min-h-0 scroll-area">
+                <table class="w-full text-[13px] min-w-[900px]">
+                    <thead>
+                        <tr class="text-[#8E8E93] text-[12px]">
+                            <th class="text-left font-semibold px-3 py-2.5 w-[42px]">
+                                <input type="checkbox" id="checkAll" class="cb">
+                            </th>
+                            <th class="text-left font-semibold px-3 py-2.5 w-[52px]">#</th>
+                            <th class="text-left font-semibold px-3 py-2.5 w-[86px]">类型</th>
+                            <th class="text-left font-semibold px-3 py-2.5">反馈内容</th>
+                            <th class="text-left font-semibold px-3 py-2.5 w-[150px]">联系方式</th>
+                            <th class="text-left font-semibold px-3 py-2.5 w-[150px]">提交时间</th>
+                            <th class="text-right font-semibold px-3 py-2.5 w-[120px]">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="fbTbody"></tbody>
+                </table>
+            </div>
+
+            <!-- 分页条 -->
+            <div
+                class="flex-none px-3 py-2.5 flex items-center gap-2 flex-wrap border-t border-black/[0.05] bg-black/[0.015]">
+                <span class="text-[12px] text-[#8E8E93] whitespace-nowrap">
+                    第 <b id="pageNow" class="text-[#1c1c1e] tabular-nums">1</b> /
+                    <b id="pageTotal" class="text-[#1c1c1e] tabular-nums">1</b> 页
+                </span>
+                <select id="pageSize" class="pager-select">
+                    <option value="10">10 条/页</option>
+                    <option value="20" selected>20 条/页</option>
+                    <option value="50">50 条/页</option>
+                    <option value="100">100 条/页</option>
+                </select>
+                <div class="ml-auto flex items-center gap-1.5">
+                    <button id="btnPrev" class="btn-pager">上一页</button>
+                    <button id="btnNext" class="btn-pager">下一页</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- ===================== 详情弹窗 ===================== -->
+    <div id="detailModal"
+        class="hidden fixed inset-0 z-[9998] items-center justify-center p-4 bg-black/40 backdrop-blur-[2px]">
+        <div
+            class="anim-pop w-full max-w-[480px] max-h-[88vh] overflow-y-auto no-sb bg-white rounded-[24px] shadow-[0_24px_64px_rgba(0,0,0,.28)]">
+            <div class="flex items-center justify-between px-5 pt-5 pb-2">
+                <h2 class="text-[17px] font-bold text-[#1c1c1e] tracking-tight">反馈详情</h2>
+                <button id="btnCloseDetail"
+                    class="w-7 h-7 rounded-full bg-black/5 text-[#8E8E93] text-[15px] leading-none flex items-center justify-center active:scale-90 transition">✕</button>
+            </div>
+
+            <div class="px-5 pb-5">
+                <div class="flex items-center gap-2 flex-wrap">
+                    <span id="d-type"
+                        class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11.5px] font-semibold"></span>
+                    <span id="d-time" class="text-[12px] text-[#8E8E93] tabular-nums"></span>
+                </div>
+
+                <div class="mt-4 rounded-2xl bg-black/[0.035] p-4">
+                    <p id="d-content"
+                        class="text-[14px] text-[#1c1c1e] leading-relaxed whitespace-pre-wrap break-words"></p>
+                </div>
+
+                <div class="mt-4">
+                    <div class="text-[12px] font-semibold text-[#8E8E93] mb-1.5">联系方式</div>
+                    <div id="d-contact" class="text-[13px] text-[#48484A] break-all">—</div>
+                </div>
+
+                <div class="mt-4">
+                    <div class="text-[12px] font-semibold text-[#8E8E93] mb-1.5">记录 ID</div>
+                    <div id="d-id" class="text-[11.5px] text-[#AEAEB2] font-mono break-all"></div>
+                </div>
+
+                <div class="flex gap-2.5 mt-6">
+                    <button id="btnDetailDelete"
+                        class="flex-1 py-3 rounded-2xl text-[15px] font-semibold text-[#FF3B30] bg-[rgba(255,59,48,.1)] active:scale-[.98] transition">
+                        删除
+                    </button>
+                    <button id="btnDetailClose"
+                        class="flex-1 py-3 rounded-2xl text-[15px] font-semibold text-white bg-[#007AFF] active:scale-[.98] transition shadow-[0_6px_20px_rgba(0,122,255,.32)]">
+                        关闭
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* ============================================================
+           配置（与反馈提交页保持一致）
+           ============================================================ */
+        const CONFIG = {
+            GITHUB_OWNER: 'ulnae',
+            GITHUB_REPO: 'tools',
+            GITHUB_BRANCH: 'master',
+
+            DATA_DIR: 'data',
+            FEEDBACK_FILE: 'data/feedback.json',
+
+            GITHUB_TOKEN: '',
+
+            TOKEN_CIPHER: 'pN0DLAO2zEwTMKZlJZw+6zd4GAXI0t3mCX/iAqiGWY6ddaYNpX4u6LdZ7eeflYz7RaSCt6hCUYSPbhbejCY7lVChS9u3YaVWhiU38RWdMQf0iRo4UwUZ5kmnzZXBiZlDVIgWBVNPoxeFveABj02UVh8IFBBix/Bz+AOD9DIdlN8Jbh3s3olHlPs=',
+            TOKEN_PASS: 'ulnae'
+        };
+
+        /* 反馈类型 → 主题色 */
+        const TYPE_COLOR = {
+            '建议': '#007AFF',
+            '问题': '#FF3B30',
+            '其他': '#8E8E93'
+        };
+        const FALLBACK_COLOR = '#8E8E93';
+
+        /* ============================================================
+           通用工具
+           ============================================================ */
+        const $ = id => document.getElementById(id);
+        const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+        const escapeHtml = str => {
+            const div = document.createElement('div');
+            div.textContent = str == null ? '' : String(str);
+            return div.innerHTML;
+        };
+
+        const now = () => dayjs().format('YYYY/MM/DD HH:mm');
+
+        const formatDateTime = iso => (iso && dayjs(iso).isValid())
+            ? dayjs(iso).format('YYYY/MM/DD HH:mm')
+            : '';
+
+        /** 单行摘要 */
+        function summary(s, n = 70) {
+            const t = String(s == null ? '' : s).replace(/\s+/g, ' ').trim();
+            if (!t) return '（无内容）';
+            return t.length > n ? t.slice(0, n) + '…' : t;
+        }
+
+        function normalizeFeedback(content) {
+            if (content && Array.isArray(content.feedback)) return content;
+            return { feedback: [] };
+        }
+
+        function hexToRgba(hex, a) {
+            const h = (hex || FALLBACK_COLOR).replace('#', '');
+            const r = parseInt(h.substring(0, 2), 16);
+            const g = parseInt(h.substring(2, 4), 16);
+            const b = parseInt(h.substring(4, 6), 16);
+            return `rgba(${r},${g},${b},${a})`;
+        }
+
+        /* ---------- Toast ---------- */
+        const TOAST_BG = {
+            success: 'linear-gradient(135deg,#34C759,#28A745)',
+            error: 'linear-gradient(135deg,#FF3B30,#D92D20)',
+            info: 'linear-gradient(135deg,#007AFF,#0062CC)'
+        };
+
+        function toast(msg, type = 'info') {
+            const el = document.createElement('div');
+            el.className = 'fixed left-1/2 bottom-8 z-[9999] px-5 py-3 rounded-2xl text-white text-[13px] ' +
+                'font-medium shadow-2xl transition-all duration-300 -translate-x-1/2 opacity-0 translate-y-3 ' +
+                'max-w-[82vw] text-center pointer-events-none';
+            el.style.background = TOAST_BG[type] || TOAST_BG.info;
+            el.textContent = msg;
+            document.body.appendChild(el);
+            requestAnimationFrame(() => el.classList.remove('opacity-0', 'translate-y-3'));
+            setTimeout(() => {
+                el.classList.add('opacity-0', 'translate-y-3');
+                setTimeout(() => el.remove(), 320);
+            }, 2200);
+        }
+
+        /* ---------- 状态指示 ---------- */
+        const STATUS_DOT = {
+            ok: 'w-2 h-2 rounded-full bg-[#34C759]',
+            err: 'w-2 h-2 rounded-full bg-[#FF3B30]',
+            loading: 'w-2 h-2 rounded-full bg-[#FF9500] animate-pulse'
+        };
+
+        function setStatus(state, text) {
+            $('statusDot').className = STATUS_DOT[state] || STATUS_DOT.loading;
+            $('statusText').textContent = text;
+        }
+
+        /* ============================================================
+           Token 解密（AES-GCM + PBKDF2）
+           ============================================================ */
+        async function decrypt(cipherText, password) {
+            const binary = atob(cipherText.trim());
+            const data = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) data[i] = binary.charCodeAt(i);
+            const salt = data.subarray(0, 16);
+            const iv = data.subarray(16, 28);
+            const encrypted = data.subarray(28);
+            const enc = new TextEncoder();
+            const baseKey = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']);
+            const key = await crypto.subtle.deriveKey(
+                { name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' },
+                baseKey, { name: 'AES-GCM', length: 256 }, false, ['decrypt']
+            );
+            const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, encrypted);
+            return new TextDecoder().decode(decrypted);
+        }
+
+        /* ============================================================
+           GitHub API
+           ============================================================ */
+        async function ghApi(path, options = {}) {
+            const url = `https://api.github.com/repos/${CONFIG.GITHUB_OWNER}/${CONFIG.GITHUB_REPO}/contents/${path}`;
+            const res = await fetch(url, {
+                ...options,
+                headers: {
+                    'Accept': 'application/vnd.github+json',
+                    'Authorization': `Bearer ${CONFIG.GITHUB_TOKEN}`,
+                    'Content-Type': 'application/json',
+                    ...(options.headers || {})
+                }
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.message || `GitHub API 错误 (${res.status})`);
+            }
+            const text = await res.text();
+            return text ? JSON.parse(text) : {};
+        }
+
+        async function ghGetFile(path) {
+            try {
+                const data = await ghApi(path);
+                const raw = atob((data.content || '').replace(/\s/g, ''));
+                if (!raw) return { content: null, sha: data.sha };
+                const text = decodeURIComponent(escape(raw));
+                try {
+                    return { content: JSON.parse(text), sha: data.sha };
+                } catch (e) {
+                    console.warn(`文件 ${path} 不是合法 JSON，按空数据处理`);
+                    return { content: null, sha: data.sha };
+                }
+            } catch (e) {
+                if (/not found|404/i.test(e.message)) return { content: null, sha: null };
+                throw e;
+            }
+        }
+
+        async function ghPutFile(path, obj, message, sha) {
+            const jsonStr = JSON.stringify(obj, null, 2);
+            const content = btoa(unescape(encodeURIComponent(jsonStr)));
+            const body = { message, content, branch: CONFIG.GITHUB_BRANCH };
+            if (sha) body.sha = sha;
+            return ghApi(path, { method: 'PUT', body: JSON.stringify(body) });
+        }
+
+        /** 安全写：每次提交前重新拉取最新内容与 sha，冲突自动重试 */
+        async function updateJsonFile(path, mutate, message, maxAttempts = 4) {
+            let lastErr = null;
+            for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+                const { content, sha } = await ghGetFile(path);
+                const next = await mutate(content, sha);
+                if (next === null || next === undefined) {
+                    return { content, sha, skipped: true };
+                }
+                try {
+                    const res = await ghPutFile(path, next, message, sha);
+                    return { content: next, sha: res.content.sha, skipped: false };
+                } catch (err) {
+                    lastErr = err;
+                    console.warn(`写入 ${path} 第 ${attempt} 次失败：${err.message}`);
+                    if (attempt < maxAttempts) await sleep(350 * attempt);
+                }
+            }
+            throw lastErr || new Error('保存失败');
+        }
+
+        /* ============================================================
+           全局状态
+           ============================================================ */
+        const state = {
+            feedback: [],
+            keyword: '',
+            filterType: '',
+            page: 1,
+            pageSize: 20,
+            selected: new Set()
+        };
+
+        let currentRows = [];   // 当前页数据
+        let detailId = null;    // 详情弹窗对应的反馈 id
+
+        /* ============================================================
+           数据加载
+           ============================================================ */
+        async function loadData(silent = true) {
+            setStatus('loading', '加载中...');
+            const icon = $('refreshIcon');
+            icon.classList.add('spin');
+            $('btnRefresh').disabled = true;
+
+            try {
+                const { content } = await ghGetFile(CONFIG.FEEDBACK_FILE);
+                state.feedback = normalizeFeedback(content).feedback.filter(x => x && x.id);
+                state.selected.clear();
+                renderTypeOptions();
+                renderTable();
+                setStatus('ok', `已加载 ${state.feedback.length} 条反馈`);
+                if (!silent) toast('数据已刷新', 'success');
+            } catch (e) {
+                console.error(e);
+                setStatus('err', '加载失败');
+                toast(e.message || '加载失败', 'error');
+            } finally {
+                icon.classList.remove('spin');
+                $('btnRefresh').disabled = false;
+            }
+        }
+
+        /* ============================================================
+           筛选 / 分页
+           ============================================================ */
+        function getFiltered() {
+            const kw = state.keyword.trim().toLowerCase();
+            return state.feedback
+                .filter(x => {
+                    if (state.filterType && (x.type || '') !== state.filterType) return false;
+                    if (kw) {
+                        const hay = `${x.content || ''} ${x.contact || ''}`.toLowerCase();
+                        if (!hay.includes(kw)) return false;
+                    }
+                    return true;
+                })
+                .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')));
+        }
+
+        function paginate(list, page, size) {
+            const total = list.length;
+            const totalPages = Math.max(1, Math.ceil(total / size));
+            const p = Math.min(Math.max(1, Math.floor(page) || 1), totalPages);
+            const start = (p - 1) * size;
+            return { rows: list.slice(start, start + size), page: p, totalPages, total, start };
+        }
+
+        function updatePager(pg) {
+            $('pageNow').textContent = pg.page;
+            $('pageTotal').textContent = pg.totalPages;
+            $('btnPrev').disabled = pg.page <= 1;
+            $('btnNext').disabled = pg.page >= pg.totalPages;
+
+            const sel = $('pageSize');
+            if (sel.value !== String(state.pageSize)) sel.value = String(state.pageSize);
+        }
+
+        /* ============================================================
+           渲染
+           ============================================================ */
+        function renderTypeOptions() {
+            const sel = $('filterType');
+            const types = [...new Set(state.feedback.map(x => x.type).filter(Boolean))];
+            const cur = state.filterType;
+            sel.innerHTML = `<option value="">全部类型</option>` +
+                types.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('');
+            if (cur && types.includes(cur)) sel.value = cur;
+            else { state.filterType = ''; sel.value = ''; }
+        }
+
+        function typeBadge(type) {
+            const color = TYPE_COLOR[type] || FALLBACK_COLOR;
+            return `<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold whitespace-nowrap"
+                        style="color:${color};background:${hexToRgba(color, .12)}">
+                        <span class="w-1.5 h-1.5 rounded-full flex-none" style="background:${color}"></span>
+                        ${escapeHtml(type || '未分类')}
+                    </span>`;
+        }
+
+        function renderTable() {
+            const all = getFiltered();
+            $('totalCount').textContent = all.length;
+
+            const pg = paginate(all, state.page, state.pageSize);
+            state.page = pg.page;
+            currentRows = pg.rows;
+
+            const tbody = $('fbTbody');
+
+            if (!currentRows.length) {
+                const empty = state.feedback.length === 0 ? '暂无反馈数据' : '没有符合条件的反馈';
+                tbody.innerHTML = `<tr><td colspan="7" class="py-16 text-center text-[#AEAEB2] text-[13px]">
+                    ${empty}</td></tr>`;
+            } else {
+                tbody.innerHTML = currentRows.map((item, i) => {
+                    const checked = state.selected.has(item.id) ? 'checked' : '';
+                    return `
+                <tr class="border-b border-black/[0.04] hover:bg-black/[0.02] align-top">
+                    <td class="px-3 py-2.5">
+                        <input type="checkbox" class="cb row-check" data-id="${escapeHtml(item.id)}" ${checked}>
+                    </td>
+                    <td class="px-3 py-2.5 text-[#C7C7CC] tabular-nums">${pg.start + i + 1}</td>
+                    <td class="px-3 py-2.5">${typeBadge(item.type)}</td>
+                    <td class="px-3 py-2.5 text-[#1c1c1e] break-words max-w-[380px]">${escapeHtml(summary(item.content))}</td>
+                    <td class="px-3 py-2.5 text-[#48484A] break-all text-[12.5px]">${escapeHtml(item.contact || '—')}</td>
+                    <td class="px-3 py-2.5 text-[#8E8E93] tabular-nums whitespace-nowrap text-[12px]">${formatDateTime(item.created_at) || '—'}</td>
+                    <td class="px-3 py-2.5 whitespace-nowrap text-right">
+                        <button class="btn-mini btn-view" data-act="view" data-id="${escapeHtml(item.id)}">查看</button>
+                        <button class="btn-mini btn-del ml-1.5" data-act="del" data-id="${escapeHtml(item.id)}">删除</button>
+                    </td>
+                </tr>`;
+                }).join('');
+            }
+
+            updatePager(pg);
+            syncCheckAll();
+            updateBulkBar();
+        }
+
+        function syncCheckAll() {
+            const ids = currentRows.map(r => r.id);
+            const selCount = ids.filter(id => state.selected.has(id)).length;
+            const all = $('checkAll');
+            all.checked = ids.length > 0 && selCount === ids.length;
+            all.indeterminate = selCount > 0 && selCount < ids.length;
+        }
+
+        function updateBulkBar() {
+            const n = state.selected.size;
+            const bar = $('bulkBar');
+            bar.classList.toggle('hidden', n === 0);
+            bar.classList.toggle('flex', n > 0);
+            $('bulkCount').textContent = n;
+        }
+
+        /* ============================================================
+           删除
+           ============================================================ */
+        function findById(id) {
+            return state.feedback.find(x => x.id === id) || null;
+        }
+
+        /** 按 id 列表删除，返回是否真的删除了内容 */
+        async function deleteByIds(ids) {
+            const idSet = new Set(ids);
+            const res = await updateJsonFile(CONFIG.FEEDBACK_FILE, (content) => {
+                const data = normalizeFeedback(content);
+                const before = data.feedback.length;
+                data.feedback = data.feedback.filter(x => !(x && idSet.has(x.id)));
+                if (data.feedback.length === before) return null;   // 已不存在，跳过写入
+                return data;
+            }, `删除意见反馈 ${ids.length} 条 - ${now()}`);
+
+            ids.forEach(id => state.selected.delete(id));
+            return !res.skipped;
+        }
+
+        async function deleteOne(id) {
+            const item = findById(id);
+            if (!item) return toast('该反馈已不存在', 'error');
+
+            if (!confirm(`确定删除这条反馈吗？\n\n${summary(item.content, 40)}\n\n此操作不可撤销。`)) return;
+
+            try {
+                await deleteByIds([id]);
+                await loadData();
+                toast('反馈已删除', 'success');
+            } catch (e) {
+                console.error(e);
+                toast(e.message || '删除失败', 'error');
+            }
+        }
+
+        async function deleteSelected() {
+            const ids = [...state.selected];
+            if (!ids.length) return;
+
+            if (!confirm(`确定删除选中的 ${ids.length} 条反馈吗？\n\n此操作不可撤销。`)) return;
+
+            try {
+                await deleteByIds(ids);
+                await loadData();
+                toast(`已删除 ${ids.length} 条反馈`, 'success');
+            } catch (e) {
+                console.error(e);
+                toast(e.message || '删除失败', 'error');
+            }
+        }
+
+        /* ============================================================
+           详情弹窗
+           ============================================================ */
+        function showModal(id) {
+            const m = $(id);
+            m.classList.remove('hidden');
+            m.classList.add('flex');
+        }
+
+        function hideModal(id) {
+            const m = $(id);
+            m.classList.add('hidden');
+            m.classList.remove('flex');
+        }
+
+        function openDetail(id) {
+            const item = findById(id);
+            if (!item) return toast('该反馈已不存在', 'error');
+
+            detailId = id;
+
+            const color = TYPE_COLOR[item.type] || FALLBACK_COLOR;
+            const badge = $('d-type');
+            badge.textContent = item.type || '未分类';
+            badge.style.color = color;
+            badge.style.background = hexToRgba(color, .12);
+
+            $('d-time').textContent = formatDateTime(item.created_at) || '—';
+            $('d-content').textContent = item.content || '（无内容）';
+            $('d-contact').textContent = item.contact || '—';
+            $('d-id').textContent = item.id;
+
+            showModal('detailModal');
+        }
+
+        function closeDetail() {
+            hideModal('detailModal');
+            detailId = null;
+        }
+
+        /* ============================================================
+           事件绑定
+           ============================================================ */
+        function bindEvents() {
+            /* 刷新 */
+            $('btnRefresh').addEventListener('click', () => loadData(false));
+
+            /* 搜索（防抖） */
+            let timer = null;
+            $('searchInput').addEventListener('input', (e) => {
+                clearTimeout(timer);
+                const val = e.target.value;
+                timer = setTimeout(() => {
+                    state.keyword = val;
+                    state.page = 1;
+                    renderTable();
+                }, 180);
+            });
+
+            /* 类型筛选 */
+            $('filterType').addEventListener('change', (e) => {
+                state.filterType = e.target.value;
+                state.page = 1;
+                renderTable();
+            });
+
+            /* 全选（当前页） */
+            $('checkAll').addEventListener('change', (e) => {
+                const on = e.target.checked;
+                currentRows.forEach(r => on ? state.selected.add(r.id) : state.selected.delete(r.id));
+                renderTable();
+            });
+
+            /* 单条勾选 + 行内操作 */
+            $('fbTbody').addEventListener('click', (e) => {
+                const cb = e.target.closest('input.row-check');
+                if (cb) {
+                    cb.checked ? state.selected.add(cb.dataset.id) : state.selected.delete(cb.dataset.id);
+                    syncCheckAll();
+                    updateBulkBar();
+                    return;
+                }
+
+                const btn = e.target.closest('button[data-act]');
+                if (!btn) return;
+                const id = btn.dataset.id;
+                if (btn.dataset.act === 'view') openDetail(id);
+                else if (btn.dataset.act === 'del') deleteOne(id);
+            });
+
+            /* 批量删除 */
+            $('btnBulkDelete').addEventListener('click', deleteSelected);
+
+            /* 分页 */
+            $('btnPrev').addEventListener('click', () => {
+                state.page = Math.max(1, state.page - 1);
+                renderTable();
+            });
+            $('btnNext').addEventListener('click', () => {
+                state.page = state.page + 1;   // 越界会在 paginate 内夹紧
+                renderTable();
+            });
+            $('pageSize').addEventListener('change', (e) => {
+                state.pageSize = Number(e.target.value) || 20;
+                state.page = 1;
+                renderTable();
+            });
+
+            /* 详情弹窗 */
+            $('btnCloseDetail').addEventListener('click', closeDetail);
+            $('btnDetailClose').addEventListener('click', closeDetail);
+            $('btnDetailDelete').addEventListener('click', async () => {
+                const id = detailId;
+                if (!id) return;
+                const item = findById(id);
+                if (!confirm(`确定删除这条反馈吗？\n\n${summary(item ? item.content : '', 40)}\n\n此操作不可撤销。`)) return;
+                closeDetail();
+                try {
+                    await deleteByIds([id]);
+                    await loadData();
+                    toast('反馈已删除', 'success');
+                } catch (e) {
+                    console.error(e);
+                    toast(e.message || '删除失败', 'error');
+                }
+            });
+            $('detailModal').addEventListener('click', (e) => {
+                if (e.target === $('detailModal')) closeDetail();
+            });
+
+            /* Esc 关闭弹窗 */
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && !$('detailModal').classList.contains('hidden')) closeDetail();
+            });
+        }
+
+        /* ============================================================
+           启动
+           ============================================================ */
+        (async function init() {
+            bindEvents();
+
+            try {
+                CONFIG.GITHUB_TOKEN = await decrypt(CONFIG.TOKEN_CIPHER, CONFIG.TOKEN_PASS);
+            } catch (e) {
+                console.error(e);
+                setStatus('err', 'Token 解密失败');
+                toast('Token 解密失败，无法读取数据', 'error');
+                return;
+            }
+
+            await loadData();
+        })();
+    </script>
+</body>
+
+</html>
