@@ -1,34 +1,34 @@
 {
   "types": [
     {
-      "id": "t_muc9zqlh6p2z",
+      "id": "2be06627-fddf-4ce6-8b7b-36610738ed57",
       "name": "美食",
       "color": "#ffcc00",
       "created_at": "2026-09-22T06:10:58.277Z",
       "updated_at": "2026-09-29T02:53:58.424Z"
     },
     {
-      "id": "t_muca0ai20skp",
+      "id": "85fda8c7-8a2f-4d93-a2cd-f20731025156",
       "name": "风景",
       "color": "#007aff",
       "created_at": "2026-09-22T06:11:24.074Z",
       "updated_at": "2026-09-29T02:55:36.095Z"
     },
     {
-      "id": "t_muca0y5e3au6",
+      "id": "c39c7221-216f-454a-814d-52ac0af788cd",
       "name": "钓点",
       "color": "#af52de",
       "created_at": "2026-09-22T06:11:54.722Z",
       "updated_at": "2026-09-29T02:54:20.728Z"
     },
     {
-      "id": "t_mucazm031gmc",
+      "id": "bf93521a-2d3d-400a-9348-392f70f3f6bb",
       "name": "避雷",
       "color": "#ef4444",
       "created_at": "2026-09-22T06:38:51.939Z"
     },
     {
-      "id": "t_mum13xpl7pum",
+      "id": "4b537854-ffae-48dd-a8b6-c11662171c0c",
       "name": "test",
       "color": "#34c759",
       "created_at": "2026-09-29T01:59:59.337Z"
