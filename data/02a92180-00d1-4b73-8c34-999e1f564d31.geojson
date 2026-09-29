@@ -1,21 +1,4 @@
 {
   "type": "FeatureCollection",
-  "features": [
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          108.81958007812501,
-          34.361576287484176
-        ]
-      },
-      "properties": {
-        "title": "二楼",
-        "description": "比较坑",
-        "type": "02a92180-00d1-4b73-8c34-999e1f564d31",
-        "created_at": "2026-09-29T03:52:05.506Z"
-      }
-    }
-  ]
+  "features": []
 }
