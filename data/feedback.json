@@ -1,0 +1,18 @@
+{
+  "feedback": [
+    {
+      "id": "8a7b6c5d-1234-4e5f-9a0b-1c2d3e4f5a6b",
+      "type": "建议",
+      "content": "希望增加夜间模式，晚上看有点刺眼。",
+      "contact": "user@example.com",
+      "created_at": "2026-09-29T10:23:45.678Z"
+    },
+    {
+      "id": "9b8c7d6e-2345-5f6a-0b1c-2d3e4f5a6b7c",
+      "type": "问题",
+      "content": "在标点编辑弹窗里，经纬度输入框有时候无法输入小数点。",
+      "contact": "",
+      "created_at": "2026-09-28T15:04:12.345Z"
+    }
+  ]
+}
