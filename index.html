@@ -205,8 +205,32 @@
 
     </main>
 
+    <!-- ══ 意见反馈入口（次级） ═══════════════════════════ -->
+    <section class="icon-pop mt-8" style="animation-delay:.34s" aria-label="意见反馈">
+      <a href="./feedback" target="_blank" rel="noopener noreferrer"
+         class="group flex items-center gap-3.5 rounded-[22px] border border-white/60 bg-white/60 px-4 py-3.5 shadow-[0_18px_40px_-26px_rgba(0,0,0,.6)] backdrop-blur-2xl transition-transform duration-300 ease-out hover:-translate-y-0.5 active:scale-[.985] active:duration-100 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[#FF6B95]/50 focus-visible:ring-offset-4 focus-visible:ring-offset-transparent dark:border-white/[0.08] dark:bg-white/[0.06]">
+
+        <!-- 小尺寸渐变图标 -->
+        <span class="grid h-11 w-11 shrink-0 place-items-center rounded-[13px] bg-gradient-to-b from-[#FF6B95] to-[#E0305C] text-white shadow-[0_8px_16px_-8px_rgba(224,48,92,.8),inset_0_1px_0_rgba(255,255,255,.45)]">
+          <i data-lucide="message-square" class="h-5 w-5"></i>
+        </span>
+
+        <!-- 文案 -->
+        <span class="min-w-0 flex-1">
+          <span class="block text-[14.5px] font-semibold tracking-[-0.01em]">意见反馈</span>
+          <span class="mt-0.5 block truncate text-[12px] text-black/45 dark:text-white/45">
+            遇到问题或有建议？告诉我们
+          </span>
+        </span>
+
+        <!-- 箭头 -->
+        <i data-lucide="chevron-right"
+           class="h-[18px] w-[18px] shrink-0 text-black/25 transition-transform duration-200 group-hover:translate-x-0.5 dark:text-white/30"></i>
+      </a>
+    </section>
+
     <!-- 页脚 -->
-    <footer class="icon-pop mt-auto pb-[calc(env(safe-area-inset-bottom)+26px)] pt-14 text-center"
+    <footer class="icon-pop mt-auto pb-[calc(env(safe-area-inset-bottom)+26px)] pt-10 text-center"
             style="animation-delay:.38s">
       <!-- Home Indicator 视觉暗示 -->
       <span class="mx-auto mt-6 block h-[5px] w-[134px] rounded-full bg-black/15 dark:bg-white/25"
