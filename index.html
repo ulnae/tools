@@ -72,6 +72,9 @@
     animation: iconPop .56s cubic-bezier(.22, 1, .36, 1) backwards;
   }
 
+  /* ── 数字等宽，跳秒不抖动 ──────────────────────────────── */
+  .tnum { font-variant-numeric: tabular-nums; }
+
   /* ── 无障碍：尊重「减弱动态效果」 ───────────────────────── */
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
@@ -91,7 +94,7 @@
   <div class="mx-auto flex min-h-screen w-full max-w-[560px] flex-col px-6">
 
     <!-- 页头 -->
-    <header class="icon-pop pb-10 pt-[calc(env(safe-area-inset-top)+58px)] text-center sm:pt-[calc(env(safe-area-inset-top)+76px)]"
+    <header class="icon-pop pb-8 pt-[calc(env(safe-area-inset-top)+52px)] text-center sm:pt-[calc(env(safe-area-inset-top)+70px)]"
             style="animation-delay:.02s">
       <h1 class="text-[clamp(30px,8vw,36px)] font-bold leading-none tracking-[-0.035em]">
         工具箱
@@ -101,13 +104,59 @@
       </p>
     </header>
 
+    <!-- ══ 今日 · 农历 · 时辰 ═══════════════════════════════ -->
+    <section class="icon-pop pb-9" style="animation-delay:.06s" aria-label="今日日期与农历">
+      <div class="overflow-hidden rounded-[24px] border border-white/60 bg-white/60 shadow-[0_18px_40px_-26px_rgba(0,0,0,.6)] backdrop-blur-2xl dark:border-white/[0.08] dark:bg-white/[0.06]">
+
+        <!-- 公历 + 农历 -->
+        <div class="flex items-center gap-4 px-4 py-4 sm:px-5">
+          <!-- 日号 -->
+          <div class="flex shrink-0 flex-col items-center justify-center">
+            <span id="solar-day"
+                  class="tnum text-[38px] font-semibold leading-none tracking-[-0.045em] sm:text-[42px]">--</span>
+            <span id="solar-week"
+                  class="mt-1.5 text-[11px] font-medium text-black/45 dark:text-white/45 sm:text-[11.5px]">—</span>
+          </div>
+
+          <div class="h-11 w-px shrink-0 bg-black/[0.09] dark:bg-white/[0.14]"></div>
+
+          <!-- 年月 / 农历 / 干支 -->
+          <div class="min-w-0 flex-1">
+            <p id="solar-ym" class="text-[14px] font-semibold tracking-[-0.015em]">—</p>
+            <p id="lunar-date" class="mt-1 truncate text-[12.5px] text-black/50 dark:text-white/50">—</p>
+            <p id="ganzhi-year" class="mt-0.5 truncate text-[11.5px] text-black/35 dark:text-white/35">—</p>
+          </div>
+        </div>
+
+        <div class="h-px bg-black/[0.07] dark:bg-white/[0.09]"></div>
+
+        <!-- 时辰 / 实时钟 -->
+        <div class="flex items-center justify-between gap-3 px-4 py-3.5 sm:px-5">
+          <div class="flex min-w-0 items-center gap-2">
+            <span class="grid h-7 w-7 shrink-0 place-items-center rounded-[9px] bg-black/[0.06] text-black/55 dark:bg-white/10 dark:text-white/70">
+              <i data-lucide="clock" class="h-3.5 w-3.5"></i>
+            </span>
+            <span id="shichen" class="text-[13.5px] font-semibold tracking-[-0.01em]">—</span>
+            <span id="shichen-range"
+                  class="tnum truncate text-[11.5px] text-black/40 dark:text-white/40">—</span>
+          </div>
+
+          <div class="shrink-0 text-right">
+            <p id="clock" class="tnum text-[13.5px] font-semibold tracking-[-0.01em]">--:--:--</p>
+            <p id="day-ganzhi" class="mt-0.5 text-[11px] text-black/40 dark:text-white/40">—</p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
     <!-- 工具图标网格 -->
     <main class="grid grid-cols-4 gap-x-1 gap-y-8 sm:gap-x-3">
 
       <!-- 文件传输助手 -->
       <a href="./transfer" target="_blank" rel="noopener noreferrer"
          class="icon-pop group flex flex-col items-center gap-2.5 rounded-2xl py-1 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[#007AFF]/60 focus-visible:ring-offset-4 focus-visible:ring-offset-transparent dark:focus-visible:ring-offset-transparent"
-         style="animation-delay:.06s">
+         style="animation-delay:.12s">
         <span class="grid aspect-square w-full max-w-[68px] place-items-center rounded-[22.5%] bg-gradient-to-b from-[#4DA2FF] to-[#0060DF] text-white shadow-[0_12px_22px_-10px_rgba(0,96,223,.85),inset_0_1px_0_rgba(255,255,255,.45)] transition-transform duration-300 ease-out group-hover:-translate-y-1 group-active:scale-[0.88] group-active:duration-100 sm:max-w-[76px]">
           <i data-lucide="arrow-up-down" class="h-7 w-7 sm:h-8 sm:w-8"></i>
         </span>
@@ -119,7 +168,7 @@
       <!-- 小说阅读器 -->
       <a href="./reader" target="_blank" rel="noopener noreferrer"
          class="icon-pop group flex flex-col items-center gap-2.5 rounded-2xl py-1 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[#5856D6]/60 focus-visible:ring-offset-4 focus-visible:ring-offset-transparent dark:focus-visible:ring-offset-transparent"
-         style="animation-delay:.13s">
+         style="animation-delay:.18s">
         <span class="grid aspect-square w-full max-w-[68px] place-items-center rounded-[22.5%] bg-gradient-to-b from-[#9B8AFF] to-[#5E5CE6] text-white shadow-[0_12px_22px_-10px_rgba(94,92,230,.85),inset_0_1px_0_rgba(255,255,255,.45)] transition-transform duration-300 ease-out group-hover:-translate-y-1 group-active:scale-[0.88] group-active:duration-100 sm:max-w-[76px]">
           <i data-lucide="book-open" class="h-7 w-7 sm:h-8 sm:w-8"></i>
         </span>
@@ -131,7 +180,7 @@
       <!-- 共享标点 -->
       <a href="./marker" target="_blank" rel="noopener noreferrer"
          class="icon-pop group flex flex-col items-center gap-2.5 rounded-2xl py-1 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[#34C759]/60 focus-visible:ring-offset-4 focus-visible:ring-offset-transparent dark:focus-visible:ring-offset-transparent"
-         style="animation-delay:.20s">
+         style="animation-delay:.24s">
         <span class="grid aspect-square w-full max-w-[68px] place-items-center rounded-[22.5%] bg-gradient-to-b from-[#5BD96B] to-[#1E9E3E] text-white shadow-[0_12px_22px_-10px_rgba(30,158,62,.85),inset_0_1px_0_rgba(255,255,255,.45)] transition-transform duration-300 ease-out group-hover:-translate-y-1 group-active:scale-[0.88] group-active:duration-100 sm:max-w-[76px]">
           <i data-lucide="map-pin" class="h-7 w-7 sm:h-8 sm:w-8"></i>
         </span>
@@ -143,7 +192,7 @@
       <!-- 二维码生成器 -->
       <a href="./qrcode" target="_blank" rel="noopener noreferrer"
          class="icon-pop group flex flex-col items-center gap-2.5 rounded-2xl py-1 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[#FF9F0A]/60 focus-visible:ring-offset-4 focus-visible:ring-offset-transparent dark:focus-visible:ring-offset-transparent"
-         style="animation-delay:.27s">
+         style="animation-delay:.30s">
         <span class="grid aspect-square w-full max-w-[68px] place-items-center rounded-[22.5%] bg-gradient-to-b from-[#FFC65C] to-[#F08C00] text-white shadow-[0_12px_22px_-10px_rgba(240,140,0,.85),inset_0_1px_0_rgba(255,255,255,.45)] transition-transform duration-300 ease-out group-hover:-translate-y-1 group-active:scale-[0.88] group-active:duration-100 sm:max-w-[76px]">
           <i data-lucide="qr-code" class="h-7 w-7 sm:h-8 sm:w-8"></i>
         </span>
@@ -158,7 +207,7 @@
 
     <!-- 页脚 -->
     <footer class="icon-pop mt-auto pb-[calc(env(safe-area-inset-bottom)+26px)] pt-14 text-center"
-            style="animation-delay:.36s">
+            style="animation-delay:.38s">
       <!-- Home Indicator 视觉暗示 -->
       <span class="mx-auto mt-6 block h-[5px] w-[134px] rounded-full bg-black/15 dark:bg-white/25"
             aria-hidden="true"></span>
@@ -166,10 +215,108 @@
 
   </div>
 
+  <!-- ══ 第三方库（CDN）═══════════════════════════════════ -->
   <!-- Lucide 图标：把 <i data-lucide> 渲染为 SVG -->
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.454.0/dist/umd/lucide.min.js"></script>
+
+  <!-- Day.js：日期格式化 / 中文星期 -->
+  <script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dayjs@1/locale/zh-cn.js"></script>
+
+  <!-- lunar-javascript：农历、干支、生肖、时辰 -->
+  <script src="https://cdn.jsdelivr.net/npm/lunar-javascript@1/lunar.js"></script>
+
   <script>
+  (function () {
+    'use strict';
+
+    /* ── 0. 初始化图标 ───────────────────────────────── */
     lucide.createIcons();
+
+    /* ── 1. 依赖校验 ─────────────────────────────────── */
+    if (typeof dayjs === 'undefined' || typeof Lunar === 'undefined') {
+      console.warn('[工具箱] 日期库加载失败，日历卡片将保持占位状态。');
+      return;
+    }
+
+    /* lunar-javascript 的 UMD 导出可能是 { Lunar, Solar, ... } 或直接是 Lunar */
+    var LunarCalendar = (Lunar && Lunar.Lunar) ? Lunar.Lunar : Lunar;
+
+    dayjs.locale('zh-cn');
+
+    /* ── 2. 常量表（仅做「地支 → 时段」静态映射）──────── */
+    var SHICHEN_RANGE = {
+      '子': '23:00–00:59',
+      '丑': '01:00–02:59',
+      '寅': '03:00–04:59',
+      '卯': '05:00–06:59',
+      '辰': '07:00–08:59',
+      '巳': '09:00–10:59',
+      '午': '11:00–12:59',
+      '未': '13:00–14:59',
+      '申': '15:00–16:59',
+      '酉': '17:00–18:59',
+      '戌': '19:00–20:59',
+      '亥': '21:00–22:59'
+    };
+
+    /* ── 3. DOM 引用 ─────────────────────────────────── */
+    var el = {
+      solarDay:  document.getElementById('solar-day'),
+      solarWeek: document.getElementById('solar-week'),
+      solarYm:   document.getElementById('solar-ym'),
+      lunarDate: document.getElementById('lunar-date'),
+      gzYear:    document.getElementById('ganzhi-year'),
+      shichen:   document.getElementById('shichen'),
+      shRange:   document.getElementById('shichen-range'),
+      clock:     document.getElementById('clock'),
+      gzDay:     document.getElementById('day-ganzhi')
+    };
+
+    /* ── 4. 渲染 ─────────────────────────────────────── */
+
+    // 每天只更新一次的部分
+    var lastDayKey = '';
+    function renderDate(now, lunar) {
+      el.solarDay.textContent  = now.format('D');
+      el.solarWeek.textContent = now.format('dddd');
+      el.solarYm.textContent   = now.format('YYYY年M月');
+
+      el.lunarDate.textContent =
+        '农历' + lunar.getMonthInChinese() + '月' + lunar.getDayInChinese();
+
+      el.gzYear.textContent =
+        lunar.getYearInGanZhi() + lunar.getYearShengXiao() + '年';
+    }
+
+    // 每秒更新的部分
+    function renderTime(now, lunar) {
+      el.clock.textContent = now.format('HH:mm:ss');
+
+      var zhi = lunar.getTimeZhi();
+      el.shichen.textContent = zhi + '时';
+      el.shRange.textContent = SHICHEN_RANGE[zhi] || '';
+
+      el.gzDay.textContent =
+        lunar.getDayInGanZhi() + '日 · ' + lunar.getTimeInGanZhi() + '时';
+    }
+
+    /* ── 5. 主循环 ───────────────────────────────────── */
+    function tick() {
+      var now   = dayjs();
+      var lunar = LunarCalendar.fromDate(now.toDate());
+
+      var dayKey = now.format('YYYY-MM-DD');
+      if (dayKey !== lastDayKey) {
+        lastDayKey = dayKey;
+        renderDate(now, lunar);
+      }
+      renderTime(now, lunar);
+    }
+
+    tick();
+    setInterval(tick, 1000);
+  })();
   </script>
 
 </body>
