@@ -243,6 +243,23 @@
             background-color: #F7F7F9;
         }
 
+        /* ---------- 来源标签 ---------- */
+        .src-tag {
+            display: inline-block;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            padding: 1px 8px;
+            border-radius: 8px;
+            font-size: 11.5px;
+            font-weight: 600;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            color: #5856D6;
+            background: rgba(88, 86, 214, .1);
+            vertical-align: middle;
+        }
+
         /* ---------- 加载旋转 ---------- */
         @keyframes spin {
             to {
@@ -287,9 +304,12 @@
             <!-- 工具条 -->
             <div class="flex-none px-3 py-3 flex items-center gap-2 flex-wrap border-b border-black/[0.05]">
                 <input id="searchInput" class="ios-input !w-auto flex-1 min-w-[160px]" type="text"
-                    placeholder="搜索内容或联系方式">
+                    placeholder="搜索内容、联系方式或来源">
                 <select id="filterType" class="ios-input !w-auto min-w-[130px]">
                     <option value="">全部类型</option>
+                </select>
+                <select id="filterSource" class="ios-input !w-auto min-w-[140px]">
+                    <option value="">全部来源</option>
                 </select>
                 <span class="text-[12px] text-[#8E8E93] whitespace-nowrap">
                     共 <b id="totalCount" class="text-[#1c1c1e] tabular-nums">0</b> 条
@@ -305,7 +325,7 @@
 
             <!-- 表格滚动区 -->
             <div class="flex-1 min-h-0 scroll-area">
-                <table class="w-full text-[13px] min-w-[900px]">
+                <table class="w-full text-[13px] min-w-[1040px]">
                     <thead>
                         <tr class="text-[#8E8E93] text-[12px]">
                             <th class="text-left font-semibold px-3 py-2.5 w-[42px]">
@@ -315,6 +335,7 @@
                             <th class="text-left font-semibold px-3 py-2.5 w-[86px]">类型</th>
                             <th class="text-left font-semibold px-3 py-2.5">反馈内容</th>
                             <th class="text-left font-semibold px-3 py-2.5 w-[150px]">联系方式</th>
+                            <th class="text-left font-semibold px-3 py-2.5 w-[130px]">来源</th>
                             <th class="text-left font-semibold px-3 py-2.5 w-[150px]">提交时间</th>
                             <th class="text-right font-semibold px-3 py-2.5 w-[120px]">操作</th>
                         </tr>
@@ -373,6 +394,11 @@
                 </div>
 
                 <div class="mt-4">
+                    <div class="text-[12px] font-semibold text-[#8E8E93] mb-1.5">来源</div>
+                    <div id="d-source" class="text-[13px] text-[#48484A] break-all">—</div>
+                </div>
+
+                <div class="mt-4">
                     <div class="text-[12px] font-semibold text-[#8E8E93] mb-1.5">记录 ID</div>
                     <div id="d-id" class="text-[11.5px] text-[#AEAEB2] font-mono break-all"></div>
                 </div>
@@ -417,6 +443,9 @@
         };
         const FALLBACK_COLOR = '#8E8E93';
 
+        /* 来源为空时的展示文案 */
+        const EMPTY_SOURCE_TEXT = '未标记';
+
         /* ============================================================
            通用工具
            ============================================================ */
@@ -440,6 +469,11 @@
             const t = String(s == null ? '' : s).replace(/\s+/g, ' ').trim();
             if (!t) return '（无内容）';
             return t.length > n ? t.slice(0, n) + '…' : t;
+        }
+
+        /** 归一化来源：兼容字段缺失/为 null 的情况 */
+        function normalizeSource(v) {
+            return String(v == null ? '' : v).trim();
         }
 
         function normalizeFeedback(content) {
@@ -585,6 +619,7 @@
             feedback: [],
             keyword: '',
             filterType: '',
+            filterSource: '',
             page: 1,
             pageSize: 20,
             selected: new Set()
@@ -607,6 +642,7 @@
                 state.feedback = normalizeFeedback(content).feedback.filter(x => x && x.id);
                 state.selected.clear();
                 renderTypeOptions();
+                renderSourceOptions();
                 renderTable();
                 setStatus('ok', `已加载 ${state.feedback.length} 条反馈`);
                 if (!silent) toast('数据已刷新', 'success');
@@ -628,8 +664,18 @@
             return state.feedback
                 .filter(x => {
                     if (state.filterType && (x.type || '') !== state.filterType) return false;
+
+                    if (state.filterSource) {
+                        const src = normalizeSource(x.source);
+                        if (state.filterSource === '__empty__') {
+                            if (src) return false;
+                        } else if (src !== state.filterSource) {
+                            return false;
+                        }
+                    }
+
                     if (kw) {
-                        const hay = `${x.content || ''} ${x.contact || ''}`.toLowerCase();
+                        const hay = `${x.content || ''} ${x.contact || ''} ${normalizeSource(x.source)}`.toLowerCase();
                         if (!hay.includes(kw)) return false;
                     }
                     return true;
@@ -668,6 +714,31 @@
             else { state.filterType = ''; sel.value = ''; }
         }
 
+        function renderSourceOptions() {
+            const sel = $('filterSource');
+            const sources = [...new Set(
+                state.feedback.map(x => normalizeSource(x.source)).filter(Boolean)
+            )].sort((a, b) => a.localeCompare(b, 'zh-CN'));
+
+            const hasEmpty = state.feedback.some(x => !normalizeSource(x.source));
+            const cur = state.filterSource;
+
+            let html = `<option value="">全部来源</option>`;
+            html += sources
+                .map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`)
+                .join('');
+            if (hasEmpty) html += `<option value="__empty__">${EMPTY_SOURCE_TEXT}</option>`;
+
+            sel.innerHTML = html;
+
+            const valid = !cur || cur === '__empty__'
+                ? (cur === '__empty__' ? hasEmpty : true)
+                : sources.includes(cur);
+
+            if (valid) sel.value = cur;
+            else { state.filterSource = ''; sel.value = ''; }
+        }
+
         function typeBadge(type) {
             const color = TYPE_COLOR[type] || FALLBACK_COLOR;
             return `<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold whitespace-nowrap"
@@ -675,6 +746,14 @@
                         <span class="w-1.5 h-1.5 rounded-full flex-none" style="background:${color}"></span>
                         ${escapeHtml(type || '未分类')}
                     </span>`;
+        }
+
+        function sourceCell(src) {
+            const s = normalizeSource(src);
+            if (!s) {
+                return `<span class="text-[#C7C7CC] text-[12px]">—</span>`;
+            }
+            return `<span class="src-tag" title="${escapeHtml(s)}">${escapeHtml(s)}</span>`;
         }
 
         function renderTable() {
@@ -689,7 +768,7 @@
 
             if (!currentRows.length) {
                 const empty = state.feedback.length === 0 ? '暂无反馈数据' : '没有符合条件的反馈';
-                tbody.innerHTML = `<tr><td colspan="7" class="py-16 text-center text-[#AEAEB2] text-[13px]">
+                tbody.innerHTML = `<tr><td colspan="8" class="py-16 text-center text-[#AEAEB2] text-[13px]">
                     ${empty}</td></tr>`;
             } else {
                 tbody.innerHTML = currentRows.map((item, i) => {
@@ -703,6 +782,7 @@
                     <td class="px-3 py-2.5">${typeBadge(item.type)}</td>
                     <td class="px-3 py-2.5 text-[#1c1c1e] break-words max-w-[380px]">${escapeHtml(summary(item.content))}</td>
                     <td class="px-3 py-2.5 text-[#48484A] break-all text-[12.5px]">${escapeHtml(item.contact || '—')}</td>
+                    <td class="px-3 py-2.5">${sourceCell(item.source)}</td>
                     <td class="px-3 py-2.5 text-[#8E8E93] tabular-nums whitespace-nowrap text-[12px]">${formatDateTime(item.created_at) || '—'}</td>
                     <td class="px-3 py-2.5 whitespace-nowrap text-right">
                         <button class="btn-mini btn-view" data-act="view" data-id="${escapeHtml(item.id)}">查看</button>
@@ -814,9 +894,14 @@
             badge.style.color = color;
             badge.style.background = hexToRgba(color, .12);
 
+            const src = normalizeSource(item.source);
             $('d-time').textContent = formatDateTime(item.created_at) || '—';
             $('d-content').textContent = item.content || '（无内容）';
             $('d-contact').textContent = item.contact || '—';
+            $('d-source').textContent = src || EMPTY_SOURCE_TEXT;
+            $('d-source').className = src
+                ? 'text-[13px] text-[#48484A] break-all font-mono'
+                : 'text-[13px] text-[#AEAEB2] break-all';
             $('d-id').textContent = item.id;
 
             showModal('detailModal');
@@ -849,6 +934,13 @@
             /* 类型筛选 */
             $('filterType').addEventListener('change', (e) => {
                 state.filterType = e.target.value;
+                state.page = 1;
+                renderTable();
+            });
+
+            /* 来源筛选 */
+            $('filterSource').addEventListener('change', (e) => {
+                state.filterSource = e.target.value;
                 state.page = 1;
                 renderTable();
             });

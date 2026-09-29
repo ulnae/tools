@@ -210,6 +210,9 @@
                 <input id="fb-contact" class="ios-input" type="text" maxlength="50"
                     placeholder="邮箱 / 微信 / 手机号，便于我们回复你">
 
+                <!-- 来源提示（地址栏带 f 参数时才显示） -->
+                <p id="srcHint" class="hidden text-[11.5px] text-[#AEAEB2] mt-3 text-center"></p>
+
                 <!-- 提交 -->
                 <button id="btnSubmit"
                     class="mt-6 w-full py-3.5 rounded-2xl text-[16px] font-semibold text-white bg-[#007AFF] active:scale-[.98] transition shadow-[0_8px_24px_rgba(0,122,255,.32)] disabled:opacity-50">
@@ -273,6 +276,21 @@
         };
 
         const now = () => dayjs().format('YYYY/MM/DD HH:mm');
+
+        /* ---------- 读取地址栏 f 参数作为反馈来源 ---------- */
+        const MAX_SOURCE_LEN = 100;
+
+        function getSourceFromUrl() {
+            try {
+                const v = new URLSearchParams(location.search).get('f');
+                if (!v) return '';
+                // 去掉首尾空白并限制长度，避免异常超长内容写进数据文件
+                return v.trim().slice(0, MAX_SOURCE_LEN);
+            } catch (e) {
+                console.warn('解析来源参数失败：', e);
+                return '';
+            }
+        }
 
         function normalizeFeedback(content) {
             if (content && Array.isArray(content.feedback)) return content;
@@ -405,7 +423,7 @@
         /* ============================================================
            页面状态
            ============================================================ */
-        const state = { type: '建议', submitting: false };
+        const state = { type: '建议', submitting: false, source: '' };
 
         /* ============================================================
            分段控件
@@ -418,6 +436,18 @@
                     btns.forEach(x => x.classList.toggle('on', x === b));
                 });
             });
+        }
+
+        /* ============================================================
+           来源提示
+           ============================================================ */
+        function initSource() {
+            state.source = getSourceFromUrl();
+            if (!state.source) return;
+            console.log('反馈来源：', state.source);
+            const hint = $('srcHint');
+            hint.textContent = `来源：${state.source}`;
+            hint.classList.remove('hidden');
         }
 
         /* ============================================================
@@ -447,6 +477,7 @@
                 type: state.type,
                 content,
                 contact,
+                source: getSourceFromUrl(),   // 反馈来源：地址栏 ?f=xxx，没有则为空字符串
                 created_at: new Date().toISOString()
             };
 
@@ -494,6 +525,7 @@
            ============================================================ */
         function bindEvents() {
             initSeg();
+            initSource();
 
             $('fb-content').addEventListener('input', (e) => {
                 $('fbCount').textContent = e.target.value.length;
