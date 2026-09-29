@@ -503,10 +503,13 @@
 
             GITHUB_TOKEN: '',
 
-            MAP_CENTER: [34.75, 113.62],
-            MAP_ZOOM: 12,
+            MAP_CENTER: [35.0, 104.0],                        // 兜底中心点（中国大致中心）
+            MAP_ZOOM: 4,                                      // 兜底缩放
             IP_ZOOM: 11,
             USE_IP_LOCATION: true,
+
+            // 中国区域范围 —— 默认视图：完整展示中国并居中
+            CHINA_BOUNDS: [[17.5, 72.0], [54.5, 136.0]],
 
             TOKEN_CIPHER: 'pN0DLAO2zEwTMKZlJZw+6zd4GAXI0t3mCX/iAqiGWY6ddaYNpX4u6LdZ7eeflYz7RaSCt6hCUYSPbhbejCY7lVChS9u3YaVWhiU38RWdMQf0iRo4UwUZ5kmnzZXBiZlDVIgWBVNPoxeFveABj02UVh8IFBBix/Bz+AOD9DIdlN8Jbh3s3olHlPs=',
             TOKEN_PASS: 'ulnae'
@@ -843,8 +846,13 @@
         /* ============================================================
            地图初始化
            ============================================================ */
-        const map = L.map('map', { zoomControl: false })
-            .setView(CONFIG.MAP_CENTER, CONFIG.MAP_ZOOM);
+        const map = L.map('map', {
+            zoomControl: false,
+            zoomSnap: 0,        // 允许小数缩放，保证中国区域能完整贴合屏幕
+            minZoom: 2,
+            maxZoom: 18
+        });
+
         L.control.zoom({ position: 'bottomright' }).addTo(map);
 
         L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', {
@@ -853,6 +861,34 @@
             minZoom: 3,
             attribution: '&copy; 高德地图'
         }).addTo(map);
+
+        /**
+         * 默认视图：把中国区域完整、居中地显示在屏幕上。
+         * 自行计算小数缩放级别，避免 Leaflet 内置取整导致边缘被裁掉。
+         */
+        function showChinaOverview(animate = false) {
+            const bounds = L.latLngBounds(CONFIG.CHINA_BOUNDS);
+            const padding = L.point(16, 16);
+
+            const size = map.getSize().subtract(padding);
+            if (size.x <= 0 || size.y <= 0) return;
+
+            // 在 zoom 0（世界宽 256px）下计算区域的像素尺寸
+            const nw = map.project(bounds.getNorthWest(), 0);
+            const se = map.project(bounds.getSouthEast(), 0);
+            const w = Math.abs(se.x - nw.x);
+            const h = Math.abs(se.y - nw.y);
+            if (!w || !h) return;
+
+            const scale = Math.min(size.x / w, size.y / h);
+            let zoom = Math.log2(scale);
+            zoom = Math.max(map.getMinZoom(), Math.min(map.getMaxZoom(), zoom));
+
+            map.setView(bounds.getCenter(), zoom, { animate });
+        }
+
+        // 页面打开先展示中国全景（居中）
+        showChinaOverview();
 
         /* ============================================================
            类型数据操作
@@ -1551,12 +1587,12 @@
             renderTypeFilters();
             renderMarkers();
 
-            /* ---------- ⑤ 定位 ---------- */
+            /* ---------- ⑤ 定位：成功后飞到当前经纬度，失败则保持中国全景 ---------- */
             const ipLoc = await ipPromise;
             if (ipLoc) {
                 map.flyTo(ipLoc, CONFIG.IP_ZOOM, { duration: 1.5 });
             } else if (CONFIG.USE_IP_LOCATION) {
-                console.warn('IP 定位失败，使用默认中心点');
+                console.warn('IP 定位失败，保持中国区域全景');
             }
 
             bindEvents();
