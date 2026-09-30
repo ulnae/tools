@@ -4,23 +4,117 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
     <title>标点数据管理</title>
     <link rel="icon" type="image/svg+xml"
         href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23007AFF'/%3E%3Cpath d='M16 6c-3.9 0-7 3.1-7 7 0 5.3 7 13 7 13s7-7.7 7-13c0-3.9-3.1-7-7-7z' fill='%23fff'/%3E%3Ccircle cx='16' cy='13' r='2.6' fill='%23007AFF'/%3E%3C/svg%3E">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        /* ============================================================
+           主题变量：浅色（日间）
+           ============================================================ */
         :root {
             --ios-blue: #007AFF;
             --ios-red: #FF3B30;
             --ios-green: #34C759;
             --ios-orange: #FF9500;
             --ios-gray: #8E8E93;
-            --ios-bg: #F2F2F7;
+
+            /* 背景 / 卡片 */
+            --bg: #F2F2F7;
+            --card: #FFFFFF;
+            --glass-bg: rgba(255, 255, 255, .86);
+            --glass-shadow: 0 8px 32px rgba(0, 0, 0, .08), 0 0 0 .5px rgba(0, 0, 0, .04);
+            --overlay: rgba(0, 0, 0, .40);
+
+            /* 文字层级 */
+            --text-1: #1c1c1e;
+            --text-2: #48484A;
+            --text-3: #8E8E93;
+            --text-4: #AEAEB2;
+            --text-5: #C7C7CC;
+
+            /* 填充 / 边框 */
+            --fill: rgba(120, 120, 128, .10);
+            --fill-strong: rgba(120, 120, 128, .16);
+            --fill-weak: rgba(0, 0, 0, .02);
+            --fill-weak2: rgba(0, 0, 0, .015);
+            --seg-bg: rgba(120, 120, 128, .12);
+
+            --border: rgba(0, 0, 0, .06);
+            --border-weak: rgba(0, 0, 0, .04);
+
+            --thead-bg: #F7F7F9;
+
+            /* 滚动条 */
+            --scroll-thumb: rgba(0, 0, 0, .16);
+            --scroll-thumb-hover: rgba(0, 0, 0, .30);
+
+            /* 功能色（浅底） */
+            --blue-soft: rgba(0, 122, 255, .10);
+            --blue-soft-hover: rgba(0, 122, 255, .20);
+            --red-soft: rgba(255, 59, 48, .10);
+            --red-soft-hover: rgba(255, 59, 48, .20);
+            --focus-ring: rgba(0, 122, 255, .18);
+
+            color-scheme: light;
+        }
+
+        /* ============================================================
+           主题变量：深色（夜间）——跟随系统
+           ============================================================ */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --ios-blue: #0A84FF;
+                --ios-red: #FF453A;
+                --ios-green: #30D158;
+                --ios-orange: #FF9F0A;
+                --ios-gray: #98989D;
+
+                --bg: #000000;
+                --card: #1C1C1E;
+                --glass-bg: rgba(28, 28, 30, .82);
+                --glass-shadow: 0 8px 32px rgba(0, 0, 0, .55), 0 0 0 .5px rgba(255, 255, 255, .06);
+                --overlay: rgba(0, 0, 0, .62);
+
+                --text-1: #F2F2F7;
+                --text-2: #C7C7CC;
+                --text-3: #98989D;
+                --text-4: #8E8E93;
+                --text-5: #636366;
+
+                --fill: rgba(120, 120, 128, .24);
+                --fill-strong: rgba(120, 120, 128, .34);
+                --fill-weak: rgba(255, 255, 255, .055);
+                --fill-weak2: rgba(255, 255, 255, .035);
+                --seg-bg: rgba(120, 120, 128, .22);
+
+                --border: rgba(255, 255, 255, .10);
+                --border-weak: rgba(255, 255, 255, .07);
+
+                --thead-bg: #2C2C2E;
+
+                --scroll-thumb: rgba(255, 255, 255, .20);
+                --scroll-thumb-hover: rgba(255, 255, 255, .36);
+
+                --blue-soft: rgba(10, 132, 255, .18);
+                --blue-soft-hover: rgba(10, 132, 255, .30);
+                --red-soft: rgba(255, 69, 58, .18);
+                --red-soft-hover: rgba(255, 69, 58, .30);
+                --focus-ring: rgba(10, 132, 255, .30);
+
+                color-scheme: dark;
+            }
         }
 
         html,
         body {
             height: 100%;
+        }
+
+        html {
+            background: var(--bg);
         }
 
         /* ---------- 整页 Shell：禁止纵向滚动 ---------- */
@@ -34,14 +128,17 @@
                 "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
             -webkit-font-smoothing: antialiased;
             -webkit-tap-highlight-color: transparent;
-            background: var(--ios-bg);
+            background: var(--bg);
+            color: var(--text-1);
+            transition: background-color .35s ease, color .35s ease;
         }
 
         .glass {
-            background: rgba(255, 255, 255, .86);
+            background: var(--glass-bg);
             backdrop-filter: saturate(180%) blur(20px);
             -webkit-backdrop-filter: saturate(180%) blur(20px);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, .08), 0 0 0 .5px rgba(0, 0, 0, .04);
+            box-shadow: var(--glass-shadow);
+            transition: background-color .35s ease, box-shadow .35s ease;
         }
 
         .no-sb::-webkit-scrollbar {
@@ -58,7 +155,7 @@
             overflow: auto;
             overscroll-behavior: contain;
             scrollbar-width: thin;
-            scrollbar-color: rgba(0, 0, 0, .18) transparent;
+            scrollbar-color: var(--scroll-thumb) transparent;
         }
 
         .scroll-area::-webkit-scrollbar {
@@ -71,14 +168,14 @@
         }
 
         .scroll-area::-webkit-scrollbar-thumb {
-            background: rgba(0, 0, 0, .16);
+            background: var(--scroll-thumb);
             border-radius: 8px;
             border: 2px solid transparent;
             background-clip: content-box;
         }
 
         .scroll-area::-webkit-scrollbar-thumb:hover {
-            background: rgba(0, 0, 0, .3);
+            background: var(--scroll-thumb-hover);
             background-clip: content-box;
         }
 
@@ -90,23 +187,23 @@
         .ios-input {
             width: 100%;
             box-sizing: border-box;
-            background: rgba(120, 120, 128, .1);
+            background: var(--fill);
             border: none;
             border-radius: 12px;
             padding: 10px 14px;
             font-size: 14px;
             font-family: inherit;
-            color: #1c1c1e;
+            color: var(--text-1);
             outline: none;
-            transition: box-shadow .18s;
+            transition: box-shadow .18s, background-color .35s ease, color .35s ease;
         }
 
         .ios-input::placeholder {
-            color: #AEAEB2;
+            color: var(--text-4);
         }
 
         .ios-input:focus {
-            box-shadow: 0 0 0 3px rgba(0, 122, 255, .18);
+            box-shadow: 0 0 0 3px var(--focus-ring);
         }
 
         select.ios-input {
@@ -128,7 +225,7 @@
             display: block;
             font-size: 12px;
             font-weight: 600;
-            color: #8E8E93;
+            color: var(--text-3);
             margin-bottom: 6px;
             margin-top: 14px;
         }
@@ -154,28 +251,28 @@
         }
 
         .btn-edit {
-            background: rgba(0, 122, 255, .1);
-            color: #007AFF;
+            background: var(--blue-soft);
+            color: var(--ios-blue);
         }
 
         .btn-edit:hover {
-            background: rgba(0, 122, 255, .2);
+            background: var(--blue-soft-hover);
         }
 
         .btn-del {
-            background: rgba(255, 59, 48, .1);
-            color: #FF3B30;
+            background: var(--red-soft);
+            color: var(--ios-red);
         }
 
         .btn-del:hover {
-            background: rgba(255, 59, 48, .2);
+            background: var(--red-soft-hover);
         }
 
         /* ---------- 分页控件 ---------- */
         .pager-select {
             appearance: none;
             -webkit-appearance: none;
-            background-color: rgba(120, 120, 128, .1);
+            background-color: var(--fill);
             background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path fill='%238E8E93' d='M2 4l4 4 4-4z'/></svg>");
             background-repeat: no-repeat;
             background-position: right 9px center;
@@ -185,14 +282,14 @@
             font-size: 12px;
             font-weight: 600;
             font-family: inherit;
-            color: #1c1c1e;
+            color: var(--text-1);
             outline: none;
             cursor: pointer;
-            transition: box-shadow .18s;
+            transition: box-shadow .18s, background-color .35s ease, color .35s ease;
         }
 
         .pager-select:focus {
-            box-shadow: 0 0 0 3px rgba(0, 122, 255, .18);
+            box-shadow: 0 0 0 3px var(--focus-ring);
         }
 
         .btn-pager {
@@ -201,15 +298,15 @@
             font-size: 12px;
             font-weight: 600;
             font-family: inherit;
-            color: #007AFF;
-            background: rgba(0, 122, 255, .1);
+            color: var(--ios-blue);
+            background: var(--blue-soft);
             border: none;
             cursor: pointer;
             transition: background .18s, transform .12s, opacity .18s;
         }
 
         .btn-pager:hover:not(:disabled) {
-            background: rgba(0, 122, 255, .2);
+            background: var(--blue-soft-hover);
         }
 
         .btn-pager:active:not(:disabled) {
@@ -255,7 +352,7 @@
         }
 
         input[type="color"]::-webkit-color-swatch {
-            border: 1px solid rgba(0, 0, 0, .1);
+            border: 1px solid var(--border);
             border-radius: 12px;
         }
 
@@ -287,7 +384,8 @@
             position: sticky;
             top: 0;
             z-index: 5;
-            background-color: #F7F7F9;
+            background-color: var(--thead-bg);
+            transition: background-color .35s ease;
         }
 
         /* ---------- 加载旋转 ---------- */
@@ -308,15 +406,15 @@
     <!-- ===================== 顶部栏 ===================== -->
     <header class="glass flex-none z-30">
         <div class="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3 flex-wrap">
-            <h1 class="text-[16px] font-bold text-[#1c1c1e] tracking-tight">标点数据管理</h1>
+            <h1 class="text-[16px] font-bold text-[color:var(--text-1)] tracking-tight">标点数据管理</h1>
 
             <div class="hidden sm:flex items-center gap-1.5">
                 <span id="statusDot" class="w-2 h-2 rounded-full bg-[#FF9500] animate-pulse"></span>
-                <span id="statusText" class="text-[12px] text-[#8E8E93] whitespace-nowrap">加载中...</span>
+                <span id="statusText" class="text-[12px] text-[color:var(--text-3)] whitespace-nowrap">加载中...</span>
             </div>
 
             <button id="btnRefresh"
-                class="ml-auto flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-semibold text-white bg-[#007AFF] active:scale-95 transition shadow-[0_4px_14px_rgba(0,122,255,.32)] disabled:opacity-50">
+                class="ml-auto flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-semibold text-white bg-[var(--ios-blue)] active:scale-95 transition shadow-[0_4px_14px_rgba(0,122,255,.32)] disabled:opacity-50">
                 <svg id="refreshIcon" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                     stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M21 12a9 9 0 1 1-2.64-6.36" />
@@ -331,7 +429,7 @@
     <main class="flex-1 min-h-0 w-full max-w-6xl mx-auto px-4 py-5 flex flex-col">
 
         <!-- 标签切换 -->
-        <div class="flex-none self-start flex gap-1 p-1 rounded-full bg-black/5 mb-4">
+        <div class="flex-none self-start flex gap-1 p-1 rounded-full bg-[var(--seg-bg)] mb-4">
             <button data-tab="markers">标点数据</button>
             <button data-tab="types">类型数据</button>
         </div>
@@ -341,12 +439,13 @@
             <div class="glass rounded-2xl overflow-hidden flex flex-col flex-1 min-h-0">
 
                 <!-- 工具条 -->
-                <div class="flex-none px-3 py-3 flex items-center gap-2 flex-wrap border-b border-black/[0.05]">
+                <div
+                    class="flex-none px-3 py-3 flex items-center gap-2 flex-wrap border-b border-[color:var(--border)]">
                     <input id="searchMarker" class="ios-input !w-auto flex-1 min-w-[160px]" type="text"
                         placeholder="搜索标题或描述">
                     <select id="filterType" class="ios-input !w-auto min-w-[140px]"></select>
-                    <span class="text-[12px] text-[#8E8E93] whitespace-nowrap">
-                        共 <b id="markerCount" class="text-[#1c1c1e] tabular-nums">0</b> 条
+                    <span class="text-[12px] text-[color:var(--text-3)] whitespace-nowrap">
+                        共 <b id="markerCount" class="text-[color:var(--text-1)] tabular-nums">0</b> 条
                     </span>
                 </div>
 
@@ -354,7 +453,7 @@
                 <div class="flex-1 min-h-0 scroll-area">
                     <table class="w-full text-[13px] min-w-[940px]">
                         <thead>
-                            <tr class="text-[#8E8E93] text-[12px]">
+                            <tr class="text-[color:var(--text-3)] text-[12px]">
                                 <th class="text-left font-semibold px-3 py-2.5 w-[52px]">#</th>
                                 <th class="text-left font-semibold px-3 py-2.5 w-[190px]">标题</th>
                                 <th class="text-left font-semibold px-3 py-2.5 w-[130px]">类型</th>
@@ -370,10 +469,10 @@
 
                 <!-- 分页条 -->
                 <div
-                    class="flex-none px-3 py-2.5 flex items-center gap-2 flex-wrap border-t border-black/[0.05] bg-black/[0.015]">
-                    <span class="text-[12px] text-[#8E8E93] whitespace-nowrap">
-                        第 <b id="markerPageNow" class="text-[#1c1c1e] tabular-nums">1</b> /
-                        <b id="markerPageTotal" class="text-[#1c1c1e] tabular-nums">1</b> 页
+                    class="flex-none px-3 py-2.5 flex items-center gap-2 flex-wrap border-t border-[color:var(--border)] bg-[var(--fill-weak2)]">
+                    <span class="text-[12px] text-[color:var(--text-3)] whitespace-nowrap">
+                        第 <b id="markerPageNow" class="text-[color:var(--text-1)] tabular-nums">1</b> /
+                        <b id="markerPageTotal" class="text-[color:var(--text-1)] tabular-nums">1</b> 页
                     </span>
                     <select id="markerPageSize" class="pager-select">
                         <option value="10">10 条/页</option>
@@ -394,12 +493,13 @@
             <div class="glass rounded-2xl overflow-hidden flex flex-col flex-1 min-h-0">
 
                 <!-- 工具条 -->
-                <div class="flex-none px-3 py-3 flex items-center gap-2 flex-wrap border-b border-black/[0.05]">
-                    <span class="text-[13px] font-semibold text-[#1c1c1e]">类型列表</span>
-                    <span class="text-[12px] text-[#8E8E93]">
-                        共 <b id="typeCount" class="text-[#1c1c1e] tabular-nums">0</b> 个
+                <div
+                    class="flex-none px-3 py-3 flex items-center gap-2 flex-wrap border-b border-[color:var(--border)]">
+                    <span class="text-[13px] font-semibold text-[color:var(--text-1)]">类型列表</span>
+                    <span class="text-[12px] text-[color:var(--text-3)]">
+                        共 <b id="typeCount" class="text-[color:var(--text-1)] tabular-nums">0</b> 个
                     </span>
-                    <span class="ml-auto text-[11.5px] text-[#AEAEB2] hidden sm:block">
+                    <span class="ml-auto text-[11.5px] text-[color:var(--text-4)] hidden sm:block">
                         删除类型会同时删除对应的 geojson 数据文件
                     </span>
                 </div>
@@ -408,7 +508,7 @@
                 <div class="flex-1 min-h-0 scroll-area">
                     <table class="w-full text-[13px] min-w-[780px]">
                         <thead>
-                            <tr class="text-[#8E8E93] text-[12px]">
+                            <tr class="text-[color:var(--text-3)] text-[12px]">
                                 <th class="text-left font-semibold px-3 py-2.5 w-[90px]">颜色</th>
                                 <th class="text-left font-semibold px-3 py-2.5 w-[180px]">名称</th>
                                 <th class="text-left font-semibold px-3 py-2.5">ID</th>
@@ -423,10 +523,10 @@
 
                 <!-- 分页条 -->
                 <div
-                    class="flex-none px-3 py-2.5 flex items-center gap-2 flex-wrap border-t border-black/[0.05] bg-black/[0.015]">
-                    <span class="text-[12px] text-[#8E8E93] whitespace-nowrap">
-                        第 <b id="typePageNow" class="text-[#1c1c1e] tabular-nums">1</b> /
-                        <b id="typePageTotal" class="text-[#1c1c1e] tabular-nums">1</b> 页
+                    class="flex-none px-3 py-2.5 flex items-center gap-2 flex-wrap border-t border-[color:var(--border)] bg-[var(--fill-weak2)]">
+                    <span class="text-[12px] text-[color:var(--text-3)] whitespace-nowrap">
+                        第 <b id="typePageNow" class="text-[color:var(--text-1)] tabular-nums">1</b> /
+                        <b id="typePageTotal" class="text-[color:var(--text-1)] tabular-nums">1</b> 页
                     </span>
                     <select id="typePageSize" class="pager-select">
                         <option value="10" selected>10 条/页</option>
@@ -445,20 +545,20 @@
 
     <!-- ===================== 标点编辑弹窗 ===================== -->
     <div id="markerModal"
-        class="hidden fixed inset-0 z-[9998] items-center justify-center p-4 bg-black/40 backdrop-blur-[2px]">
+        class="hidden fixed inset-0 z-[9998] items-center justify-center p-4 bg-[var(--overlay)] backdrop-blur-[2px]">
         <div
-            class="anim-pop w-full max-w-[440px] max-h-[90vh] overflow-y-auto no-sb bg-white rounded-[24px] shadow-[0_24px_64px_rgba(0,0,0,.28)]">
+            class="anim-pop w-full max-w-[440px] max-h-[90vh] overflow-y-auto no-sb bg-[var(--card)] rounded-[24px] shadow-[0_24px_64px_rgba(0,0,0,.28)]">
             <div class="flex items-center justify-between px-5 pt-5 pb-2">
-                <h2 class="text-[17px] font-bold text-[#1c1c1e] tracking-tight">编辑标点</h2>
+                <h2 class="text-[17px] font-bold text-[color:var(--text-1)] tracking-tight">编辑标点</h2>
                 <button id="btnCloseMarkerModal"
-                    class="w-7 h-7 rounded-full bg-black/5 text-[#8E8E93] text-[15px] leading-none flex items-center justify-center active:scale-90 transition">✕</button>
+                    class="w-7 h-7 rounded-full bg-[var(--fill)] text-[color:var(--text-3)] text-[15px] leading-none flex items-center justify-center active:scale-90 transition">✕</button>
             </div>
 
             <div class="px-5 pb-5">
-                <label class="f-label">标题 <span class="text-[#FF3B30]">*</span></label>
+                <label class="f-label">标题 <span class="text-[color:var(--ios-red)]">*</span></label>
                 <input id="m-title" class="ios-input" type="text" maxlength="50" placeholder="标点名称">
 
-                <label class="f-label">类型 <span class="text-[#FF3B30]">*</span></label>
+                <label class="f-label">类型 <span class="text-[color:var(--ios-red)]">*</span></label>
                 <select id="m-type" class="ios-input"></select>
 
                 <label class="f-label">描述</label>
@@ -466,22 +566,22 @@
 
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="f-label">经度 <span class="text-[#FF3B30]">*</span></label>
+                        <label class="f-label">经度 <span class="text-[color:var(--ios-red)]">*</span></label>
                         <input id="m-lng" class="ios-input" type="number" step="0.000001" inputmode="decimal">
                     </div>
                     <div>
-                        <label class="f-label">纬度 <span class="text-[#FF3B30]">*</span></label>
+                        <label class="f-label">纬度 <span class="text-[color:var(--ios-red)]">*</span></label>
                         <input id="m-lat" class="ios-input" type="number" step="0.000001" inputmode="decimal">
                     </div>
                 </div>
 
                 <div class="flex gap-2.5 mt-6">
                     <button id="btnCancelMarker"
-                        class="flex-1 py-3 rounded-2xl text-[15px] font-semibold text-[#007AFF] bg-black/[0.06] active:scale-[.98] transition">
+                        class="flex-1 py-3 rounded-2xl text-[15px] font-semibold text-[color:var(--ios-blue)] bg-[var(--fill-strong)] active:scale-[.98] transition">
                         取消
                     </button>
                     <button id="btnSaveMarker"
-                        class="flex-1 py-3 rounded-2xl text-[15px] font-semibold text-white bg-[#007AFF] active:scale-[.98] transition shadow-[0_6px_20px_rgba(0,122,255,.32)] disabled:opacity-50">
+                        class="flex-1 py-3 rounded-2xl text-[15px] font-semibold text-white bg-[var(--ios-blue)] active:scale-[.98] transition shadow-[0_6px_20px_rgba(0,122,255,.32)] disabled:opacity-50">
                         保存
                     </button>
                 </div>
@@ -491,20 +591,20 @@
 
     <!-- ===================== 类型编辑弹窗 ===================== -->
     <div id="typeModal"
-        class="hidden fixed inset-0 z-[9998] items-center justify-center p-4 bg-black/40 backdrop-blur-[2px]">
+        class="hidden fixed inset-0 z-[9998] items-center justify-center p-4 bg-[var(--overlay)] backdrop-blur-[2px]">
         <div
-            class="anim-pop w-full max-w-[400px] max-h-[90vh] overflow-y-auto no-sb bg-white rounded-[24px] shadow-[0_24px_64px_rgba(0,0,0,.28)]">
+            class="anim-pop w-full max-w-[400px] max-h-[90vh] overflow-y-auto no-sb bg-[var(--card)] rounded-[24px] shadow-[0_24px_64px_rgba(0,0,0,.28)]">
             <div class="flex items-center justify-between px-5 pt-5 pb-2">
-                <h2 class="text-[17px] font-bold text-[#1c1c1e] tracking-tight">编辑类型</h2>
+                <h2 class="text-[17px] font-bold text-[color:var(--text-1)] tracking-tight">编辑类型</h2>
                 <button id="btnCloseTypeModal"
-                    class="w-7 h-7 rounded-full bg-black/5 text-[#8E8E93] text-[15px] leading-none flex items-center justify-center active:scale-90 transition">✕</button>
+                    class="w-7 h-7 rounded-full bg-[var(--fill)] text-[color:var(--text-3)] text-[15px] leading-none flex items-center justify-center active:scale-90 transition">✕</button>
             </div>
 
             <div class="px-5 pb-5">
-                <label class="f-label">类型名称 <span class="text-[#FF3B30]">*</span></label>
+                <label class="f-label">类型名称 <span class="text-[color:var(--ios-red)]">*</span></label>
                 <input id="t-name" class="ios-input" type="text" maxlength="20" placeholder="例如：餐厅 / 景区 / 钓点">
 
-                <label class="f-label">类型颜色 <span class="text-[#FF3B30]">*</span></label>
+                <label class="f-label">类型颜色 <span class="text-[color:var(--ios-red)]">*</span></label>
                 <div class="flex gap-2 items-center">
                     <input type="color" id="t-color" value="#007AFF">
                     <input id="t-color-text" class="ios-input flex-1" type="text" maxlength="7" value="#007AFF"
@@ -514,11 +614,11 @@
 
                 <div class="flex gap-2.5 mt-6">
                     <button id="btnCancelType"
-                        class="flex-1 py-3 rounded-2xl text-[15px] font-semibold text-[#007AFF] bg-black/[0.06] active:scale-[.98] transition">
+                        class="flex-1 py-3 rounded-2xl text-[15px] font-semibold text-[color:var(--ios-blue)] bg-[var(--fill-strong)] active:scale-[.98] transition">
                         取消
                     </button>
                     <button id="btnSaveType"
-                        class="flex-1 py-3 rounded-2xl text-[15px] font-semibold text-white bg-[#007AFF] active:scale-[.98] transition shadow-[0_6px_20px_rgba(0,122,255,.32)] disabled:opacity-50">
+                        class="flex-1 py-3 rounded-2xl text-[15px] font-semibold text-white bg-[var(--ios-blue)] active:scale-[.98] transition shadow-[0_6px_20px_rgba(0,122,255,.32)] disabled:opacity-50">
                         保存
                     </button>
                 </div>
@@ -876,8 +976,10 @@
            渲染
            ============================================================ */
         const TAB_BASE = 'px-4 py-1.5 rounded-full text-[13px] font-semibold transition';
-        const TAB_ON = TAB_BASE + ' bg-white text-[#1c1c1e] shadow-[0_1px_4px_rgba(0,0,0,.1)]';
-        const TAB_OFF = TAB_BASE + ' text-[#8E8E93] hover:text-[#1c1c1e]';
+        const TAB_ON = TAB_BASE +
+            ' bg-[var(--card)] text-[color:var(--text-1)] shadow-[0_1px_4px_rgba(0,0,0,.1)]';
+        const TAB_OFF = TAB_BASE +
+            ' text-[color:var(--text-3)] hover:text-[color:var(--text-1)]';
 
         function setTab(tab) {
             state.tab = tab;
@@ -942,7 +1044,7 @@
             const tbody = $('markerTbody');
 
             if (!markerRows.length) {
-                tbody.innerHTML = `<tr><td colspan="7" class="py-16 text-center text-[#AEAEB2] text-[13px]">
+                tbody.innerHTML = `<tr><td colspan="7" class="py-16 text-center text-[color:var(--text-4)] text-[13px]">
                     暂无标点数据</td></tr>`;
             } else {
                 tbody.innerHTML = markerRows.map((row, i) => {
@@ -950,19 +1052,19 @@
                     const c = (row.feature.geometry && row.feature.geometry.coordinates) || [];
                     const color = row.color || FALLBACK_COLOR;
                     return `
-                <tr class="border-b border-black/[0.04] hover:bg-black/[0.02] align-top">
-                    <td class="px-3 py-2.5 text-[#C7C7CC] tabular-nums">${pg.start + i + 1}</td>
-                    <td class="px-3 py-2.5 font-medium text-[#1c1c1e] break-words">${escapeHtml(p.title || '未命名')}</td>
+                <tr class="border-b border-[color:var(--border-weak)] hover:bg-[var(--fill-weak)] align-top">
+                    <td class="px-3 py-2.5 text-[color:var(--text-5)] tabular-nums">${pg.start + i + 1}</td>
+                    <td class="px-3 py-2.5 font-medium text-[color:var(--text-1)] break-words">${escapeHtml(p.title || '未命名')}</td>
                     <td class="px-3 py-2.5">
                         <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold whitespace-nowrap"
-                              style="color:${color};background:${hexToRgba(color, .12)}">
+                              style="color:${color};background:${hexToRgba(color, .14)}">
                             <span class="w-1.5 h-1.5 rounded-full flex-none" style="background:${color}"></span>
                             ${escapeHtml(row.typeName)}
                         </span>
                     </td>
-                    <td class="px-3 py-2.5 text-[#48484A] break-words whitespace-pre-wrap max-w-[320px]">${escapeHtml(p.description || '—')}</td>
-                    <td class="px-3 py-2.5 text-[#8E8E93] tabular-nums whitespace-nowrap font-mono text-[12px]">${fmtCoord(c)}</td>
-                    <td class="px-3 py-2.5 text-[#8E8E93] tabular-nums whitespace-nowrap text-[12px]">${formatDateTime(p.created_at) || '—'}</td>
+                    <td class="px-3 py-2.5 text-[color:var(--text-2)] break-words whitespace-pre-wrap max-w-[320px]">${escapeHtml(p.description || '—')}</td>
+                    <td class="px-3 py-2.5 text-[color:var(--text-3)] tabular-nums whitespace-nowrap font-mono text-[12px]">${fmtCoord(c)}</td>
+                    <td class="px-3 py-2.5 text-[color:var(--text-3)] tabular-nums whitespace-nowrap text-[12px]">${formatDateTime(p.created_at) || '—'}</td>
                     <td class="px-3 py-2.5 whitespace-nowrap text-right">
                         <button class="btn-mini btn-edit" data-act="edit" data-i="${i}">编辑</button>
                         <button class="btn-mini btn-del ml-1.5" data-act="del" data-i="${i}">删除</button>
@@ -988,24 +1090,24 @@
             const tbody = $('typeTbody');
 
             if (!typeRows.length) {
-                tbody.innerHTML = `<tr><td colspan="6" class="py-16 text-center text-[#AEAEB2] text-[13px]">
+                tbody.innerHTML = `<tr><td colspan="6" class="py-16 text-center text-[color:var(--text-4)] text-[13px]">
                     暂无类型数据</td></tr>`;
             } else {
                 tbody.innerHTML = typeRows.map(t => {
                     const color = t.color || FALLBACK_COLOR;
                     const count = Types.featuresOf(t.id).length;
                     return `
-                <tr class="border-b border-black/[0.04] hover:bg-black/[0.02]">
+                <tr class="border-b border-[color:var(--border-weak)] hover:bg-[var(--fill-weak)]">
                     <td class="px-3 py-2.5">
                         <span class="inline-flex items-center gap-2">
-                            <span class="w-4 h-4 rounded-full flex-none ring-1 ring-black/10" style="background:${color}"></span>
-                            <span class="font-mono text-[11.5px] text-[#8E8E93]">${escapeHtml(color)}</span>
+                            <span class="w-4 h-4 rounded-full flex-none ring-1 ring-[color:var(--border)]" style="background:${color}"></span>
+                            <span class="font-mono text-[11.5px] text-[color:var(--text-3)]">${escapeHtml(color)}</span>
                         </span>
                     </td>
-                    <td class="px-3 py-2.5 font-medium text-[#1c1c1e] break-words">${escapeHtml(t.name || '未命名')}</td>
-                    <td class="px-3 py-2.5 font-mono text-[11.5px] text-[#8E8E93] break-all">${escapeHtml(t.id)}</td>
-                    <td class="px-3 py-2.5 text-[#1c1c1e] tabular-nums">${count}</td>
-                    <td class="px-3 py-2.5 text-[#8E8E93] tabular-nums whitespace-nowrap text-[12px]">${formatDateTime(t.created_at) || '—'}</td>
+                    <td class="px-3 py-2.5 font-medium text-[color:var(--text-1)] break-words">${escapeHtml(t.name || '未命名')}</td>
+                    <td class="px-3 py-2.5 font-mono text-[11.5px] text-[color:var(--text-3)] break-all">${escapeHtml(t.id)}</td>
+                    <td class="px-3 py-2.5 text-[color:var(--text-1)] tabular-nums">${count}</td>
+                    <td class="px-3 py-2.5 text-[color:var(--text-3)] tabular-nums whitespace-nowrap text-[12px]">${formatDateTime(t.created_at) || '—'}</td>
                     <td class="px-3 py-2.5 whitespace-nowrap text-right">
                         <button class="btn-mini btn-edit" data-act="edit" data-id="${t.id}">编辑</button>
                         <button class="btn-mini btn-del ml-1.5" data-act="del" data-id="${t.id}">删除</button>
