@@ -5,18 +5,83 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>意见反馈</title>
+    <meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
     <link rel="icon" type="image/svg+xml"
         href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23007AFF'/%3E%3Cpath d='M7 9a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3h-6l-5 4v-4H10a3 3 0 0 1-3-3z' fill='%23fff'/%3E%3C/svg%3E">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.10/dayjs.min.js"></script>
     <style>
+        /* ============================================================
+           主题变量 —— 日间（默认）
+           ============================================================ */
         :root {
+            color-scheme: light;
+
             --ios-blue: #007AFF;
             --ios-red: #FF3B30;
             --ios-green: #34C759;
             --ios-orange: #FF9500;
             --ios-gray: #8E8E93;
+
             --ios-bg: #F2F2F7;
+
+            --c-text: #1c1c1e;
+            --c-text-2: #8E8E93;
+            --c-text-3: #AEAEB2;
+
+            --c-card: rgba(255, 255, 255, .86);
+            --c-card-border: rgba(0, 0, 0, .04);
+            --c-shadow: 0 8px 32px rgba(0, 0, 0, .08);
+
+            --c-input: rgba(120, 120, 128, .10);
+            --c-seg-bg: rgba(120, 120, 128, .12);
+            --c-seg-on: #ffffff;
+            --c-seg-on-text: #1c1c1e;
+            --c-seg-on-shadow: 0 1px 4px rgba(0, 0, 0, .12);
+
+            --c-soft-btn: rgba(120, 120, 128, .14);
+            --c-scroll: rgba(0, 0, 0, .18);
+            --c-focus-ring: rgba(0, 122, 255, .18);
+            --c-btn-shadow: 0 8px 24px rgba(0, 122, 255, .32);
+            --c-green-soft: rgba(52, 199, 89, .12);
+        }
+
+        /* ============================================================
+           主题变量 —— 夜间（跟随系统）
+           ============================================================ */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                color-scheme: dark;
+
+                --ios-blue: #0A84FF;
+                --ios-red: #FF453A;
+                --ios-green: #30D158;
+                --ios-orange: #FF9F0A;
+                --ios-gray: #98989D;
+
+                --ios-bg: #000000;
+
+                --c-text: #f2f2f7;
+                --c-text-2: #98989D;
+                --c-text-3: #636366;
+
+                --c-card: rgba(28, 28, 30, .78);
+                --c-card-border: rgba(255, 255, 255, .06);
+                --c-shadow: 0 8px 32px rgba(0, 0, 0, .55);
+
+                --c-input: rgba(120, 120, 128, .24);
+                --c-seg-bg: rgba(120, 120, 128, .24);
+                --c-seg-on: #636366;
+                --c-seg-on-text: #ffffff;
+                --c-seg-on-shadow: 0 1px 4px rgba(0, 0, 0, .4);
+
+                --c-soft-btn: rgba(120, 120, 128, .24);
+                --c-scroll: rgba(255, 255, 255, .2);
+                --c-focus-ring: rgba(10, 132, 255, .30);
+                --c-btn-shadow: 0 8px 24px rgba(10, 132, 255, .26);
+                --c-green-soft: rgba(48, 209, 88, .16);
+            }
         }
 
         html,
@@ -35,15 +100,20 @@
             -webkit-font-smoothing: antialiased;
             -webkit-tap-highlight-color: transparent;
             background: var(--ios-bg);
+            color: var(--c-text);
+            transition: background-color .25s ease, color .25s ease;
         }
 
+        /* ---------- 毛玻璃卡片 ---------- */
         .glass {
-            background: rgba(255, 255, 255, .86);
+            background: var(--c-card);
             backdrop-filter: saturate(180%) blur(20px);
             -webkit-backdrop-filter: saturate(180%) blur(20px);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, .08), 0 0 0 .5px rgba(0, 0, 0, .04);
+            box-shadow: var(--c-shadow), 0 0 0 .5px var(--c-card-border);
+            transition: background-color .25s ease, box-shadow .25s ease;
         }
 
+        /* ---------- 滚动条 ---------- */
         .no-sb::-webkit-scrollbar {
             display: none;
         }
@@ -57,7 +127,7 @@
             overflow: auto;
             overscroll-behavior: contain;
             scrollbar-width: thin;
-            scrollbar-color: rgba(0, 0, 0, .18) transparent;
+            scrollbar-color: var(--c-scroll) transparent;
         }
 
         .scroll-area::-webkit-scrollbar {
@@ -70,32 +140,33 @@
         }
 
         .scroll-area::-webkit-scrollbar-thumb {
-            background: rgba(0, 0, 0, .16);
+            background: var(--c-scroll);
             border-radius: 8px;
             border: 2px solid transparent;
             background-clip: content-box;
         }
 
+        /* ---------- 输入控件 ---------- */
         .ios-input {
             width: 100%;
             box-sizing: border-box;
-            background: rgba(120, 120, 128, .1);
+            background: var(--c-input);
             border: none;
             border-radius: 12px;
             padding: 11px 14px;
             font-size: 14px;
             font-family: inherit;
-            color: #1c1c1e;
+            color: var(--c-text);
             outline: none;
-            transition: box-shadow .18s;
+            transition: box-shadow .18s, background-color .25s ease, color .25s ease;
         }
 
         .ios-input::placeholder {
-            color: #AEAEB2;
+            color: var(--c-text-3);
         }
 
         .ios-input:focus {
-            box-shadow: 0 0 0 3px rgba(0, 122, 255, .18);
+            box-shadow: 0 0 0 3px var(--c-focus-ring);
         }
 
         textarea.ios-input {
@@ -103,16 +174,23 @@
             line-height: 1.55;
         }
 
+        /* ---------- 标签 ---------- */
         .f-label {
             display: block;
             font-size: 12px;
             font-weight: 600;
-            color: #8E8E93;
+            color: var(--c-text-2);
             margin: 16px 0 6px;
         }
 
         .f-label.first {
             margin-top: 0;
+        }
+
+        /* ---------- 分段控件 ---------- */
+        .seg-wrap {
+            background: var(--c-seg-bg);
+            transition: background-color .25s ease;
         }
 
         .seg-btn {
@@ -122,7 +200,7 @@
             font-size: 13px;
             font-weight: 600;
             font-family: inherit;
-            color: #8E8E93;
+            color: var(--c-text-2);
             background: transparent;
             border: none;
             cursor: pointer;
@@ -134,11 +212,45 @@
         }
 
         .seg-btn.on {
-            background: #fff;
-            color: #1c1c1e;
-            box-shadow: 0 1px 4px rgba(0, 0, 0, .12);
+            background: var(--c-seg-on);
+            color: var(--c-seg-on-text);
+            box-shadow: var(--c-seg-on-shadow);
         }
 
+        /* ---------- 状态圆点 ---------- */
+        .dot {
+            width: .5rem;
+            height: .5rem;
+            border-radius: 9999px;
+            flex: none;
+        }
+
+        .dot-ok {
+            background: var(--ios-green);
+        }
+
+        .dot-err {
+            background: var(--ios-red);
+        }
+
+        .dot-loading {
+            background: var(--ios-orange);
+            animation: pulse 2s cubic-bezier(.4, 0, .6, 1) infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: .45;
+            }
+        }
+
+        /* ---------- 动画 ---------- */
         @keyframes pop-in {
             from {
                 transform: scale(.94) translateY(12px);
@@ -164,6 +276,21 @@
         .spin {
             animation: spin .8s linear infinite;
         }
+
+        /* ---------- 主按钮 ---------- */
+        .btn-primary {
+            background: var(--ios-blue);
+            box-shadow: var(--c-btn-shadow);
+            color: #fff;
+            transition: transform .15s, box-shadow .25s ease, background-color .25s ease;
+        }
+
+        /* ---------- 次级按钮 ---------- */
+        .btn-soft {
+            background: var(--c-soft-btn);
+            color: var(--ios-blue);
+            transition: transform .15s, background-color .25s ease, color .25s ease;
+        }
     </style>
 </head>
 
@@ -172,10 +299,11 @@
     <!-- ===================== 顶部栏 ===================== -->
     <header class="glass flex-none z-30">
         <div class="max-w-[560px] mx-auto px-4 py-3 flex items-center gap-3">
-            <h1 class="text-[16px] font-bold text-[#1c1c1e] tracking-tight">意见反馈</h1>
+            <h1 class="text-[16px] font-bold tracking-tight text-[var(--c-text)]">意见反馈</h1>
             <div class="ml-auto flex items-center gap-1.5">
-                <span id="statusDot" class="w-2 h-2 rounded-full bg-[#FF9500] animate-pulse"></span>
-                <span id="statusText" class="text-[12px] text-[#8E8E93] whitespace-nowrap">初始化中...</span>
+                <span id="statusDot" class="dot dot-loading"></span>
+                <span id="statusText"
+                    class="text-[12px] whitespace-nowrap text-[var(--c-text-2)]">初始化中...</span>
             </div>
         </div>
     </header>
@@ -185,41 +313,43 @@
         <div class="max-w-[560px] mx-auto px-4 py-5 pb-12">
 
             <div id="formCard" class="glass rounded-[22px] p-5 anim-pop">
-                <p class="text-[13px] text-[#8E8E93] leading-relaxed">
+                <p class="text-[13px] leading-relaxed text-[var(--c-text-2)]">
                     你的每一条反馈都会被认真阅读，感谢你帮助我们变得更好。
                 </p>
 
                 <!-- 类型 -->
                 <label class="f-label">反馈类型</label>
-                <div id="typeSeg" class="flex gap-1 p-1 rounded-2xl bg-black/5">
+                <div id="typeSeg" class="seg-wrap flex gap-1 p-1 rounded-2xl">
                     <button type="button" class="seg-btn on" data-type="建议">建议</button>
                     <button type="button" class="seg-btn" data-type="问题">问题</button>
                     <button type="button" class="seg-btn" data-type="其他">其他</button>
                 </div>
 
                 <!-- 内容 -->
-                <label class="f-label">反馈内容 <span class="text-[#FF3B30]">*</span></label>
+                <label class="f-label">反馈内容 <span class="text-[var(--ios-red)]">*</span></label>
                 <textarea id="fb-content" class="ios-input" rows="6" maxlength="500"
                     placeholder="请尽量描述清楚，比如：在哪个页面、做了什么操作、出现了什么情况..."></textarea>
-                <div class="text-right text-[11.5px] text-[#AEAEB2] mt-1.5">
+                <div class="text-right text-[11.5px] mt-1.5 text-[var(--c-text-3)]">
                     <span id="fbCount" class="tabular-nums">0</span> / 500
                 </div>
 
                 <!-- 联系方式 -->
-                <label class="f-label">联系方式 <span class="text-[#AEAEB2] font-normal">（选填）</span></label>
+                <label class="f-label">联系方式 <span
+                        class="font-normal text-[var(--c-text-3)]">（选填）</span></label>
                 <input id="fb-contact" class="ios-input" type="text" maxlength="50"
                     placeholder="邮箱 / 微信 / 手机号，便于我们回复你">
 
                 <!-- 来源提示（地址栏带 f 参数时才显示） -->
-                <p id="srcHint" class="hidden text-[11.5px] text-[#AEAEB2] mt-3 text-center"></p>
+                <p id="srcHint"
+                    class="hidden text-[11.5px] mt-3 text-center text-[var(--c-text-3)]"></p>
 
                 <!-- 提交 -->
                 <button id="btnSubmit"
-                    class="mt-6 w-full py-3.5 rounded-2xl text-[16px] font-semibold text-white bg-[#007AFF] active:scale-[.98] transition shadow-[0_8px_24px_rgba(0,122,255,.32)] disabled:opacity-50">
+                    class="btn-primary mt-6 w-full py-3.5 rounded-2xl text-[16px] font-semibold active:scale-[.98] disabled:opacity-50">
                     提交反馈
                 </button>
 
-                <p class="text-[11.5px] text-[#AEAEB2] text-center mt-3.5">
+                <p class="text-[11.5px] text-center mt-3.5 text-[var(--c-text-3)]">
                     提交即表示同意我们记录该内容用于产品改进
                 </p>
             </div>
@@ -228,16 +358,17 @@
             <div id="doneCard"
                 class="hidden glass rounded-[22px] p-8 mt-0 flex-col items-center text-center anim-pop">
                 <div class="w-14 h-14 rounded-full flex items-center justify-center mb-4"
-                    style="background:rgba(52,199,89,.12)">
-                    <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="#34C759" stroke-width="2.4"
-                        stroke-linecap="round" stroke-linejoin="round">
+                    style="background:var(--c-green-soft)">
+                    <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"
+                        style="color:var(--ios-green)">
                         <path d="M20 6 9 17l-5-5" />
                     </svg>
                 </div>
-                <h2 class="text-[17px] font-bold text-[#1c1c1e]">提交成功</h2>
-                <p class="text-[13px] text-[#8E8E93] mt-1.5 leading-relaxed">感谢你的反馈，我们会尽快处理。</p>
+                <h2 class="text-[17px] font-bold text-[var(--c-text)]">提交成功</h2>
+                <p class="text-[13px] mt-1.5 leading-relaxed text-[var(--c-text-2)]">感谢你的反馈，我们会尽快处理。</p>
                 <button id="btnAgain"
-                    class="mt-6 px-6 py-3 rounded-2xl text-[15px] font-semibold text-[#007AFF] bg-black/[0.06] active:scale-[.98] transition">
+                    class="btn-soft mt-6 px-6 py-3 rounded-2xl text-[15px] font-semibold active:scale-[.98]">
                     再提一条
                 </button>
             </div>
@@ -319,11 +450,11 @@
             }, 2200);
         }
 
-        /* ---------- 状态指示 ---------- */
+        /* ---------- 状态指示（类名由 CSS 变量驱动，自动适配主题） ---------- */
         const STATUS_DOT = {
-            ok: 'w-2 h-2 rounded-full bg-[#34C759]',
-            err: 'w-2 h-2 rounded-full bg-[#FF3B30]',
-            loading: 'w-2 h-2 rounded-full bg-[#FF9500] animate-pulse'
+            ok: 'dot dot-ok',
+            err: 'dot dot-err',
+            loading: 'dot dot-loading'
         };
 
         function setStatus(state, text) {
