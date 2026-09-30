@@ -208,6 +208,22 @@
         "type": "85fda8c7-8a2f-4d93-a2cd-f20731025156",
         "created_at": "2026-09-30T09:10:09.959Z"
       }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.49054232566282,
+          36.09245455851266
+        ]
+      },
+      "properties": {
+        "title": "石老人",
+        "description": "天没亮就来看日出了",
+        "type": "85fda8c7-8a2f-4d93-a2cd-f20731025156",
+        "created_at": "2026-09-30T09:13:49.950Z"
+      }
     }
   ]
 }
