@@ -49,6 +49,22 @@
         "type": "b0e6ad95-b711-4ba8-a5f4-bcde6fb7a394",
         "created_at": "2026-09-30T09:49:29.131Z"
       }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          113.58196638368902,
+          34.868527692211416
+        ]
+      },
+      "properties": {
+        "title": "双桥花卉基地",
+        "description": "花鸟市场",
+        "type": "b0e6ad95-b711-4ba8-a5f4-bcde6fb7a394",
+        "created_at": "2026-09-30T09:53:44.698Z"
+      }
     }
   ]
 }
