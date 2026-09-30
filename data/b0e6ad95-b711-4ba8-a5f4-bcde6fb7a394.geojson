@@ -1,4 +1,21 @@
 {
   "type": "FeatureCollection",
-  "features": []
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          116.45830299060569,
+          39.87561253977976
+        ]
+      },
+      "properties": {
+        "title": "潘家园",
+        "description": "各种各样奇奇怪怪的玩意儿",
+        "type": "b0e6ad95-b711-4ba8-a5f4-bcde6fb7a394",
+        "created_at": "2026-09-30T09:35:21.228Z"
+      }
+    }
+  ]
 }
