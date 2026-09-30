@@ -86,22 +86,6 @@
       "geometry": {
         "type": "Point",
         "coordinates": [
-          116.40300035476686,
-          39.93751379563947
-        ]
-      },
-      "properties": {
-        "title": "南锣鼓巷",
-        "description": "人挺多，环境一般，有人乱扔垃圾",
-        "type": "85fda8c7-8a2f-4d93-a2cd-f20731025156",
-        "created_at": "2026-09-24T00:55:06.414Z"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
           116.38660669326784,
           39.94261390008317
         ]
