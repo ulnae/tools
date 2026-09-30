@@ -5,23 +5,152 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>意见反馈处理</title>
+
+    <!-- 跟随系统主题的浏览器状态栏颜色 -->
+    <meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#0d1016" media="(prefers-color-scheme: dark)">
+
     <link rel="icon" type="image/svg+xml"
         href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23FF9500'/%3E%3Cpath d='M7 9a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3h-6l-5 4v-4H10a3 3 0 0 1-3-3z' fill='%23fff'/%3E%3C/svg%3E">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.10/dayjs.min.js"></script>
+
+    <script>
+        /* ============================================================
+           Tailwind：把语义色名映射到 CSS 变量
+           ============================================================ */
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        /* 文本层级 */
+                        ink:     'var(--c-ink)',
+                        sub:     'var(--c-sub)',
+                        muted:   'var(--c-muted)',
+                        faint:   'var(--c-faint)',
+                        faint2:  'var(--c-faint2)',
+                        /* 结构与填充 */
+                        line:    'var(--c-line)',
+                        field:   'var(--c-fill)',
+                        fill2:   'var(--c-fill2)',
+                        rowhover:'var(--c-hover)',
+                        barbg:   'var(--c-bar)',
+                        thead:   'var(--c-thead)',
+                        modal:   'var(--c-modal)',
+                        /* 强调色 */
+                        accent:  'var(--c-accent)',
+                        danger:  'var(--c-danger)',
+                        success: 'var(--c-success)',
+                        warn:    'var(--c-warn)',
+                        src:     'var(--c-src)',
+                    },
+                    fontFamily: {
+                        sans: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Text"', '"Helvetica Neue"',
+                               '"PingFang SC"', '"Hiragino Sans GB"', '"Microsoft YaHei"', 'sans-serif'],
+                    },
+                },
+            },
+        };
+    </script>
+
     <style>
+        /* ============================================================
+           日间主题（默认）
+           ============================================================ */
         :root {
-            --ios-blue: #007AFF;
-            --ios-red: #FF3B30;
-            --ios-green: #34C759;
-            --ios-orange: #FF9500;
-            --ios-gray: #8E8E93;
-            --ios-bg: #F2F2F7;
+            color-scheme: light;
+
+            --c-bg:           #F2F2F7;
+            --c-glass:        rgba(255, 255, 255, .86);
+            --c-glass-ring:   rgba(0, 0, 0, .04);
+            --c-glass-shadow: 0 8px 32px rgba(0, 0, 0, .08);
+
+            /* 文本层级 */
+            --c-ink:      #1c1c1e;
+            --c-sub:      #48484A;
+            --c-muted:    #8E8E93;
+            --c-faint:    #AEAEB2;
+            --c-faint2:   #C7C7CC;
+
+            /* 结构与填充 */
+            --c-line:     rgba(0, 0, 0, .06);
+            --c-fill:     rgba(120, 120, 128, .10);
+            --c-fill2:    rgba(0, 0, 0, .035);
+            --c-hover:    rgba(0, 0, 0, .025);
+            --c-bar:      rgba(0, 0, 0, .015);
+            --c-thead:    #F7F7F9;
+            --c-modal:    #ffffff;
+            --c-scroll:   rgba(0, 0, 0, .16);
+            --c-scroll-h: rgba(0, 0, 0, .30);
+
+            /* 强调色 */
+            --c-accent:        #007AFF;
+            --c-accent-soft:   rgba(0, 122, 255, .10);
+            --c-accent-soft-h: rgba(0, 122, 255, .20);
+            --c-accent-shadow: rgba(0, 122, 255, .32);
+
+            --c-danger:        #FF3B30;
+            --c-danger-soft:   rgba(255, 59, 48, .10);
+            --c-danger-soft-h: rgba(255, 59, 48, .20);
+
+            --c-success:  #34C759;
+            --c-warn:     #FF9500;
+            --c-src:      #5856D6;
+            --c-src-soft: rgba(88, 86, 214, .10);
         }
 
+        /* ============================================================
+           夜间主题（跟随系统）
+           ============================================================ */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                color-scheme: dark;
+
+                --c-bg:           #0d1016;
+                --c-glass:        rgba(28, 30, 36, .84);
+                --c-glass-ring:   rgba(255, 255, 255, .06);
+                --c-glass-shadow: 0 8px 32px rgba(0, 0, 0, .45);
+
+                --c-ink:      #f2f2f7;
+                --c-sub:      #c7c7cc;
+                --c-muted:    #8E8E93;
+                --c-faint:    #7c7c82;
+                --c-faint2:   #5a5a60;
+
+                --c-line:     rgba(255, 255, 255, .08);
+                --c-fill:     rgba(120, 120, 128, .24);
+                --c-fill2:    rgba(255, 255, 255, .05);
+                --c-hover:    rgba(255, 255, 255, .04);
+                --c-bar:      rgba(255, 255, 255, .02);
+                --c-thead:    #1a1d23;
+                --c-modal:    #1c1f26;
+                --c-scroll:   rgba(255, 255, 255, .18);
+                --c-scroll-h: rgba(255, 255, 255, .32);
+
+                --c-accent:        #0A84FF;
+                --c-accent-soft:   rgba(10, 132, 255, .18);
+                --c-accent-soft-h: rgba(10, 132, 255, .28);
+                --c-accent-shadow: rgba(10, 132, 255, .32);
+
+                --c-danger:        #FF453A;
+                --c-danger-soft:   rgba(255, 69, 58, .18);
+                --c-danger-soft-h: rgba(255, 69, 58, .28);
+
+                --c-success:  #32D74B;
+                --c-warn:     #FF9F0A;
+                --c-src:      #7d7aff;
+                --c-src-soft: rgba(125, 122, 255, .16);
+            }
+        }
+
+        /* ---------- 基础布局 ---------- */
         html,
         body {
             height: 100%;
+        }
+
+        html {
+            background: var(--c-bg);
         }
 
         body.app-shell {
@@ -34,16 +163,21 @@
                 "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
             -webkit-font-smoothing: antialiased;
             -webkit-tap-highlight-color: transparent;
-            background: var(--ios-bg);
+            background: var(--c-bg);
+            color: var(--c-ink);
+            transition: background-color .25s ease, color .25s ease;
         }
 
+        /* ---------- 毛玻璃面板 ---------- */
         .glass {
-            background: rgba(255, 255, 255, .86);
+            background: var(--c-glass);
             backdrop-filter: saturate(180%) blur(20px);
             -webkit-backdrop-filter: saturate(180%) blur(20px);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, .08), 0 0 0 .5px rgba(0, 0, 0, .04);
+            box-shadow: var(--c-glass-shadow), 0 0 0 .5px var(--c-glass-ring);
+            transition: background-color .25s ease, box-shadow .25s ease;
         }
 
+        /* ---------- 无滚动条 ---------- */
         .no-sb::-webkit-scrollbar {
             display: none;
         }
@@ -58,7 +192,7 @@
             overflow: auto;
             overscroll-behavior: contain;
             scrollbar-width: thin;
-            scrollbar-color: rgba(0, 0, 0, .18) transparent;
+            scrollbar-color: var(--c-scroll) transparent;
         }
 
         .scroll-area::-webkit-scrollbar {
@@ -71,14 +205,14 @@
         }
 
         .scroll-area::-webkit-scrollbar-thumb {
-            background: rgba(0, 0, 0, .16);
+            background: var(--c-scroll);
             border-radius: 8px;
             border: 2px solid transparent;
             background-clip: content-box;
         }
 
         .scroll-area::-webkit-scrollbar-thumb:hover {
-            background: rgba(0, 0, 0, .3);
+            background: var(--c-scroll-h);
             background-clip: content-box;
         }
 
@@ -90,23 +224,23 @@
         .ios-input {
             width: 100%;
             box-sizing: border-box;
-            background: rgba(120, 120, 128, .1);
+            background: var(--c-fill);
             border: none;
             border-radius: 12px;
             padding: 10px 14px;
             font-size: 14px;
             font-family: inherit;
-            color: #1c1c1e;
+            color: var(--c-ink);
             outline: none;
-            transition: box-shadow .18s;
+            transition: box-shadow .18s, background-color .25s ease, color .25s ease;
         }
 
         .ios-input::placeholder {
-            color: #AEAEB2;
+            color: var(--c-faint);
         }
 
         .ios-input:focus {
-            box-shadow: 0 0 0 3px rgba(0, 122, 255, .18);
+            box-shadow: 0 0 0 3px var(--c-accent-soft);
         }
 
         select.ios-input {
@@ -127,7 +261,7 @@
             font-weight: 600;
             font-family: inherit;
             cursor: pointer;
-            transition: background .18s, transform .12s;
+            transition: background .18s, transform .12s, color .25s ease;
             border: none;
         }
 
@@ -136,28 +270,28 @@
         }
 
         .btn-view {
-            background: rgba(0, 122, 255, .1);
-            color: #007AFF;
+            background: var(--c-accent-soft);
+            color: var(--c-accent);
         }
 
         .btn-view:hover {
-            background: rgba(0, 122, 255, .2);
+            background: var(--c-accent-soft-h);
         }
 
         .btn-del {
-            background: rgba(255, 59, 48, .1);
-            color: #FF3B30;
+            background: var(--c-danger-soft);
+            color: var(--c-danger);
         }
 
         .btn-del:hover {
-            background: rgba(255, 59, 48, .2);
+            background: var(--c-danger-soft-h);
         }
 
         /* ---------- 分页控件 ---------- */
         .pager-select {
             appearance: none;
             -webkit-appearance: none;
-            background-color: rgba(120, 120, 128, .1);
+            background-color: var(--c-fill);
             background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path fill='%238E8E93' d='M2 4l4 4 4-4z'/></svg>");
             background-repeat: no-repeat;
             background-position: right 9px center;
@@ -167,14 +301,14 @@
             font-size: 12px;
             font-weight: 600;
             font-family: inherit;
-            color: #1c1c1e;
+            color: var(--c-ink);
             outline: none;
             cursor: pointer;
-            transition: box-shadow .18s;
+            transition: box-shadow .18s, background-color .25s ease, color .25s ease;
         }
 
         .pager-select:focus {
-            box-shadow: 0 0 0 3px rgba(0, 122, 255, .18);
+            box-shadow: 0 0 0 3px var(--c-accent-soft);
         }
 
         .btn-pager {
@@ -183,15 +317,15 @@
             font-size: 12px;
             font-weight: 600;
             font-family: inherit;
-            color: #007AFF;
-            background: rgba(0, 122, 255, .1);
+            color: var(--c-accent);
+            background: var(--c-accent-soft);
             border: none;
             cursor: pointer;
-            transition: background .18s, transform .12s, opacity .18s;
+            transition: background .18s, transform .12s, opacity .18s, color .25s ease;
         }
 
         .btn-pager:hover:not(:disabled) {
-            background: rgba(0, 122, 255, .2);
+            background: var(--c-accent-soft-h);
         }
 
         .btn-pager:active:not(:disabled) {
@@ -207,7 +341,7 @@
         input[type="checkbox"].cb {
             width: 17px;
             height: 17px;
-            accent-color: #007AFF;
+            accent-color: var(--c-accent);
             cursor: pointer;
             vertical-align: middle;
         }
@@ -240,7 +374,8 @@
             position: sticky;
             top: 0;
             z-index: 5;
-            background-color: #F7F7F9;
+            background-color: var(--c-thead);
+            transition: background-color .25s ease;
         }
 
         /* ---------- 来源标签 ---------- */
@@ -255,9 +390,40 @@
             font-size: 11.5px;
             font-weight: 600;
             font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-            color: #5856D6;
-            background: rgba(88, 86, 214, .1);
+            color: var(--c-src);
+            background: var(--c-src-soft);
             vertical-align: middle;
+            transition: color .25s ease, background-color .25s ease;
+        }
+
+        /* ---------- 主按钮 / 危险软按钮 ---------- */
+        .btn-primary {
+            background: var(--c-accent);
+            color: #fff;
+            box-shadow: 0 4px 14px var(--c-accent-shadow);
+            transition: background-color .25s ease, box-shadow .25s ease, transform .12s;
+        }
+
+        .btn-primary:active {
+            transform: scale(.95);
+        }
+
+        .btn-primary:disabled {
+            opacity: .5;
+        }
+
+        .btn-soft-danger {
+            color: var(--c-danger);
+            background: var(--c-danger-soft);
+            transition: background-color .18s, color .25s ease, transform .12s;
+        }
+
+        .btn-soft-danger:active {
+            transform: scale(.98);
+        }
+
+        .btn-soft-danger:hover {
+            background: var(--c-danger-soft-h);
         }
 
         /* ---------- 加载旋转 ---------- */
@@ -278,15 +444,15 @@
     <!-- ===================== 顶部栏 ===================== -->
     <header class="glass flex-none z-30">
         <div class="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3 flex-wrap">
-            <h1 class="text-[16px] font-bold text-[#1c1c1e] tracking-tight">意见反馈处理</h1>
+            <h1 class="text-[16px] font-bold text-ink tracking-tight">意见反馈处理</h1>
 
             <div class="hidden sm:flex items-center gap-1.5">
-                <span id="statusDot" class="w-2 h-2 rounded-full bg-[#FF9500] animate-pulse"></span>
-                <span id="statusText" class="text-[12px] text-[#8E8E93] whitespace-nowrap">加载中...</span>
+                <span id="statusDot" class="w-2 h-2 rounded-full bg-warn animate-pulse"></span>
+                <span id="statusText" class="text-[12px] text-muted whitespace-nowrap">加载中...</span>
             </div>
 
             <button id="btnRefresh"
-                class="ml-auto flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-semibold text-white bg-[#007AFF] active:scale-95 transition shadow-[0_4px_14px_rgba(0,122,255,.32)] disabled:opacity-50">
+                class="btn-primary ml-auto flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-semibold">
                 <svg id="refreshIcon" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                     stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M21 12a9 9 0 1 1-2.64-6.36" />
@@ -302,7 +468,7 @@
         <div class="glass rounded-2xl overflow-hidden flex flex-col flex-1 min-h-0">
 
             <!-- 工具条 -->
-            <div class="flex-none px-3 py-3 flex items-center gap-2 flex-wrap border-b border-black/[0.05]">
+            <div class="flex-none px-3 py-3 flex items-center gap-2 flex-wrap border-b border-line">
                 <input id="searchInput" class="ios-input !w-auto flex-1 min-w-[160px]" type="text"
                     placeholder="搜索内容、联系方式或来源">
                 <select id="filterType" class="ios-input !w-auto min-w-[130px]">
@@ -311,13 +477,13 @@
                 <select id="filterSource" class="ios-input !w-auto min-w-[140px]">
                     <option value="">全部来源</option>
                 </select>
-                <span class="text-[12px] text-[#8E8E93] whitespace-nowrap">
-                    共 <b id="totalCount" class="text-[#1c1c1e] tabular-nums">0</b> 条
+                <span class="text-[12px] text-muted whitespace-nowrap">
+                    共 <b id="totalCount" class="text-ink tabular-nums">0</b> 条
                 </span>
 
                 <div id="bulkBar" class="hidden items-center gap-2 ml-auto">
-                    <span class="text-[12px] text-[#8E8E93] whitespace-nowrap">
-                        已选 <b id="bulkCount" class="text-[#FF3B30] tabular-nums">0</b> 条
+                    <span class="text-[12px] text-muted whitespace-nowrap">
+                        已选 <b id="bulkCount" class="text-danger tabular-nums">0</b> 条
                     </span>
                     <button id="btnBulkDelete" class="btn-mini btn-del">删除选中</button>
                 </div>
@@ -327,7 +493,7 @@
             <div class="flex-1 min-h-0 scroll-area">
                 <table class="w-full text-[13px] min-w-[1040px]">
                     <thead>
-                        <tr class="text-[#8E8E93] text-[12px]">
+                        <tr class="text-muted text-[12px]">
                             <th class="text-left font-semibold px-3 py-2.5 w-[42px]">
                                 <input type="checkbox" id="checkAll" class="cb">
                             </th>
@@ -345,11 +511,10 @@
             </div>
 
             <!-- 分页条 -->
-            <div
-                class="flex-none px-3 py-2.5 flex items-center gap-2 flex-wrap border-t border-black/[0.05] bg-black/[0.015]">
-                <span class="text-[12px] text-[#8E8E93] whitespace-nowrap">
-                    第 <b id="pageNow" class="text-[#1c1c1e] tabular-nums">1</b> /
-                    <b id="pageTotal" class="text-[#1c1c1e] tabular-nums">1</b> 页
+            <div class="flex-none px-3 py-2.5 flex items-center gap-2 flex-wrap border-t border-line bg-barbg">
+                <span class="text-[12px] text-muted whitespace-nowrap">
+                    第 <b id="pageNow" class="text-ink tabular-nums">1</b> /
+                    <b id="pageTotal" class="text-ink tabular-nums">1</b> 页
                 </span>
                 <select id="pageSize" class="pager-select">
                     <option value="10">10 条/页</option>
@@ -369,47 +534,47 @@
     <div id="detailModal"
         class="hidden fixed inset-0 z-[9998] items-center justify-center p-4 bg-black/40 backdrop-blur-[2px]">
         <div
-            class="anim-pop w-full max-w-[480px] max-h-[88vh] overflow-y-auto no-sb bg-white rounded-[24px] shadow-[0_24px_64px_rgba(0,0,0,.28)]">
+            class="anim-pop w-full max-w-[480px] max-h-[88vh] overflow-y-auto no-sb bg-modal rounded-[24px] shadow-[0_24px_64px_rgba(0,0,0,.28)]">
             <div class="flex items-center justify-between px-5 pt-5 pb-2">
-                <h2 class="text-[17px] font-bold text-[#1c1c1e] tracking-tight">反馈详情</h2>
+                <h2 class="text-[17px] font-bold text-ink tracking-tight">反馈详情</h2>
                 <button id="btnCloseDetail"
-                    class="w-7 h-7 rounded-full bg-black/5 text-[#8E8E93] text-[15px] leading-none flex items-center justify-center active:scale-90 transition">✕</button>
+                    class="w-7 h-7 rounded-full bg-field text-muted text-[15px] leading-none flex items-center justify-center active:scale-90 transition">✕</button>
             </div>
 
             <div class="px-5 pb-5">
                 <div class="flex items-center gap-2 flex-wrap">
                     <span id="d-type"
                         class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11.5px] font-semibold"></span>
-                    <span id="d-time" class="text-[12px] text-[#8E8E93] tabular-nums"></span>
+                    <span id="d-time" class="text-[12px] text-muted tabular-nums"></span>
                 </div>
 
-                <div class="mt-4 rounded-2xl bg-black/[0.035] p-4">
+                <div class="mt-4 rounded-2xl bg-fill2 p-4">
                     <p id="d-content"
-                        class="text-[14px] text-[#1c1c1e] leading-relaxed whitespace-pre-wrap break-words"></p>
+                        class="text-[14px] text-ink leading-relaxed whitespace-pre-wrap break-words"></p>
                 </div>
 
                 <div class="mt-4">
-                    <div class="text-[12px] font-semibold text-[#8E8E93] mb-1.5">联系方式</div>
-                    <div id="d-contact" class="text-[13px] text-[#48484A] break-all">—</div>
+                    <div class="text-[12px] font-semibold text-muted mb-1.5">联系方式</div>
+                    <div id="d-contact" class="text-[13px] text-sub break-all">—</div>
                 </div>
 
                 <div class="mt-4">
-                    <div class="text-[12px] font-semibold text-[#8E8E93] mb-1.5">来源</div>
-                    <div id="d-source" class="text-[13px] text-[#48484A] break-all">—</div>
+                    <div class="text-[12px] font-semibold text-muted mb-1.5">来源</div>
+                    <div id="d-source" class="text-[13px] text-sub break-all">—</div>
                 </div>
 
                 <div class="mt-4">
-                    <div class="text-[12px] font-semibold text-[#8E8E93] mb-1.5">记录 ID</div>
-                    <div id="d-id" class="text-[11.5px] text-[#AEAEB2] font-mono break-all"></div>
+                    <div class="text-[12px] font-semibold text-muted mb-1.5">记录 ID</div>
+                    <div id="d-id" class="text-[11.5px] text-faint font-mono break-all"></div>
                 </div>
 
                 <div class="flex gap-2.5 mt-6">
                     <button id="btnDetailDelete"
-                        class="flex-1 py-3 rounded-2xl text-[15px] font-semibold text-[#FF3B30] bg-[rgba(255,59,48,.1)] active:scale-[.98] transition">
+                        class="btn-soft-danger flex-1 py-3 rounded-2xl text-[15px] font-semibold">
                         删除
                     </button>
                     <button id="btnDetailClose"
-                        class="flex-1 py-3 rounded-2xl text-[15px] font-semibold text-white bg-[#007AFF] active:scale-[.98] transition shadow-[0_6px_20px_rgba(0,122,255,.32)]">
+                        class="btn-primary flex-1 py-3 rounded-2xl text-[15px] font-semibold">
                         关闭
                     </button>
                 </div>
@@ -511,11 +676,11 @@
             }, 2200);
         }
 
-        /* ---------- 状态指示 ---------- */
+        /* ---------- 状态指示（跟随主题色） ---------- */
         const STATUS_DOT = {
-            ok: 'w-2 h-2 rounded-full bg-[#34C759]',
-            err: 'w-2 h-2 rounded-full bg-[#FF3B30]',
-            loading: 'w-2 h-2 rounded-full bg-[#FF9500] animate-pulse'
+            ok: 'w-2 h-2 rounded-full bg-success',
+            err: 'w-2 h-2 rounded-full bg-danger',
+            loading: 'w-2 h-2 rounded-full bg-warn animate-pulse'
         };
 
         function setStatus(state, text) {
@@ -751,7 +916,7 @@
         function sourceCell(src) {
             const s = normalizeSource(src);
             if (!s) {
-                return `<span class="text-[#C7C7CC] text-[12px]">—</span>`;
+                return `<span class="text-faint2 text-[12px]">—</span>`;
             }
             return `<span class="src-tag" title="${escapeHtml(s)}">${escapeHtml(s)}</span>`;
         }
@@ -768,22 +933,22 @@
 
             if (!currentRows.length) {
                 const empty = state.feedback.length === 0 ? '暂无反馈数据' : '没有符合条件的反馈';
-                tbody.innerHTML = `<tr><td colspan="8" class="py-16 text-center text-[#AEAEB2] text-[13px]">
+                tbody.innerHTML = `<tr><td colspan="8" class="py-16 text-center text-faint text-[13px]">
                     ${empty}</td></tr>`;
             } else {
                 tbody.innerHTML = currentRows.map((item, i) => {
                     const checked = state.selected.has(item.id) ? 'checked' : '';
                     return `
-                <tr class="border-b border-black/[0.04] hover:bg-black/[0.02] align-top">
+                <tr class="border-b border-line hover:bg-rowhover align-top">
                     <td class="px-3 py-2.5">
                         <input type="checkbox" class="cb row-check" data-id="${escapeHtml(item.id)}" ${checked}>
                     </td>
-                    <td class="px-3 py-2.5 text-[#C7C7CC] tabular-nums">${pg.start + i + 1}</td>
+                    <td class="px-3 py-2.5 text-faint2 tabular-nums">${pg.start + i + 1}</td>
                     <td class="px-3 py-2.5">${typeBadge(item.type)}</td>
-                    <td class="px-3 py-2.5 text-[#1c1c1e] break-words max-w-[380px]">${escapeHtml(summary(item.content))}</td>
-                    <td class="px-3 py-2.5 text-[#48484A] break-all text-[12.5px]">${escapeHtml(item.contact || '—')}</td>
+                    <td class="px-3 py-2.5 text-ink break-words max-w-[380px]">${escapeHtml(summary(item.content))}</td>
+                    <td class="px-3 py-2.5 text-sub break-all text-[12.5px]">${escapeHtml(item.contact || '—')}</td>
                     <td class="px-3 py-2.5">${sourceCell(item.source)}</td>
-                    <td class="px-3 py-2.5 text-[#8E8E93] tabular-nums whitespace-nowrap text-[12px]">${formatDateTime(item.created_at) || '—'}</td>
+                    <td class="px-3 py-2.5 text-muted tabular-nums whitespace-nowrap text-[12px]">${formatDateTime(item.created_at) || '—'}</td>
                     <td class="px-3 py-2.5 whitespace-nowrap text-right">
                         <button class="btn-mini btn-view" data-act="view" data-id="${escapeHtml(item.id)}">查看</button>
                         <button class="btn-mini btn-del ml-1.5" data-act="del" data-id="${escapeHtml(item.id)}">删除</button>
@@ -900,8 +1065,8 @@
             $('d-contact').textContent = item.contact || '—';
             $('d-source').textContent = src || EMPTY_SOURCE_TEXT;
             $('d-source').className = src
-                ? 'text-[13px] text-[#48484A] break-all font-mono'
-                : 'text-[13px] text-[#AEAEB2] break-all';
+                ? 'text-[13px] text-sub break-all font-mono'
+                : 'text-[13px] text-faint break-all';
             $('d-id').textContent = item.id;
 
             showModal('detailModal');
