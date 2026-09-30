@@ -240,6 +240,22 @@
         "type": "85fda8c7-8a2f-4d93-a2cd-f20731025156",
         "created_at": "2026-09-30T09:16:14.710Z"
       }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.43132389075431,
+          36.05395259522287
+        ]
+      },
+      "properties": {
+        "title": "小麦岛公园",
+        "description": "去的那天下雨了，略有遗憾",
+        "type": "85fda8c7-8a2f-4d93-a2cd-f20731025156",
+        "created_at": "2026-09-30T09:22:35.182Z"
+      }
     }
   ]
 }
