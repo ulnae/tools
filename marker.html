@@ -9,19 +9,80 @@
     <link rel="icon" type="image/svg+xml"
         href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23007AFF'/%3E%3Cpath d='M16 6c-3.9 0-7 3.1-7 7 0 5.3 7 13 7 13s7-7.7 7-13c0-3.9-3.1-7-7-7z' fill='%23fff'/%3E%3Ccircle cx='16' cy='13' r='2.6' fill='%23007AFF'/%3E%3C/svg%3E">
 
+    <!-- 移动端浏览器地址栏 / 状态栏配色（跟随系统主题） -->
+    <meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js@1.12.0/src/toastify.min.css" />
     <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
+        /* ============================================================
+           主题变量：跟随系统（prefers-color-scheme）
+           ============================================================ */
         :root {
+            /* ---- iOS 系统色（浅色） ---- */
             --ios-blue: #007AFF;
             --ios-blue-dark: #0062CC;
             --ios-red: #FF3B30;
             --ios-green: #34C759;
             --ios-orange: #FF9500;
             --ios-gray: #8E8E93;
-            --ios-bg: #F2F2F7;
+
+            /* ---- 语义色（浅色） ---- */
+            --c-bg: #F2F2F7;
+            --c-card: #FFFFFF;
+            --c-text: #1C1C1E;
+            --c-text-2: #8E8E93;
+            --c-text-3: #AEAEB2;
+            --c-text-4: #C7C7CC;
+
+            --c-fill: rgba(120, 120, 128, .12);
+            --c-fill-2: rgba(120, 120, 128, .20);
+            --c-fill-3: rgba(120, 120, 128, .28);
+
+            --c-input-bg: rgba(120, 120, 128, .10);
+            --c-sep: rgba(0, 0, 0, .08);
+
+            --c-glass: rgba(255, 255, 255, .82);
+            --c-shadow: 0 8px 32px rgba(0, 0, 0, .12), 0 0 0 .5px rgba(0, 0, 0, .04);
+            --c-shadow-lg: 0 24px 64px rgba(0, 0, 0, .28);
+
+            color-scheme: light;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                /* ---- iOS 系统色（深色，使用官方 Dark 变体） ---- */
+                --ios-blue: #0A84FF;
+                --ios-blue-dark: #409CFF;
+                --ios-red: #FF453A;
+                --ios-green: #30D158;
+                --ios-orange: #FF9F0A;
+                --ios-gray: #98989F;
+
+                /* ---- 语义色（深色） ---- */
+                --c-bg: #000000;
+                --c-card: #1C1C1E;
+                --c-text: #F2F2F7;
+                --c-text-2: #98989F;
+                --c-text-3: #7C7C82;
+                --c-text-4: #5A5A5F;
+
+                --c-fill: rgba(120, 120, 128, .24);
+                --c-fill-2: rgba(120, 120, 128, .34);
+                --c-fill-3: rgba(120, 120, 128, .46);
+
+                --c-input-bg: rgba(120, 120, 128, .24);
+                --c-sep: rgba(255, 255, 255, .12);
+
+                --c-glass: rgba(28, 28, 30, .78);
+                --c-shadow: 0 8px 32px rgba(0, 0, 0, .6), 0 0 0 .5px rgba(255, 255, 255, .08);
+                --c-shadow-lg: 0 24px 64px rgba(0, 0, 0, .72);
+
+                color-scheme: dark;
+            }
         }
 
         html,
@@ -35,21 +96,28 @@
                 "Helvetica Neue", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
             -webkit-font-smoothing: antialiased;
             -webkit-tap-highlight-color: transparent;
-            background: var(--ios-bg);
+            background: var(--c-bg);
+            color: var(--c-text);
         }
 
         #map {
             width: 100%;
             height: 100%;
-            background: var(--ios-bg);
+            background: var(--c-bg);
         }
 
         /* ============ 毛玻璃 ============ */
         .glass {
-            background: rgba(255, 255, 255, .82);
+            background: var(--c-glass);
             backdrop-filter: saturate(180%) blur(20px);
             -webkit-backdrop-filter: saturate(180%) blur(20px);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, .12), 0 0 0 .5px rgba(0, 0, 0, .04);
+            box-shadow: var(--c-shadow);
+        }
+
+        /* ============ 卡片（弹窗） ============ */
+        .sheet {
+            background: var(--c-card);
+            box-shadow: var(--c-shadow-lg);
         }
 
         /* ============ 隐藏滚动条 ============ */
@@ -69,8 +137,8 @@
             width: 20px;
             height: 20px;
             border-radius: 50%;
-            border: 1.5px solid #C7C7CC;
-            background: #fff;
+            border: 1.5px solid var(--c-text-4);
+            background: var(--c-card);
             position: relative;
             cursor: pointer;
             transition: all .18s ease;
@@ -100,12 +168,33 @@
             color: #fff;
         }
 
-        /* ============ Leaflet 弹窗 iOS 化 ============ */
+        /* ============ Leaflet 深色适配 ============ */
+        .leaflet-container {
+            background: var(--c-bg);
+            font-family: inherit;
+        }
+
+        /* 深色模式下把浅色地图瓦片反相成暗色底图 */
+        @media (prefers-color-scheme: dark) {
+            .leaflet-tile-pane {
+                filter: invert(1) hue-rotate(180deg) brightness(.94) contrast(.92) saturate(.78);
+            }
+        }
+
+        /* 弹窗 */
         .leaflet-popup-content-wrapper {
             border-radius: 20px;
             padding: 0;
             overflow: hidden;
+            background: var(--c-card);
+            color: var(--c-text);
             box-shadow: 0 16px 48px rgba(0, 0, 0, .2), 0 0 0 .5px rgba(0, 0, 0, .05);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .leaflet-popup-content-wrapper {
+                box-shadow: 0 16px 48px rgba(0, 0, 0, .7), 0 0 0 .5px rgba(255, 255, 255, .08);
+            }
         }
 
         /* 关键：不要覆盖 Leaflet 计算出的宽度，避免首次测量错位 */
@@ -116,6 +205,7 @@
 
         .leaflet-popup-tip {
             box-shadow: none;
+            background: var(--c-card);
         }
 
         .leaflet-container a.leaflet-popup-close-button {
@@ -124,17 +214,57 @@
             width: 26px;
             height: 26px;
             border-radius: 50%;
-            background: rgba(120, 120, 128, .14);
-            color: var(--ios-gray);
+            background: var(--c-fill);
+            color: var(--c-text-2);
             font-size: 17px;
             line-height: 24px;
-            transition: background .18s;
+            transition: background .18s, color .18s;
             z-index: 10;
         }
 
         .leaflet-container a.leaflet-popup-close-button:hover {
-            background: rgba(120, 120, 128, .28);
-            color: #1c1c1e;
+            background: var(--c-fill-3);
+            color: var(--c-text);
+        }
+
+        /* 缩放控件 */
+        .leaflet-bar {
+            border: none !important;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, .18);
+        }
+
+        .leaflet-bar a,
+        .leaflet-bar a:hover {
+            background: var(--c-card);
+            color: var(--c-text);
+            border-bottom-color: var(--c-sep) !important;
+            transition: background .18s;
+        }
+
+        .leaflet-bar a:hover {
+            background: var(--c-fill-2);
+        }
+
+        .leaflet-bar a.leaflet-disabled {
+            background: var(--c-card);
+            color: var(--c-text-4);
+        }
+
+        /* 版权信息 */
+        .leaflet-control-attribution {
+            background: var(--c-glass) !important;
+            color: var(--c-text-2) !important;
+            backdrop-filter: saturate(180%) blur(20px);
+            -webkit-backdrop-filter: saturate(180%) blur(20px);
+            padding: 2px 8px;
+            border-radius: 8px 0 0 0;
+            font-size: 10px;
+        }
+
+        .leaflet-control-attribution a {
+            color: var(--c-text-2) !important;
         }
 
         /* ============ 标记图标 ============ */
@@ -164,23 +294,29 @@
         .ios-input {
             width: 100%;
             box-sizing: border-box;
-            background: rgba(120, 120, 128, .1);
+            background: var(--c-input-bg);
             border: none;
             border-radius: 12px;
             padding: 10px 14px;
             font-size: 14px;
             font-family: inherit;
-            color: #1c1c1e;
+            color: var(--c-text);
             outline: none;
-            transition: box-shadow .18s;
+            transition: box-shadow .18s, background .18s;
         }
 
         .ios-input::placeholder {
-            color: #AEAEB2;
+            color: var(--c-text-3);
         }
 
         .ios-input:focus {
             box-shadow: 0 0 0 3px rgba(0, 122, 255, .18);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .ios-input:focus {
+                box-shadow: 0 0 0 3px rgba(10, 132, 255, .35);
+            }
         }
 
         /* ============ 色板 ============ */
@@ -216,7 +352,7 @@
         }
 
         input[type="color"]::-webkit-color-swatch {
-            border: 1px solid rgba(0, 0, 0, .1);
+            border: 1px solid var(--c-sep);
             border-radius: 12px;
         }
 
@@ -268,7 +404,7 @@
         .popup-detail h3 {
             font-size: 16px;
             font-weight: 700;
-            color: #1c1c1e;
+            color: var(--c-text);
             line-height: 1.35;
             margin: 0 0 8px;
             word-break: break-word;
@@ -276,7 +412,7 @@
 
         .popup-detail .desc {
             font-size: 13px;
-            color: #48484A;
+            color: var(--c-text-2);
             line-height: 1.6;
             white-space: pre-wrap;
             word-break: break-word;
@@ -289,7 +425,7 @@
             box-sizing: border-box;
             padding: 11px 16px;
             border-radius: 14px;
-            background: #007AFF;
+            background: var(--ios-blue);
             color: #ffffff;
             font-size: 14px;
             font-weight: 600;
@@ -302,7 +438,7 @@
         }
 
         .popup-detail .nav-btn:hover {
-            background: #0062CC;
+            background: var(--ios-blue-dark);
             color: #ffffff;
         }
 
@@ -315,7 +451,7 @@
         .popup-form h3 {
             font-size: 16px;
             font-weight: 700;
-            color: #1c1c1e;
+            color: var(--c-text);
             margin: 0 0 16px;
             letter-spacing: -.2px;
         }
@@ -324,7 +460,7 @@
             display: block;
             font-size: 12px;
             font-weight: 600;
-            color: #8E8E93;
+            color: var(--c-text-2);
             margin-bottom: 6px;
         }
 
@@ -334,7 +470,7 @@
 
         .popup-form .lock-tip {
             font-size: 11px;
-            color: #AEAEB2;
+            color: var(--c-text-3);
             margin-top: 6px;
             display: flex;
             align-items: center;
@@ -384,12 +520,12 @@
         }
 
         .popup-form .btn-secondary {
-            background: rgba(120, 120, 128, .12);
-            color: #007AFF;
+            background: var(--c-fill);
+            color: var(--ios-blue);
         }
 
         .popup-form .btn-primary {
-            background: #007AFF;
+            background: var(--ios-blue);
             color: #ffffff;
             box-shadow: 0 4px 14px rgba(0, 122, 255, .32);
         }
@@ -410,18 +546,60 @@
             border-radius: 12px;
             font-size: 13px;
             font-weight: 500;
-            color: #1c1c1e;
-            background: rgba(0, 0, 0, .05);
+            color: var(--c-text);
+            background: var(--c-fill);
             text-decoration: none;
             transition: transform .12s, background .18s;
         }
 
         .fb-btn:hover {
-            background: rgba(0, 0, 0, .09);
+            background: var(--c-fill-2);
         }
 
         .fb-btn:active {
             transform: scale(.95);
+        }
+
+        /* ============ 类型筛选列表项（跟随主题） ============ */
+        .filter-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 10px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background .18s;
+        }
+
+        .filter-row:hover {
+            background: var(--c-fill);
+        }
+
+        .filter-row:active {
+            background: var(--c-fill-2);
+        }
+
+        .filter-name {
+            flex: 1;
+            font-size: 13px;
+            color: var(--c-text);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .filter-count {
+            flex: none;
+            font-size: 11px;
+            color: var(--c-text-3);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .filter-empty {
+            font-size: 12px;
+            color: var(--c-text-3);
+            padding: 8px 10px;
+            line-height: 1.6;
         }
 
         /* ============ 顶部工具栏：类型按钮（仅移动端显示，图标化） ============ */
@@ -474,9 +652,11 @@
     <div id="panel"
         class="hidden md:block absolute z-[1000] top-[68px] md:top-3 left-3 right-3 md:right-auto md:w-[264px] glass rounded-[20px] overflow-hidden">
         <div id="panelHeader" class="flex items-center justify-between px-4 py-3.5 cursor-pointer select-none">
-            <h2 id="panelTitle" class="text-[13px] font-semibold text-[#1c1c1e] tracking-tight">类型筛选</h2>
-            <svg id="panelChev" class="w-3.5 h-3.5 text-[#C7C7CC] transition-transform duration-200" viewBox="0 0 20 20"
-                fill="currentColor">
+            <h2 id="panelTitle"
+                class="text-[13px] font-semibold text-[color:var(--c-text)] tracking-tight">类型筛选</h2>
+            <svg id="panelChev"
+                class="w-3.5 h-3.5 text-[color:var(--c-text-4)] transition-transform duration-200"
+                viewBox="0 0 20 20" fill="currentColor">
                 <path fill-rule="evenodd"
                     d="M5.29 7.29a1 1 0 011.42 0L10 10.59l3.29-3.3a1 1 0 111.42 1.42l-4 4a1 1 0 01-1.42 0l-4-4a1 1 0 010-1.42z"
                     clip-rule="evenodd" />
@@ -486,9 +666,12 @@
         <div id="panelBody" class="px-3 pt-3 pb-3 max-h-[calc(100vh-160px)] overflow-y-auto no-sb">
             <input id="searchInput" class="ios-input mb-3 hidden md:block" type="text" placeholder="搜索名称或描述">
             <div class="flex items-center gap-3 px-1 mb-2">
-                <button id="btnSelectAll" class="text-[12px] font-medium text-[#007AFF] active:opacity-60">全选</button>
-                <button id="btnSelectNone" class="text-[12px] font-medium text-[#007AFF] active:opacity-60">清空</button>
-                <button id="btnManageTypes" class="ml-auto text-[12px] font-semibold text-[#007AFF] active:opacity-60">+
+                <button id="btnSelectAll"
+                    class="text-[12px] font-medium text-[color:var(--ios-blue)] active:opacity-60">全选</button>
+                <button id="btnSelectNone"
+                    class="text-[12px] font-medium text-[color:var(--ios-blue)] active:opacity-60">清空</button>
+                <button id="btnManageTypes"
+                    class="ml-auto text-[12px] font-semibold text-[color:var(--ios-blue)] active:opacity-60">+
                     新增类型</button>
             </div>
             <div id="typeFilters" class="space-y-0.5"></div>
@@ -500,8 +683,10 @@
         class="absolute z-[1000] top-3 left-3 right-3 md:left-auto md:right-3 md:w-auto flex items-center gap-2 glass rounded-[20px] px-2.5 py-2">
 
         <div class="hidden md:flex items-center gap-1.5 pl-1.5 pr-1 flex-none">
-            <span id="statusDot" class="w-2 h-2 rounded-full bg-[#FF9500] animate-pulse"></span>
-            <span id="statusText" class="text-[12px] text-[#8E8E93] whitespace-nowrap">加载中...</span>
+            <span id="statusDot"
+                class="w-2 h-2 rounded-full flex-none bg-[color:var(--ios-orange)] animate-pulse"></span>
+            <span id="statusText"
+                class="text-[12px] text-[color:var(--c-text-2)] whitespace-nowrap">加载中...</span>
         </div>
 
         <input id="searchInputM" class="md:hidden flex-1 min-w-0 ios-input !py-2 !px-3" type="text"
@@ -509,7 +694,7 @@
 
         <!-- 类型筛选：移动端图标按钮 -->
         <button id="btnToggleTypesM" data-active="false" title="类型筛选" aria-label="类型筛选"
-            class="hidden md:hidden flex-none w-9 h-9 rounded-xl text-[#1c1c1e] bg-black/5 active:scale-95 transition items-center justify-center">
+            class="hidden md:hidden flex-none w-9 h-9 rounded-xl text-[color:var(--c-text)] bg-[color:var(--c-fill)] active:scale-95 transition items-center justify-center">
             <svg class="w-[18px] h-[18px] flex-none" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polygon points="12 2 2 7 12 12 22 7 12 2" />
@@ -519,17 +704,19 @@
         </button>
 
         <!-- ============ 意见反馈入口（顶部工具栏，移动端显示图标） ============ -->
-        <a id="btnFeedback" class="fb-btn flex-none" href="./feedback?f=共享标点" title="意见反馈" target="_blank" aria-label="意见反馈">
+        <a id="btnFeedback" class="fb-btn flex-none" href="./feedback?f=共享标点" title="意见反馈" target="_blank"
+            aria-label="意见反馈">
             <svg class="w-[18px] h-[18px] flex-none" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+                <path
+                    d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
             </svg>
             <span class="fb-text">反馈</span>
         </a>
 
         <!-- ============ 添加标点（PC：图标 + 文字；移动端：仅图标） ============ -->
         <button id="btnAddMode" title="添加标点"
-            class="flex-none inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-semibold text-white bg-[#007AFF] active:scale-95 transition shadow-[0_4px_14px_rgba(0,122,255,.32)]">
+            class="flex-none inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-semibold text-white bg-[color:var(--ios-blue)] active:scale-95 transition shadow-[0_4px_14px_rgba(0,122,255,.32)]">
             <span id="btnAddModeIcon" class="inline-flex flex-none">
                 <svg class="w-[16px] h-[16px]" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                     stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -545,21 +732,20 @@
     <!-- ============ 新增类型弹窗 ============ -->
     <div id="typeModal"
         class="hidden fixed inset-0 z-[9998] items-center justify-center p-4 bg-black/40 backdrop-blur-[2px]">
-        <div
-            class="anim-pop w-full max-w-[380px] bg-white rounded-[24px] shadow-[0_24px_64px_rgba(0,0,0,.28)] overflow-hidden">
+        <div class="anim-pop w-full max-w-[380px] sheet rounded-[24px] overflow-hidden">
             <div class="flex items-center justify-between px-5 pt-5 pb-3">
-                <h2 class="text-[17px] font-bold text-[#1c1c1e] tracking-tight">新增类型</h2>
+                <h2 class="text-[17px] font-bold text-[color:var(--c-text)] tracking-tight">新增类型</h2>
                 <button id="btnCloseTypeModal"
-                    class="w-7 h-7 rounded-full bg-black/5 text-[#8E8E93] text-[15px] leading-none flex items-center justify-center active:scale-90 transition">✕</button>
+                    class="w-7 h-7 rounded-full bg-[color:var(--c-fill)] text-[color:var(--c-text-2)] text-[15px] leading-none flex items-center justify-center active:scale-90 transition">✕</button>
             </div>
 
             <div class="px-5 pb-5 max-h-[70vh] overflow-y-auto no-sb">
-                <label class="block text-[12px] font-semibold text-[#8E8E93] mb-1.5 mt-1">类型名称 <span
-                        class="text-[#FF3B30]">*</span></label>
+                <label class="block text-[12px] font-semibold text-[color:var(--c-text-2)] mb-1.5 mt-1">类型名称 <span
+                        class="text-[color:var(--ios-red)]">*</span></label>
                 <input id="nt-name" class="ios-input" type="text" maxlength="20" placeholder="例如：餐厅 / 景区 / 钓点">
 
-                <label class="block text-[12px] font-semibold text-[#8E8E93] mb-1.5 mt-4">类型颜色 <span
-                        class="text-[#FF3B30]">*</span></label>
+                <label class="block text-[12px] font-semibold text-[color:var(--c-text-2)] mb-1.5 mt-4">类型颜色 <span
+                        class="text-[color:var(--ios-red)]">*</span></label>
                 <div class="flex gap-2 items-center">
                     <input type="color" id="nt-color" value="#007AFF">
                     <input id="nt-color-text" class="ios-input flex-1" type="text" maxlength="7" value="#007AFF"
@@ -568,7 +754,7 @@
                 <div id="swatches" class="flex flex-wrap gap-2.5 mt-3.5"></div>
 
                 <button id="btnSaveType"
-                    class="w-full mt-6 py-3 rounded-2xl text-[15px] font-semibold text-white bg-[#007AFF] active:scale-[.98] transition shadow-[0_6px_20px_rgba(0,122,255,.32)] disabled:opacity-50">
+                    class="w-full mt-6 py-3 rounded-2xl text-[15px] font-semibold text-white bg-[color:var(--ios-blue)] active:scale-[.98] transition shadow-[0_6px_20px_rgba(0,122,255,.32)] disabled:opacity-50">
                     保存类型
                 </button>
             </div>
@@ -683,6 +869,10 @@
         const mobileMQ = window.matchMedia('(max-width: 768px)');
         const isMobileLayout = () => mobileMQ.matches;
 
+        /* 跟随系统主题 */
+        const darkMQ = window.matchMedia('(prefers-color-scheme: dark)');
+        const isDarkMode = () => darkMQ.matches;
+
         const TOAST_STYLE = {
             success: 'linear-gradient(135deg,#34C759,#28A745)',
             error: 'linear-gradient(135deg,#FF3B30,#D92D20)',
@@ -701,9 +891,9 @@
         }
 
         const STATUS_DOT = {
-            ok: 'w-2 h-2 rounded-full flex-none bg-[#34C759]',
-            err: 'w-2 h-2 rounded-full flex-none bg-[#FF3B30]',
-            loading: 'w-2 h-2 rounded-full flex-none bg-[#FF9500] animate-pulse'
+            ok: 'w-2 h-2 rounded-full flex-none bg-[color:var(--ios-green)]',
+            err: 'w-2 h-2 rounded-full flex-none bg-[color:var(--ios-red)]',
+            loading: 'w-2 h-2 rounded-full flex-none bg-[color:var(--ios-orange)] animate-pulse'
         };
 
         function setStatus(state, text) {
@@ -1088,16 +1278,16 @@
             const counts = Types.countByType();
 
             if (list.length === 0) {
-                wrap.innerHTML = `<div class="text-[12px] text-[#AEAEB2] px-2 py-2.5 leading-relaxed">暂无类型，点击上方「+ 新增类型」创建。</div>`;
+                wrap.innerHTML = `<div class="filter-empty">暂无类型，点击上方「+ 新增类型」创建。</div>`;
                 return;
             }
 
             wrap.innerHTML = list.map(t => `
-                <label class="flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-black/[0.04] active:bg-black/[0.07] cursor-pointer transition-colors">
+                <label class="filter-row">
                     <input type="checkbox" class="ios-check" value="${t.id}" ${state.activeTypeIds.has(t.id) ? 'checked' : ''}>
                     <span class="w-2.5 h-2.5 rounded-full flex-none" style="background:${t.color}"></span>
-                    <span class="flex-1 text-[13px] text-[#1c1c1e] truncate">${escapeHtml(t.name)}</span>
-                    <span class="text-[11px] text-[#AEAEB2] flex-none tabular-nums">${counts[t.id] || 0}</span>
+                    <span class="filter-name">${escapeHtml(t.name)}</span>
+                    <span class="filter-count">${counts[t.id] || 0}</span>
                 </label>
             `).join('');
 
@@ -1662,6 +1852,14 @@
             };
             if (mobileMQ.addEventListener) mobileMQ.addEventListener('change', onMQChange);
             else if (mobileMQ.addListener) mobileMQ.addListener(onMQChange);
+
+            /* 系统主题切换时，深色底图滤镜由 CSS 自动接管；
+               这里仅做一次 Leaflet 内部重绘，确保瓦片滤镜立即生效 */
+            const onThemeChange = () => {
+                if (state.geoLayer) state.geoLayer.eachLayer(l => l.closePopup && l.closePopup());
+            };
+            if (darkMQ.addEventListener) darkMQ.addEventListener('change', onThemeChange);
+            else if (darkMQ.addListener) darkMQ.addListener(onThemeChange);
         }
 
         /* ============================================================
