@@ -8,69 +8,168 @@
     <!-- ===== ICO / Favicon（内联 SVG，无需额外请求） ===== -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23007AFF'/%3E%3Cg fill='%23fff'%3E%3Crect x='12' y='12' width='16' height='16' rx='3'/%3E%3Crect x='36' y='12' width='16' height='16' rx='3'/%3E%3Crect x='12' y='36' width='16' height='16' rx='3'/%3E%3Crect x='36' y='36' width='8' height='8'/%3E%3Crect x='46' y='36' width='6' height='6'/%3E%3Crect x='36' y='46' width='6' height='6'/%3E%3Crect x='46' y='46' width='6' height='6'/%3E%3C/g%3E%3Cg fill='%23007AFF'%3E%3Crect x='18' y='18' width='4' height='4'/%3E%3Crect x='42' y='18' width='4' height='4'/%3E%3Crect x='18' y='42' width='4' height='4'/%3E%3C/g%3E%3C/svg%3E">
     <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23007AFF'/%3E%3Cg fill='%23fff'%3E%3Crect x='12' y='12' width='16' height='16' rx='3'/%3E%3Crect x='36' y='12' width='16' height='16' rx='3'/%3E%3Crect x='12' y='36' width='16' height='16' rx='3'/%3E%3Crect x='36' y='36' width='8' height='8'/%3E%3Crect x='46' y='36' width='6' height='6'/%3E%3Crect x='36' y='46' width='6' height='6'/%3E%3Crect x='46' y='46' width='6' height='6'/%3E%3C/g%3E%3Cg fill='%23007AFF'%3E%3Crect x='18' y='18' width='4' height='4'/%3E%3Crect x='42' y='18' width='4' height='4'/%3E%3Crect x='18' y='42' width='4' height='4'/%3E%3C/g%3E%3C/svg%3E">
-    <meta name="theme-color" content="#f2f2f7">
+
+    <!-- 主题色：随系统深浅色自动切换（浏览器地址栏 / 状态栏） -->
+    <meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            // 所有颜色都指向 CSS 变量，由 :root / 暗色媒体查询统一提供
+            colors: {
+              ink:    'var(--c-ink)',
+              muted:  'var(--c-muted)',
+              faint:  'var(--c-faint)',
+              line:   'var(--c-line)',
+              accent: 'var(--c-accent)',
+              card:   'var(--c-card)',
+              inset:  'var(--c-inset)',
+            },
+            fontFamily: {
+              sans: ['-apple-system','BlinkMacSystemFont','SF Pro Text','SF Pro Display',
+                     'Helvetica Neue','Helvetica','Arial','sans-serif'],
+            },
+          },
+        },
+      };
+    </script>
 
-    <!--
-      ===== 关键修复 =====
-      原方案使用 qrcodejs@1.0.0，该库存在两个致命缺陷：
-        1. QR8bitByte 内部自行处理 UTF-8 时，只要出现多字节字符（中文/日文/emoji），
-           就会在字节流最前面插入 EF BB BF（BOM），导致部分扫码器解析出多余字符；
-        2. 旧版构建的 getLength() / write() 在字符数与字节数不一致时会错位，
-           直接抛出 "code length overflow"，表现为"一输入中文就报错、无法渲染"。
-      现改用 qrcode-generator@1.4.4（业界成熟实现，自动选择版本号），
-      并在下面显式接管 stringToBytes，保证 UTF-8 编码 100% 正确。
-    -->
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
 
     <style>
-        /* iPhone 风格字体与底色 */
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif;
-            background-color: #f2f2f7; /* iOS 系统背景灰 */
-            -webkit-tap-highlight-color: transparent;
+        /* ============================================================
+           主题变量：日间（默认）
+           ============================================================ */
+        :root{
+            color-scheme: light;
+
+            --c-bg:           #f2f2f7;   /* iOS 系统背景灰 */
+            --c-card:         #ffffff;   /* 卡片 */
+            --c-inset:        #f2f2f7;   /* 输入框 / 内嵌区域 */
+            --c-inset-focus:  #e8e8ed;
+            --c-seg-bg:       #e8e8ed;   /* 分段控件底槽 */
+            --c-seg-active:   #ffffff;   /* 分段控件选中块 */
+            --c-btn2:         #e8e8ed;   /* 次要按钮 */
+            --c-btn2-hover:   #dcdce1;
+
+            --c-ink:          #1c1c1e;   /* 主文字 */
+            --c-muted:        #8e8e93;   /* 次要文字 */
+            --c-faint:        #aeaeb2;   /* 最弱文字 */
+            --c-line:         #e5e5ea;   /* 分割线 */
+
+            --c-accent:       #007aff;   /* iOS 蓝 */
+            --c-accent-hover: #0066d6;
+            --c-accent-ring:  rgba(0, 122, 255, .15);
+
+            --c-err:          #ff3b30;
+            --c-shadow:       rgba(0, 0, 0, .04);
+            --c-shadow-hover: rgba(0, 0, 0, .07);
+
+            --c-qr-bg:        #ffffff;   /* 二维码底色（固定白，保证扫得准） */
         }
-        /* 卡片圆角与阴影 */
+
+        /* ============================================================
+           主题变量：夜间（跟随系统）
+           ============================================================ */
+        @media (prefers-color-scheme: dark){
+            :root{
+                color-scheme: dark;
+
+                --c-bg:           #000000;
+                --c-card:         #1c1c1e;
+                --c-inset:        #2c2c2e;
+                --c-inset-focus:  #3a3a3c;
+                --c-seg-bg:       #2c2c2e;
+                --c-seg-active:   #48484a;
+                --c-btn2:         #2c2c2e;
+                --c-btn2-hover:   #3a3a3c;
+
+                --c-ink:          #ffffff;
+                --c-muted:        #98989f;
+                --c-faint:        #636366;
+                --c-line:         #38383a;
+
+                --c-accent:       #0a84ff;
+                --c-accent-hover: #409cff;
+                --c-accent-ring:  rgba(10, 132, 255, .28);
+
+                --c-err:          #ff453a;
+                --c-shadow:       rgba(0, 0, 0, .45);
+                --c-shadow-hover: rgba(0, 0, 0, .60);
+
+                --c-qr-bg:        #ffffff;
+            }
+        }
+
+        /* ============ 基础 ============ */
+        *{ -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+                         "Helvetica Neue", Helvetica, Arial, sans-serif;
+            background-color: var(--c-bg);
+            color: var(--c-ink);
+            transition: background-color .25s ease, color .25s ease;
+        }
+
+        /* ============ 卡片 ============ */
         .ios-card {
-            background: #ffffff;
+            background: var(--c-card);
             border-radius: 20px;
-            box-shadow: 0 2px 16px rgba(0, 0, 0, 0.04), 0 1px 4px rgba(0, 0, 0, 0.02);
-            transition: box-shadow 0.2s ease;
+            box-shadow: 0 2px 16px var(--c-shadow), 0 1px 4px var(--c-shadow);
+            transition: box-shadow .2s ease, background-color .25s ease;
         }
         .ios-card:hover {
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06), 0 2px 8px rgba(0, 0, 0, 0.03);
+            box-shadow: 0 4px 24px var(--c-shadow-hover), 0 2px 8px var(--c-shadow);
         }
-        /* iOS 风格输入框 */
+
+        /* ============ 输入框 ============ */
         .ios-input {
-            background: #f2f2f7;
+            background: var(--c-inset);
             border: none;
             border-radius: 12px;
             padding: 12px 16px;
             font-size: 16px;
             width: 100%;
             outline: none;
-            transition: background 0.2s ease, box-shadow 0.2s ease;
-            color: #1c1c1e;
+            transition: background .2s ease, box-shadow .2s ease, color .25s ease;
+            color: var(--c-ink);
             -webkit-appearance: none;
         }
         .ios-input:focus {
-            background: #e8e8ed;
-            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15);
+            background: var(--c-inset-focus);
+            box-shadow: 0 0 0 3px var(--c-accent-ring);
         }
         .ios-input::placeholder {
-            color: #8e8e93;
+            color: var(--c-muted);
         }
-        /* iOS 风格分段控件 */
+        /* select 保留系统下拉箭头，只接管配色 */
+        select.ios-input {
+            -webkit-appearance: menulist;
+            appearance: auto;
+            padding-right: 36px;
+            cursor: pointer;
+        }
+        /* 复选框跟随强调色 */
+        input[type="checkbox"] {
+            accent-color: var(--c-accent);
+            cursor: pointer;
+        }
+
+        /* ============ 分段控件 ============ */
         .segmented-control {
             display: flex;
-            background: #e8e8ed;
+            background: var(--c-seg-bg);
             border-radius: 10px;
             padding: 3px;
             overflow-x: auto;
             scrollbar-width: none;
             -ms-overflow-style: none;
+            transition: background-color .25s ease;
         }
         .segmented-control::-webkit-scrollbar {
             display: none;
@@ -81,29 +180,30 @@
             border-radius: 8px;
             font-size: 14px;
             font-weight: 500;
-            color: #1c1c1e;
+            color: var(--c-ink);
             background: transparent;
             border: none;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: background .2s ease, color .2s ease, box-shadow .2s ease;
             white-space: nowrap;
             -webkit-appearance: none;
         }
         .segmented-control button.active {
-            background: #ffffff;
-            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+            background: var(--c-seg-active);
+            box-shadow: 0 1px 4px rgba(0, 0, 0, .18);
             font-weight: 600;
         }
         .segmented-control button:not(.active):hover {
-            color: #007aff;
+            color: var(--c-accent);
         }
-        /* 二维码容器 */
+
+        /* ============ 二维码容器 ============ */
         #qrcode-container {
             display: flex;
             justify-content: center;
             align-items: center;
             padding: 24px;
-            background: #ffffff;
+            background: var(--c-qr-bg);   /* 固定白底，保证扫码识别率 */
             border-radius: 20px;
             min-height: 260px;
         }
@@ -113,9 +213,10 @@
             max-width: 100%;
             height: auto;
         }
-        /* 按钮 */
+
+        /* ============ 按钮 ============ */
         .ios-btn {
-            background: #007aff;
+            background: var(--c-accent);
             color: #fff;
             border: none;
             border-radius: 12px;
@@ -123,35 +224,37 @@
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: background .2s ease, transform .1s ease, opacity .2s ease;
             -webkit-appearance: none;
         }
         .ios-btn:hover {
-            background: #0066d6;
+            background: var(--c-accent-hover);
         }
         .ios-btn:active {
             transform: scale(0.98);
             opacity: 0.9;
         }
         .ios-btn-secondary {
-            background: #e8e8ed;
-            color: #1c1c1e;
+            background: var(--c-btn2);
+            color: var(--c-ink);
         }
         .ios-btn-secondary:hover {
-            background: #dcdce1;
+            background: var(--c-btn2-hover);
         }
-        /* 表单字段标签 */
+
+        /* ============ 表单标签 ============ */
         .field-label {
             font-size: 13px;
             font-weight: 500;
-            color: #8e8e93;
+            color: var(--c-muted);
             margin-bottom: 6px;
             display: block;
             letter-spacing: 0.02em;
         }
-        /* 二维码预览区 */
+
+        /* ============ 二维码预览卡 ============ */
         .qr-preview-card {
-            background: #ffffff;
+            background: var(--c-card);
             border-radius: 20px;
             padding: 24px;
             display: flex;
@@ -159,11 +262,13 @@
             align-items: center;
             justify-content: center;
             min-height: 300px;
-            box-shadow: 0 2px 16px rgba(0, 0, 0, 0.04);
+            box-shadow: 0 2px 16px var(--c-shadow);
+            transition: background-color .25s ease, box-shadow .25s ease;
         }
-        /* 错误提示 */
+
+        /* ============ 错误提示 ============ */
         .qr-error {
-            color: #ff3b30;
+            color: var(--c-err);
             font-size: 14px;
             line-height: 1.6;
             text-align: center;
@@ -172,18 +277,20 @@
         .qr-error small {
             display: block;
             margin-top: 6px;
-            color: #8e8e93;
+            color: var(--c-muted);
             font-size: 12px;
         }
-        /* 页面过渡 */
+
+        /* ============ 表单进场动画 ============ */
         .form-panel {
             animation: fadeIn 0.25s ease;
         }
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(6px); }
-            to { opacity: 1; transform: translateY(0); }
+            to   { opacity: 1; transform: translateY(0); }
         }
-        /* 响应式调整 */
+
+        /* ============ 响应式微调 ============ */
         @media (max-width: 768px) {
             .segmented-control button {
                 padding: 7px 12px;
@@ -195,15 +302,9 @@
         }
     </style>
 </head>
-<body class="min-h-screen py-6 px-4 md:py-10">
+<body class="min-h-screen py-6 px-4 md:py-10 font-sans">
 
     <div class="max-w-6xl mx-auto">
-
-        <!-- 标题 -->
-        <div class="text-center mb-8">
-            <h1 class="text-2xl md:text-3xl font-semibold text-gray-900 tracking-tight">二维码生成器</h1>
-            <p class="text-sm text-gray-500 mt-1">输入内容，实时生成</p>
-        </div>
 
         <!-- 主布局：左表单 + 右预览 -->
         <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
@@ -243,19 +344,20 @@
             <div class="lg:col-span-2">
                 <div class="qr-preview-card sticky top-6">
                     <div id="qrcode-container">
-                        <p class="text-gray-400 text-sm">输入内容后自动生成</p>
+                        <p class="text-faint text-sm">输入内容后自动生成</p>
                     </div>
-                    <p class="text-xs text-gray-400 mt-4 text-center" id="qr-hint">实时预览</p>
+                    <p class="text-xs text-faint mt-4 text-center" id="qr-hint">实时预览</p>
                 </div>
             </div>
 
         </div>
 
         <!-- 页脚（含意见反馈入口） -->
-        <p class="text-center text-xs text-gray-400 mt-10 mb-4">
+        <p class="text-center text-xs text-faint mt-10 mb-4">
             二维码内容在本地生成，不会上传服务器
             <span class="mx-1">·</span>
-            <a href="./feedback?f=二维码生成器" target="_blank" class="text-blue-500 hover:text-blue-600 hover:underline transition-colors">意见反馈</a>
+            <a href="./feedback?f=二维码生成器" target="_blank"
+               class="text-accent hover:opacity-80 hover:underline transition-colors">意见反馈</a>
         </p>
 
     </div>
@@ -378,7 +480,7 @@
                         html = `
                             <label class="field-label">文本内容</label>
                             <textarea class="ios-input" rows="5" data-field="text" placeholder="输入任意文本内容...">${escapeHtml(d.text)}</textarea>
-                            <p class="text-xs text-gray-400 mt-2">支持任意文本、符号和链接</p>
+                            <p class="text-xs text-faint mt-2">支持任意文本、符号和链接</p>
                         `;
                         break;
 
@@ -386,7 +488,7 @@
                         html = `
                             <label class="field-label">网址</label>
                             <input class="ios-input" type="url" data-field="url" value="${escapeHtml(d.url)}" placeholder="https://example.com" autocomplete="url">
-                            <p class="text-xs text-gray-400 mt-2">输入完整的网址，包含 http:// 或 https://</p>
+                            <p class="text-xs text-faint mt-2">输入完整的网址，包含 http:// 或 https://</p>
                         `;
                         break;
 
@@ -440,8 +542,8 @@
                                 </select>
                             </div>
                             <div class="mt-4 flex items-center gap-3">
-                                <input type="checkbox" id="wifi-hidden" data-field="hidden" ${d.hidden ? 'checked' : ''} class="w-5 h-5 rounded-md border-gray-300 text-blue-500 focus:ring-blue-500">
-                                <label for="wifi-hidden" class="text-sm text-gray-600">隐藏网络</label>
+                                <input type="checkbox" id="wifi-hidden" data-field="hidden" ${d.hidden ? 'checked' : ''} class="w-5 h-5 rounded-md">
+                                <label for="wifi-hidden" class="text-sm text-muted">隐藏网络</label>
                             </div>
                         `;
                         break;
@@ -461,7 +563,7 @@
                         html = `
                             <label class="field-label">电话号码</label>
                             <input class="ios-input" type="tel" data-field="phone" value="${escapeHtml(d.phone)}" placeholder="+86 138 0000 0000">
-                            <p class="text-xs text-gray-400 mt-2">建议使用国际格式（+国家代码）</p>
+                            <p class="text-xs text-faint mt-2">建议使用国际格式（+国家代码）</p>
                         `;
                         break;
 
@@ -571,6 +673,7 @@
             }
 
             // ============ 渲染二维码到 canvas（UTF-8 安全） ============
+            // 二维码始终采用「白底 + 深色模块」，无论日间/夜间都能被扫码器稳定识别
             function renderQRToCanvas(text, level) {
                 // 0 表示让库自动选择最小可用版本号
                 const qr = qrcode(0, level);
@@ -587,9 +690,12 @@
                 canvas.height = size;
 
                 const ctx = canvas.getContext('2d');
+
+                // 底色固定为白色（保证任何主题下都清晰可扫）
                 ctx.fillStyle = '#ffffff';
                 ctx.fillRect(0, 0, size, size);
 
+                // 模块颜色：始终使用近黑色，避免因主题反转导致识别失败
                 ctx.fillStyle = '#1c1c1e';
                 for (let r = 0; r < count; r++) {
                     for (let c = 0; c < count; c++) {
@@ -613,7 +719,7 @@
                 qrContainer.innerHTML = '';
 
                 if (!data) {
-                    qrContainer.innerHTML = '<p class="text-gray-400 text-sm">输入内容后自动生成</p>';
+                    qrContainer.innerHTML = '<p class="text-faint text-sm">输入内容后自动生成</p>';
                     qrHint.textContent = '实时预览';
                     return;
                 }
