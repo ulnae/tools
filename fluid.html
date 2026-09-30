@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fluid</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
+    canvas { width: 100vw; height: 100vh; display: block; }
+  </style>
+</head>
+<body>
+  <canvas id="fluid"></canvas>
+
+  <!-- 通过 CDN 加载 webgl-fluid 库（ES Module） -->
+  <script type="importmap">
+  {
+    "imports": {
+      "webgl-fluid": "https://cdn.jsdelivr.net/npm/webgl-fluid@0.3/dist/webgl-fluid.mjs"
+    }
+  }
+  </script>
+
+  <script type="module">
+    import WebGLFluid from 'webgl-fluid';
+
+    const canvas = document.getElementById('fluid');
+
+    // 一行调用，完成流体模拟初始化与交互绑定
+    WebGLFluid(canvas, {
+      // 是否在加载时自动产生一组随机喷溅
+      IMMEDIATE: true,
+
+      // 交互触发方式：'hover' 鼠标悬停即触发，'click' 需要按住拖拽
+      TRIGGER: 'hover',
+
+      // 模拟分辨率（越高细节越丰富，性能开销越大）
+      SIM_RESOLUTION: 128,
+
+      // 染料 / 颜色分辨率
+      DYE_RESOLUTION: 1024,
+
+      // 密度耗散：数值越大颜色消失越快
+      DENSITY_DISSIPATION: 1,
+
+      // 速度耗散：数值越大流体运动衰减越快
+      VELOCITY_DISSIPATION: 0.3,
+
+      // 压力求解迭代次数
+      PRESSURE: 0.8,
+      PRESSURE_ITERATIONS: 20,
+
+      // 涡度强度，控制旋涡感
+      CURL: 30,
+
+      // 喷溅半径与力度
+      SPLAT_RADIUS: 0.35,
+      SPLAT_FORCE: 6000,
+
+      // 是否开启光照着色，让流体有立体感
+      SHADING: true,
+
+      // 颜色是否随时间自动循环变化
+      COLORFUL: true,
+      COLOR_UPDATE_SPEED: 10,
+
+      // 背景色（RGB 0–255）
+      BACK_COLOR: { r: 0, g: 0, b: 0 },
+
+      // 是否透明背景（配合 CSS 背景图使用）
+      TRANSPARENT: false,
+
+      // 泛光效果
+      BLOOM: true,
+      BLOOM_INTENSITY: 0.8,
+      BLOOM_THRESHOLD: 0.6,
+
+      // 阳光射线效果
+      SUNRAYS: true,
+      SUNRAYS_WEIGHT: 1.0
+    });
+  </script>
+</body>
+</html>
