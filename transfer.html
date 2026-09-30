@@ -4,12 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>隔空闪传</title>
-<meta name="theme-color" content="#0d1016">
+
+<!-- 主题色随系统切换（移动端浏览器状态栏） -->
+<meta name="theme-color" content="#eef1f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0d1016" media="(prefers-color-scheme: dark)">
+
 <meta name="description" content="基于 WebRTC 的点对点文件传输，电脑与手机直连互传，文件不经过任何服务器中转。">
 
 <!-- favicon（内联 SVG，无需外部文件） -->
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%234f8cff'/%3E%3Cpath d='M32 14l12 12h-7v14h-10V26h-7z' fill='%23fff'/%3E%3Crect x='18' y='44' width='28' height='6' rx='3' fill='%23fff' opacity='.8'/%3E%3C/svg%3E">
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%234f8cff'/%3E%3Cpath d='M32 14l12 12h-7v14h-10V26h-7z' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%234f8cff'/%3E%3Cpath d='M32 14l12 12h-7v14h-10V26h-7z' fill='%23fff'/%3E%3Crect x='18' y='44' width='28' height='6' rx='3' fill='%23fff' opacity='.8'/%3E%3C/svg%3E">
 
 <!-- Tailwind CSS -->
 <script src="https://cdn.tailwindcss.com"></script>
@@ -17,14 +21,37 @@
   tailwind.config = {
     theme: {
       extend: {
+        // 所有颜色都指向 CSS 变量，由 :root / @media (prefers-color-scheme: dark) 提供
         colors: {
-          ink:    '#e7ebf3',
-          muted:  '#8992a5',
-          line:   '#262d3a',
-          accent: '#4f8cff',
-          ok:     '#2ecc71',
-          warn:   '#f5a623',
-          err:    '#ff5c5c',
+          ink:       'var(--c-ink)',
+          strong:    'var(--c-strong)',
+          muted:     'var(--c-muted)',
+          faint:     'var(--c-faint)',
+          line:      'var(--c-line)',
+          accent:    'var(--c-accent)',
+          ok:        'var(--c-ok)',
+          warn:      'var(--c-warn)',
+          err:       'var(--c-err)',
+
+          panel:     'var(--c-panel)',
+          panel2:    'var(--c-panel2)',
+          inset:     'var(--c-inset)',
+          card:      'var(--c-card)',
+          drop:      'var(--c-drop)',
+          track:     'var(--c-track)',
+          toast:     'var(--c-toast)',
+
+          chip:      'var(--c-chip)',
+          'chip-fg': 'var(--c-chip-fg)',
+
+          'ok-soft':   'var(--c-ok-soft)',
+          'ok-fg':     'var(--c-ok-fg)',
+          'send-soft': 'var(--c-send-soft)',
+          'send-fg':   'var(--c-send-fg)',
+          'warn-soft': 'var(--c-warn-soft)',
+          'warn-fg':   'var(--c-warn-fg)',
+          'err-soft':  'var(--c-err-soft)',
+          'err-fg':    'var(--c-err-fg)',
         },
         fontFamily: {
           sans: ['-apple-system','BlinkMacSystemFont','Segoe UI','PingFang SC',
@@ -36,44 +63,147 @@
 </script>
 
 <style>
+  /* ========== 日间主题（默认） ========== */
+  :root{
+    color-scheme: light;
+
+    --c-bg:        #eef1f7;
+    --c-glow:      #dbe6ff;
+
+    --c-ink:       #1a2030;
+    --c-strong:    #2b3549;
+    --c-muted:     #6a7488;
+    --c-faint:     #8b94a7;
+
+    --c-line:      #dce1eb;
+    --c-panel:     #ffffff;
+    --c-panel2:    #f5f7fb;
+    --c-shadow:    0 12px 32px rgba(20, 32, 60, .10);
+
+    --c-inset:     #f1f4f9;
+    --c-card:      #f7f9fd;
+    --c-drop:      #c6cedd;
+    --c-track:     #e4e8f1;
+    --c-scroll:    #c9d0de;
+
+    --c-chip:      #e7ebf3;
+    --c-chip-fg:   #39435a;
+    --c-toast:     #ffffff;
+
+    --c-accent:    #2f6bff;
+    --c-ok:        #16a34a;
+    --c-warn:      #b8860b;
+    --c-err:       #e5484d;
+
+    --c-ok-soft:   rgba(22, 163, 74, .12);
+    --c-ok-fg:     #12833f;
+    --c-send-soft: rgba(47, 107, 255, .12);
+    --c-send-fg:   #2f6bff;
+    --c-warn-soft: rgba(245, 166, 35, .18);
+    --c-warn-fg:   #96690a;
+    --c-err-soft:  rgba(229, 72, 77, .12);
+    --c-err-fg:    #c02a2f;
+  }
+
+  /* ========== 夜间主题（跟随系统） ========== */
+  @media (prefers-color-scheme: dark){
+    :root{
+      color-scheme: dark;
+
+      --c-bg:        #0d1016;
+      --c-glow:      #1e2942;
+
+      --c-ink:       #e7ebf3;
+      --c-strong:    #cfd6e6;
+      --c-muted:     #8992a5;
+      --c-faint:     #5b6478;
+
+      --c-line:      #262d3a;
+      --c-panel:     #1b2029;
+      --c-panel2:    #161a22;
+      --c-shadow:    0 12px 32px rgba(0, 0, 0, .28);
+
+      --c-inset:     #11151d;
+      --c-card:      #12161e;
+      --c-drop:      #333d50;
+      --c-track:     #232a37;
+      --c-scroll:    #2b3445;
+
+      --c-chip:      #2b3445;
+      --c-chip-fg:   #c8d2e6;
+      --c-toast:     #222a38;
+
+      --c-accent:    #4f8cff;
+      --c-ok:        #2ecc71;
+      --c-warn:      #f5a623;
+      --c-err:       #ff5c5c;
+
+      --c-ok-soft:   rgba(46, 204, 113, .14);
+      --c-ok-fg:     #5fe0a0;
+      --c-send-soft: rgba(79, 140, 255, .16);
+      --c-send-fg:   #7aa9ff;
+      --c-warn-soft: rgba(245, 166, 35, .15);
+      --c-warn-fg:   #f5c26b;
+      --c-err-soft:  rgba(255, 92, 92, .15);
+      --c-err-fg:    #ff8a8a;
+    }
+  }
+
   *{ -webkit-tap-highlight-color: transparent; }
-  html{ -webkit-text-size-adjust: 100%; }
+  html{ -webkit-text-size-adjust: 100%; background: var(--c-bg); }
+
   body{
-    margin:0;
+    margin: 0;
     background:
-      radial-gradient(900px 480px at 50% -180px, #1e2942 0%, transparent 70%),
-      #0d1016;
-    min-height:100vh;
+      radial-gradient(900px 480px at 50% -180px, var(--c-glow) 0%, transparent 70%),
+      var(--c-bg);
+    min-height: 100vh;
+    transition: background-color .25s ease;
+  }
+
+  /* 面板（渐变卡片） */
+  .panel{
+    background: linear-gradient(180deg, var(--c-panel) 0%, var(--c-panel2) 100%);
+    border: 1px solid var(--c-line);
+    box-shadow: var(--c-shadow);
+    transition: background-color .25s ease, border-color .25s ease;
+  }
+
+  /* 连接状态小圆点 */
+  .live-dot{
+    background: var(--c-ok);
+    box-shadow: 0 0 0 4px var(--c-ok-soft);
   }
 
   /* 二维码 SVG 自适应 */
-  #qr svg{ display:block; width:100%; height:auto; }
+  #qr svg{ display: block; width: 100%; height: auto; }
 
-  /* 拖拽高亮（ID 选择器，避免与 Tailwind 工具类打架） */
+  /* 拖拽高亮 */
+  #dropzone{ transition: border-color .2s ease, background-color .2s ease; }
   #dropzone.over{
-    border-color:#4f8cff;
-    background:rgba(79,140,255,.08);
+    border-color: var(--c-accent);
+    background: var(--c-send-soft);
   }
 
   /* details 去掉默认三角 */
-  summary{ list-style:none; }
-  summary::-webkit-details-marker{ display:none; }
+  summary{ list-style: none; }
+  summary::-webkit-details-marker{ display: none; }
 
   /* Toast */
   .toast{
-    opacity:0;
-    transform:translate(-50%, 20px);
-    transition:opacity .22s ease, transform .22s ease;
-    pointer-events:none;
+    opacity: 0;
+    transform: translate(-50%, 20px);
+    transition: opacity .22s ease, transform .22s ease;
+    pointer-events: none;
   }
   .toast.show{
-    opacity:1;
-    transform:translate(-50%, 0);
+    opacity: 1;
+    transform: translate(-50%, 0);
   }
 
-  /* 细滚动条（可选） */
-  ::-webkit-scrollbar{ width:8px; height:8px; }
-  ::-webkit-scrollbar-thumb{ background:#2b3445; border-radius:4px; }
+  /* 细滚动条 */
+  ::-webkit-scrollbar{ width: 8px; height: 8px; }
+  ::-webkit-scrollbar-thumb{ background: var(--c-scroll); border-radius: 4px; }
 </style>
 </head>
 
@@ -83,29 +213,27 @@
 
   <!-- ===== 页头 ===== -->
   <header class="mb-6 text-center">
-    <h1 class="mb-2 text-[22px] font-bold tracking-[.5px]">📡 隔空闪传</h1>
-    <p class="m-0 text-[13px] text-muted">电脑 ⇄ 手机 · 点对点直连 · 文件不经过服务器</p>
+    <p class="m-0 text-[13px] text-muted">电脑 ⇄ 手机 · 点对点直连</p>
   </header>
 
   <!-- ===== 连接面板 ===== -->
-  <section id="panelConnect"
-           class="mb-4 rounded-2xl border border-line bg-gradient-to-b from-[#1b2029] to-[#161a22] p-5 shadow-[0_12px_32px_rgba(0,0,0,.28)]">
+  <section id="panelConnect" class="panel mb-4 rounded-2xl p-5">
 
     <!-- 主机（电脑端） -->
     <div id="hostBox">
-      <h2 class="mb-3.5 text-center text-[15px] font-semibold text-[#cfd6e6]">用手机扫码连接</h2>
+      <h2 class="mb-3.5 text-center text-[15px] font-semibold text-strong">用手机扫码连接</h2>
 
       <div id="qr"
            class="mx-auto mb-4 flex min-h-[120px] w-[210px] max-w-[66vw] items-center justify-center rounded-[14px] bg-white p-2.5">
         <div class="py-10 text-[13px] text-[#888]">二维码生成中…</div>
       </div>
 
-      <div class="flex flex-wrap items-center justify-center gap-2 rounded-[10px] border border-line bg-[#11151d] px-3 py-2.5">
+      <div class="flex flex-wrap items-center justify-center gap-2 rounded-[10px] border border-line bg-inset px-3 py-2.5">
         <span class="text-[12px] text-muted">本机 ID</span>
         <code id="myId"
               class="break-all font-mono text-[13px] text-accent">—</code>
         <button id="copyId"
-                class="rounded-md bg-[#2b3445] px-2.5 py-1 text-[12px] font-semibold text-[#c8d2e6] transition hover:brightness-110 active:scale-95">
+                class="rounded-md bg-chip px-2.5 py-1 text-[12px] font-semibold text-chip-fg transition hover:brightness-110 active:scale-95">
           复制
         </button>
       </div>
@@ -118,7 +246,7 @@
 
     <!-- 访客（手机端） -->
     <div id="guestBox" hidden>
-      <h2 class="mb-3.5 text-center text-[15px] font-semibold text-[#cfd6e6]">正在连接电脑…</h2>
+      <h2 class="mb-3.5 text-center text-[15px] font-semibold text-strong">正在连接电脑…</h2>
       <p id="guestMsg" class="mt-3.5 text-center text-[12.5px] leading-[1.7] text-muted">
         正在建立 P2P 连接，请稍候…
       </p>
@@ -136,7 +264,7 @@
       <div class="mt-3 flex gap-2">
         <input id="targetId" type="text" placeholder="例如 xfer-a1b2c3d4"
                autocomplete="off" spellcheck="false"
-               class="min-w-0 flex-1 rounded-[9px] border border-line bg-[#11151d] px-3 py-2.5 text-sm text-ink outline-none transition placeholder:text-[#5b6478] focus:border-accent">
+               class="min-w-0 flex-1 rounded-[9px] border border-line bg-inset px-3 py-2.5 text-sm text-ink outline-none transition placeholder:text-faint focus:border-accent">
         <button id="btnConnect"
                 class="rounded-[9px] bg-accent px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 active:scale-95">
           连接
@@ -146,16 +274,15 @@
   </section>
 
   <!-- ===== 传输面板 ===== -->
-  <section id="panelTransfer" hidden
-           class="mb-4 rounded-2xl border border-line bg-gradient-to-b from-[#1b2029] to-[#161a22] p-5 shadow-[0_12px_32px_rgba(0,0,0,.28)]">
+  <section id="panelTransfer" hidden class="panel mb-4 rounded-2xl p-5">
 
     <div class="mb-3.5 flex items-center gap-2 text-[13px] text-muted">
-      <span class="h-2 w-2 rounded-full bg-ok shadow-[0_0_0_4px_rgba(46,204,113,.15)]"></span>
+      <span class="live-dot h-2 w-2 flex-none rounded-full"></span>
       <span id="peerLabel">已连接</span>
     </div>
 
     <div id="dropzone"
-         class="cursor-pointer rounded-[14px] border-[1.5px] border-dashed border-[#333d50] bg-[#12161e] px-4 py-[26px] text-center transition-colors">
+         class="cursor-pointer rounded-[14px] border-[1.5px] border-dashed border-drop bg-card px-4 py-[26px] text-center">
       <input type="file" id="fileInput" multiple hidden>
       <div class="mb-1.5 text-[26px]">📎</div>
       <div class="text-[15px] font-semibold">点击选择文件</div>
@@ -166,16 +293,16 @@
   </section>
 
   <!-- ===== 页脚（含意见反馈入口） ===== -->
-  <p class="mt-[26px] text-center text-[12px] text-[#5b6478]">
+  <p class="mt-[26px] text-center text-[12px] text-faint">
     基于 WebRTC 点对点传输，文件不经过任何服务器中转
     <span class="mx-1">·</span>
     <a href="./feedback?f=隔空闪传" target="_blank" rel="noopener"
-       class="text-accent hover:underline transition-colors">意见反馈</a>
+       class="text-accent transition-colors hover:underline">意见反馈</a>
   </p>
 </div>
 
 <div id="toast"
-     class="toast fixed bottom-7 left-1/2 z-50 max-w-[86vw] rounded-[10px] border border-line bg-[#222a38] px-[18px] py-2.5 text-center text-[13.5px] text-ink shadow-[0_10px_28px_rgba(0,0,0,.45)]"></div>
+     class="toast fixed bottom-7 left-1/2 z-50 max-w-[86vw] rounded-[10px] border border-line bg-toast px-[18px] py-2.5 text-center text-[13.5px] text-ink shadow-[0_10px_28px_rgba(0,0,0,.35)]"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
@@ -456,18 +583,18 @@
     });
   }
 
-  /* ============ 列表项（Tailwind 版） ============ */
+  /* ============ 列表项 ============ */
   function createItem(kind, name, size) {
     const isSend = kind === 'send';
 
     const row = document.createElement('div');
-    row.className = 'flex items-center gap-3 rounded-xl border border-line bg-[#12161e] p-3';
+    row.className = 'flex items-center gap-3 rounded-xl border border-line bg-card p-3';
 
     /* 图标 */
     const ico = document.createElement('div');
     ico.className =
       'grid h-8 w-8 flex-none place-items-center rounded-[9px] text-[15px] font-bold ' +
-      (isSend ? 'bg-[#4f8cff26] text-[#7aa9ff]' : 'bg-[#2ecc7124] text-[#5fe0a0]');
+      (isSend ? 'bg-send-soft text-send-fg' : 'bg-ok-soft text-ok-fg');
     ico.textContent = isSend ? '↑' : '↓';
 
     /* 主体 */
@@ -480,7 +607,7 @@
     nm.title = name;
 
     const bar = document.createElement('div');
-    bar.className = 'h-[5px] overflow-hidden rounded-[3px] bg-[#232a37]';
+    bar.className = 'h-[5px] overflow-hidden rounded-[3px] bg-track';
 
     const fill = document.createElement('i');
     fill.className = 'block h-full w-0 rounded-[3px] transition-[width] duration-100 ' +
@@ -514,13 +641,13 @@
       },
       done(url, filename) {
         fill.style.width = '100%';
-        fill.className = 'block h-full w-full rounded-[3px] bg-[#2ecc71]';
+        fill.className = 'block h-full w-full rounded-[3px] bg-ok';
         pct.textContent = '100%';
         act.innerHTML = '';
         if (url) {
           const a = document.createElement('a');
           a.className =
-            'inline-block rounded-md bg-[#2b3445] px-2.5 py-1 text-[12px] font-semibold text-[#c8d2e6] ' +
+            'inline-block rounded-md bg-chip px-2.5 py-1 text-[12px] font-semibold text-chip-fg ' +
             'transition hover:brightness-110 active:scale-95';
           a.href = url;
           a.download = filename || name;
@@ -528,22 +655,22 @@
           act.appendChild(a);
         } else {
           const s = document.createElement('span');
-          s.className = 'inline-block rounded-md bg-[#2ecc7124] px-2 py-1 text-[11.5px] text-[#5fe0a0]';
+          s.className = 'inline-block rounded-md bg-ok-soft px-2 py-1 text-[11.5px] text-ok-fg';
           s.textContent = '完成';
           act.appendChild(s);
         }
       },
       warn(text) {
         const s = document.createElement('span');
-        s.className = 'ml-2 inline-block rounded-md bg-[#f5a62326] px-2 py-1 text-[11.5px] text-[#f5c26b]';
+        s.className = 'ml-2 inline-block rounded-md bg-warn-soft px-2 py-1 text-[11.5px] text-warn-fg';
         s.textContent = text;
         act.appendChild(s);
       },
       fail(text) {
-        fill.className = 'block h-full w-full rounded-[3px] bg-[#ff5c5c]';
+        fill.className = 'block h-full w-full rounded-[3px] bg-err';
         act.innerHTML = '';
         const s = document.createElement('span');
-        s.className = 'inline-block rounded-md bg-[#ff5c5c26] px-2 py-1 text-[11.5px] text-[#ff8a8a]';
+        s.className = 'inline-block rounded-md bg-err-soft px-2 py-1 text-[11.5px] text-err-fg';
         s.textContent = text || '失败';
         act.appendChild(s);
       }
@@ -587,7 +714,7 @@
         el.copyId.textContent = '已复制';
         setTimeout(() => { el.copyId.textContent = '复制'; }, 1200);
       } catch (e) {
-        console.log(e)
+        console.log(e);
         toast('复制失败，请手动选择文本');
       }
     });
