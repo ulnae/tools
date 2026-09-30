@@ -192,6 +192,22 @@
         "type": "85fda8c7-8a2f-4d93-a2cd-f20731025156",
         "created_at": "2026-09-30T09:08:00.967Z"
       }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          112.52938839117625,
+          41.1358210700922
+        ]
+      },
+      "properties": {
+        "title": "黄花沟",
+        "description": "景区景色一般，路上的风景简直绝了，太美了！",
+        "type": "85fda8c7-8a2f-4d93-a2cd-f20731025156",
+        "created_at": "2026-09-30T09:10:09.959Z"
+      }
     }
   ]
 }
