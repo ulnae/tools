@@ -65,6 +65,22 @@
         "type": "c39c7221-216f-454a-814d-52ac0af788cd",
         "created_at": "2026-10-04T04:15:39.825Z"
       }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          114.43997204303743,
+          34.48616185483573
+        ]
+      },
+      "properties": {
+        "title": "河道边",
+        "description": "出鲫鱼",
+        "type": "c39c7221-216f-454a-814d-52ac0af788cd",
+        "created_at": "2026-10-04T04:16:25.009Z"
+      }
     }
   ]
 }
