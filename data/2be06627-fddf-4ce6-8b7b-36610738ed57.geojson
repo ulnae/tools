@@ -48,6 +48,22 @@
         "type": "2be06627-fddf-4ce6-8b7b-36610738ed57",
         "created_at": "2026-09-30T09:21:10.085Z"
       }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          114.47782874107362,
+          34.48256694250296
+        ]
+      },
+      "properties": {
+        "title": "刘记扣碗羊汤",
+        "description": "羊肉特别新鲜，汤特别好喝👍",
+        "type": "2be06627-fddf-4ce6-8b7b-36610738ed57",
+        "created_at": "2026-10-04T04:13:18.006Z"
+      }
     }
   ]
 }
