@@ -64,6 +64,22 @@
         "type": "2be06627-fddf-4ce6-8b7b-36610738ed57",
         "created_at": "2026-10-04T04:13:18.006Z"
       }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          114.46375250816347,
+          34.47808303399252
+        ]
+      },
+      "properties": {
+        "title": "贺家驴肉汤馆",
+        "description": "经典老味道",
+        "type": "2be06627-fddf-4ce6-8b7b-36610738ed57",
+        "created_at": "2026-10-05T03:31:10.686Z"
+      }
     }
   ]
 }
