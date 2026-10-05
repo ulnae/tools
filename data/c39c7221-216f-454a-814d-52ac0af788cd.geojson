@@ -76,10 +76,11 @@
         ]
       },
       "properties": {
-        "title": "河道边",
+        "title": "河道两边",
         "description": "出鲫鱼",
         "type": "c39c7221-216f-454a-814d-52ac0af788cd",
-        "created_at": "2026-10-04T04:16:25.009Z"
+        "created_at": "2026-10-04T04:16:25.009Z",
+        "updated_at": "2026-10-05T03:26:50.430Z"
       }
     }
   ]
