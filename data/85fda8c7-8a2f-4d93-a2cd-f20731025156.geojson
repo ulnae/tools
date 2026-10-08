@@ -151,22 +151,6 @@
       "geometry": {
         "type": "Point",
         "coordinates": [
-          120.12176513671876,
-          30.225848323247735
-        ]
-      },
-      "properties": {
-        "title": "西湖",
-        "description": "",
-        "type": "85fda8c7-8a2f-4d93-a2cd-f20731025156",
-        "created_at": "2026-09-24T08:21:42.802Z"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
           113.1376737934903,
           41.567649502897346
         ]
