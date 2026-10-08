@@ -45,9 +45,10 @@
       },
       "properties": {
         "title": "陈砦花卉市场",
-        "description": "国基路店",
+        "description": "花鸟鱼虫、琴棋书画，应有尽有",
         "type": "b0e6ad95-b711-4ba8-a5f4-bcde6fb7a394",
-        "created_at": "2026-09-30T09:49:29.131Z"
+        "created_at": "2026-09-30T09:49:29.131Z",
+        "updated_at": "2026-10-08T07:37:09.491Z"
       }
     },
     {
