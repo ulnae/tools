@@ -273,6 +273,49 @@
             border: none !important;
         }
 
+        /* ============================================================
+           标记点常显标题标签（Leaflet permanent tooltip）
+           ============================================================ */
+        .marker-label {
+            background: var(--c-glass);
+            backdrop-filter: saturate(180%) blur(16px);
+            -webkit-backdrop-filter: saturate(180%) blur(16px);
+            border: none;
+            border-radius: 8px;
+            padding: 2px 8px;
+            color: var(--c-text);
+            font-family: inherit;
+            font-size: 11px;
+            font-weight: 600;
+            line-height: 1.7;
+            letter-spacing: -.1px;
+            white-space: nowrap;
+            max-width: 132px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, .14), 0 0 0 .5px rgba(0, 0, 0, .05);
+            transition: opacity .18s ease;
+        }
+
+        /* 去掉 tooltip 小箭头，让它看起来就是一个标签 */
+        .marker-label::before {
+            display: none !important;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .marker-label {
+                box-shadow: 0 2px 10px rgba(0, 0, 0, .6), 0 0 0 .5px rgba(255, 255, 255, .1);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .marker-label {
+                font-size: 10.5px;
+                max-width: 104px;
+                padding: 1px 6px;
+            }
+        }
+
         /* ============ 动画 ============ */
         @keyframes pop-in {
             from {
@@ -1314,7 +1357,9 @@
                 className: 'marker-pin',
                 iconSize: [15, 24],
                 iconAnchor: [7.5, 24],
-                popupAnchor: [0, -24]
+                popupAnchor: [0, -24],
+                // 标题标签锚点（相对图标左上角）
+                tooltipAnchor: [0, 0]
             });
         }
 
@@ -1376,6 +1421,43 @@
             </div>`;
         }
 
+        /**
+         * 为单个标点绑定「常显标题 + 点击后隐藏标题显示详情」的交互。
+         *  • 默认：permanent tooltip 常显标题
+         *  • 点击标记：popupopen → 关闭标题标签
+         *  • 关闭弹窗：popupclose → 重新显示标题标签
+         */
+        function bindMarkerInteractions(layer, props, coords) {
+            const title = props.title || '未命名标点';
+
+            // ① 常显标题标签
+            layer.bindTooltip(escapeHtml(title), {
+                permanent: true,
+                direction: 'bottom',
+                offset: [0, 0],
+                className: 'marker-label',
+                opacity: 1,
+                sticky: false,
+                interactive: false
+            });
+
+            // ② 弹窗打开时隐藏标题，弹窗关闭时恢复标题
+            layer.on('popupopen', () => {
+                layer.closeTooltip();
+            });
+            layer.on('popupclose', () => {
+                // 图层可能已因重新渲染被移除，避免对已移除的 marker 操作
+                if (map.hasLayer(layer)) layer.openTooltip();
+            });
+
+            // ③ 详情弹窗
+            layer.bindPopup(buildDetailHtml(props, coords), {
+                maxWidth: 300,
+                minWidth: 260,
+                autoPanPadding: [24, 24]
+            });
+        }
+
         function renderMarkers() {
             if (state.geoLayer) map.removeLayer(state.geoLayer);
 
@@ -1387,9 +1469,9 @@
                     return L.marker(latlng, { icon: makeIcon(t ? t.color : FALLBACK_COLOR) });
                 },
                 onEachFeature: (feature, layer) => {
-                    layer.bindPopup(buildDetailHtml(feature.properties, feature.geometry.coordinates), {
-                        maxWidth: 300, minWidth: 260, autoPanPadding: [24, 24]
-                    });
+                    const props = feature.properties || {};
+                    const coords = feature.geometry.coordinates;
+                    bindMarkerInteractions(layer, props, coords);
                 }
             }).addTo(map);
 
