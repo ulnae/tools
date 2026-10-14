@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+
+<!-- ================= ICO / Favicon（内联 SVG） ================= -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%230A84FF'/%3E%3Cstop offset='1' stop-color='%235E5CE6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23g)'/%3E%3Crect x='10' y='10' width='19' height='19' rx='5' fill='%23fff'/%3E%3Crect x='35' y='10' width='19' height='19' rx='5' fill='%23fff' opacity='0.82'/%3E%3Crect x='10' y='35' width='19' height='19' rx='5' fill='%23fff' opacity='0.82'/%3E%3Crect x='36.5' y='36.5' width='16' height='16' rx='4' fill='none' stroke='%23fff' stroke-width='3' stroke-dasharray='5 4' opacity='0.95'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%230A84FF'/%3E%3Cstop offset='1' stop-color='%235E5CE6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23g)'/%3E%3Crect x='10' y='10' width='19' height='19' rx='5' fill='%23fff'/%3E%3Crect x='35' y='10' width='19' height='19' rx='5' fill='%23fff' opacity='0.82'/%3E%3Crect x='10' y='35' width='19' height='19' rx='5' fill='%23fff' opacity='0.82'/%3E%3Crect x='36.5' y='36.5' width='16' height='16' rx='4' fill='none' stroke='%23fff' stroke-width='3' stroke-dasharray='5 4' opacity='0.95'/%3E%3C/svg%3E">
+
+<title>拼图游戏</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config = { darkMode: 'media' };</script>
+
+<style>
+  * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC",
+                 "Helvetica Neue", Helvetica, Arial, "Microsoft YaHei", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overscroll-behavior: none;
+  }
+  .is-hidden { display: none !important; }
+
+  /* ---------------- 棋盘 & 空白格 ---------------- */
+  #board {
+    --blank-line: rgba(0,122,255,.68);
+    --blank-glow: rgba(0,122,255,.18);
+    --blank-stripe: rgba(0,122,255,.085);
+  }
+  @media (prefers-color-scheme: dark) {
+    #board {
+      --blank-line: rgba(10,132,255,.85);
+      --blank-glow: rgba(10,132,255,.25);
+      --blank-stripe: rgba(10,132,255,.13);
+    }
+  }
+
+  #blankSlot {
+    position: absolute;
+    top: 0; left: 0;
+    z-index: 0;
+    pointer-events: none;
+    border-radius: 5px;
+    background:
+      repeating-linear-gradient(45deg,
+        var(--blank-stripe) 0px, var(--blank-stripe) 5px,
+        transparent 5px, transparent 10px);
+    box-shadow: inset 0 0 14px var(--blank-glow);
+    transition: transform .17s cubic-bezier(.25,.8,.35,1),
+                width .12s ease, height .12s ease;
+    will-change: transform;
+  }
+  #blankSlot::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow: inset 0 0 0 1.5px var(--blank-line);
+    animation: blankPulse 2.2s ease-in-out infinite;
+  }
+  @keyframes blankPulse {
+    0%, 100% { opacity: .5; }
+    50%      { opacity: 1; }
+  }
+
+  .tile {
+    position: absolute;
+    top: 0; left: 0;
+    z-index: 1;
+    background-repeat: no-repeat;
+    border-radius: 3px;
+    box-shadow: inset 0 0 0 1px rgba(128,128,128,.16);
+    transition: transform .17s cubic-bezier(.25,.8,.35,1);
+    will-change: transform;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+  }
+  .tile:active { filter: brightness(.94); }
+
+  #board.no-anim .tile,
+  #board.no-anim #blankSlot { transition: none !important; }
+
+  /* 棋盘容器尺寸由 JS 动态设置（保持图片比例） */
+  #boardWrap {
+    position: relative;
+    max-width: 92vw;
+  }
+  #board {
+    box-shadow: 0 12px 34px -14px rgba(0,0,0,.35), 0 2px 8px -4px rgba(0,0,0,.15);
+  }
+
+  /* ---------------- 胜利发光动画 ---------------- */
+  @keyframes boardWin {
+    0%   { box-shadow: 0 0 0 0 rgba(0,122,255,.55), 0 12px 34px -14px rgba(0,0,0,.35); }
+    50%  { box-shadow: 0 0 0 14px rgba(0,122,255,0), 0 12px 34px -14px rgba(0,0,0,.35); }
+    100% { box-shadow: 0 0 0 0 rgba(0,122,255,0), 0 12px 34px -14px rgba(0,0,0,.35); }
+  }
+  #boardWrap.win-glow #board {
+    animation: boardWin 1s ease-out 2;
+  }
+
+  /* ---------------- 预览 ---------------- */
+  #previewImg {
+    display: block;
+    max-width: min(320px, 82vw);
+    max-height: min(320px, 42vh);
+    width: auto;
+    height: auto;
+  }
+
+  /* ---------------- 规格预设 ---------------- */
+  .preset {
+    background: rgba(120,120,128,.12);
+    color: inherit;
+    transition: all .18s ease;
+  }
+  .preset:active { transform: scale(.95); }
+  .preset.active { background: #007AFF; color: #fff; box-shadow: 0 4px 14px -4px rgba(0,122,255,.7); }
+  @media (prefers-color-scheme: dark) {
+    .preset { background: rgba(120,120,128,.28); }
+  }
+
+  /* ---------------- 数字输入 ---------------- */
+  input[type=number]::-webkit-outer-spin-button,
+  input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type=number] { -moz-appearance: textfield; }
+
+  /* ---------------- 动画 ---------------- */
+  @keyframes toastIn { from { opacity:0; transform: translate(-50%, 12px) } to { opacity:1; transform: translate(-50%, 0) } }
+  .toast { animation: toastIn .25s ease both; }
+
+  @keyframes popIn { from { opacity:0; transform: scale(.9) } to { opacity:1; transform: scale(1) } }
+  .pop { animation: popIn .28s cubic-bezier(.2,.9,.3,1.2) both; }
+
+  @keyframes fadeIn { from { opacity:0 } to { opacity:1 } }
+  .fade { animation: fadeIn .2s ease both; }
+</style>
+</head>
+
+<body class="min-h-screen bg-[#F2F2F7] dark:bg-black text-[#1C1C1E] dark:text-white transition-colors duration-300">
+
+<!-- ============ 顶部导航 ============ -->
+<header class="sticky top-0 z-30 border-b border-black/[0.06] dark:border-white/[0.08] bg-[#F2F2F7]/85 dark:bg-black/75 backdrop-blur-xl backdrop-saturate-150">
+  <div class="max-w-[640px] mx-auto px-4 h-14 flex items-center justify-between">
+    <div class="flex items-center gap-2.5">
+      <div class="w-7 h-7 rounded-[9px] bg-gradient-to-br from-[#0A84FF] to-[#5E5CE6] flex items-center justify-center shrink-0 shadow-[0_2px_8px_-2px_rgba(10,132,255,.7)]">
+        <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7" rx="1.6"/>
+          <rect x="14" y="3" width="7" height="7" rx="1.6"/>
+          <rect x="3" y="14" width="7" height="7" rx="1.6"/>
+          <rect x="15.2" y="15.2" width="4.6" height="4.6" rx="1.2" stroke-dasharray="2.6 2"/>
+        </svg>
+      </div>
+      <h1 class="text-[17px] font-semibold tracking-tight">拼图游戏</h1>
+    </div>
+    <button id="changeImgBtn" class="is-hidden text-[15px] font-medium text-[#007AFF] dark:text-[#0A84FF] active:opacity-50 transition">换图片</button>
+  </div>
+</header>
+
+<!-- ============ 设置页 ============ -->
+<main id="setupView" class="max-w-[640px] mx-auto px-4 pt-5 pb-10 space-y-4">
+
+  <!-- 图片选择 -->
+  <section class="rounded-[20px] bg-white dark:bg-[#1C1C1E] p-4 shadow-[0_2px_14px_-6px_rgba(0,0,0,.12)]">
+    <div id="dropZone"
+         class="w-full aspect-[4/3] rounded-[16px] border-2 border-dashed border-black/[0.12] dark:border-white/[0.16]
+                flex flex-col items-center justify-center gap-2 cursor-pointer select-none
+                transition-colors hover:bg-black/[0.02] dark:hover:bg-white/[0.03] active:scale-[0.99]">
+      <div class="w-14 h-14 rounded-full bg-[#007AFF]/10 dark:bg-[#0A84FF]/15 flex items-center justify-center mb-0.5">
+        <svg class="w-7 h-7 text-[#007AFF] dark:text-[#0A84FF]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="3.5"/>
+          <circle cx="8.6" cy="8.6" r="1.6"/>
+          <path d="M21 15.5l-4.6-4.6L5.6 21.7"/>
+        </svg>
+      </div>
+      <p class="text-[16px] font-semibold">点击选择图片</p>
+      <p class="text-[13px] text-black/40 dark:text-white/40">支持 JPG / PNG / WEBP，也可拖拽到这里</p>
+
+      <button id="pickBtn" type="button"
+              class="mt-2 h-9 px-4 rounded-full bg-[#007AFF] text-white text-[14px] font-medium active:scale-95 transition">
+        从相册选择
+      </button>
+    </div>
+
+    <!-- 预览（保持原图比例） -->
+    <div id="previewWrap" class="is-hidden">
+      <div class="flex justify-center">
+        <div id="previewBox" class="relative w-fit rounded-[16px] overflow-hidden bg-black/[0.04] dark:bg-white/[0.06] ring-1 ring-black/[0.05] dark:ring-white/[0.07]">
+          <img id="previewImg" alt="预览">
+          <div id="gridOverlay" class="absolute inset-0 grid pointer-events-none"></div>
+        </div>
+      </div>
+      <div class="mt-3 flex items-center justify-center gap-3 flex-wrap">
+        <button id="reselectBtn" type="button"
+                class="h-9 px-4 rounded-full bg-black/[0.06] dark:bg-white/[0.12] text-[14px] font-medium active:scale-95 transition">
+          重新选择图片
+        </button>
+        <span id="ratioHint" class="text-[13px] text-black/40 dark:text-white/40">保持原图比例</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 规格设置 -->
+  <section class="rounded-[20px] bg-white dark:bg-[#1C1C1E] p-4 shadow-[0_2px_14px_-6px_rgba(0,0,0,.12)]">
+    <h2 class="text-[15px] font-semibold mb-3">裁剪规格</h2>
+
+    <div id="presetRow" class="flex flex-wrap gap-2">
+      <button type="button" class="preset h-10 px-4 rounded-[12px] text-[15px] font-medium" data-r="2" data-c="2">2 × 2</button>
+      <button type="button" class="preset h-10 px-4 rounded-[12px] text-[15px] font-medium" data-r="3" data-c="3">3 × 3</button>
+      <button type="button" class="preset h-10 px-4 rounded-[12px] text-[15px] font-medium" data-r="4" data-c="4">4 × 4</button>
+      <button type="button" class="preset h-10 px-4 rounded-[12px] text-[15px] font-medium" data-r="5" data-c="5">5 × 5</button>
+      <button type="button" class="preset h-10 px-4 rounded-[12px] text-[15px] font-medium" data-r="6" data-c="6">6 × 6</button>
+      <button type="button" class="preset h-10 px-4 rounded-[12px] text-[15px] font-medium" data-r="8" data-c="8">8 × 8</button>
+      <button type="button" class="preset h-10 px-4 rounded-[12px] text-[15px] font-medium" data-r="9" data-c="9">9 × 9</button>
+    </div>
+
+    <div class="mt-4">
+      <div class="flex items-center gap-2.5">
+        <span class="text-[15px] text-black/60 dark:text-white/60 shrink-0">自定义</span>
+        <input id="rowInput" type="number" inputmode="numeric" min="2" max="12" value="4"
+               class="w-[76px] h-11 rounded-[12px] bg-black/[0.05] dark:bg-white/[0.10] text-center text-[18px] font-semibold outline-none
+                      focus:ring-2 focus:ring-[#007AFF]/40 transition">
+        <span class="text-[17px] text-black/35 dark:text-white/35 font-medium">×</span>
+        <input id="colInput" type="number" inputmode="numeric" min="2" max="12" value="4"
+               class="w-[76px] h-11 rounded-[12px] bg-black/[0.05] dark:bg-white/[0.10] text-center text-[18px] font-semibold outline-none
+                      focus:ring-2 focus:ring-[#007AFF]/40 transition">
+        <span id="tileCountHint" class="ml-auto text-[13px] text-black/35 dark:text-white/35 tabular-nums shrink-0">16 块</span>
+      </div>
+      <p class="mt-2 text-[12.5px] text-black/35 dark:text-white/35 leading-relaxed">
+        行 × 列，范围 2 – 12，可输入 2×3、9×2 等任意组合
+      </p>
+    </div>
+
+    <p class="mt-3 text-[13px] leading-relaxed text-black/40 dark:text-white/40">
+      图片会保持原比例切分成“行 × 列”网格，随机去掉 1 块后打乱（保证没有拼块一开始就在正确位置），滑动拼图还原原图。
+    </p>
+  </section>
+
+  <button id="startBtn" type="button" disabled
+          class="w-full h-[52px] rounded-[16px] bg-[#007AFF] text-white text-[17px] font-semibold
+                 transition active:scale-[0.98] disabled:opacity-35 disabled:active:scale-100
+                 shadow-[0_8px_22px_-8px_rgba(0,122,255,.9)]">
+    开始拼图
+  </button>
+</main>
+
+<!-- ============ 游戏页 ============ -->
+<main id="gameView" class="is-hidden max-w-[640px] mx-auto px-4 pt-4 pb-8">
+
+  <div class="flex items-center justify-between mb-3.5">
+    <div class="flex gap-2">
+      <div class="h-9 px-3.5 rounded-[11px] bg-white dark:bg-[#1C1C1E] flex items-center gap-1.5 shadow-[0_2px_10px_-6px_rgba(0,0,0,.2)]">
+        <span class="text-[12px] text-black/40 dark:text-white/40">步数</span>
+        <span id="moveCount" class="text-[15px] font-semibold tabular-nums">0</span>
+      </div>
+      <div class="h-9 px-3.5 rounded-[11px] bg-white dark:bg-[#1C1C1E] flex items-center gap-1.5 shadow-[0_2px_10px_-6px_rgba(0,0,0,.2)]">
+        <span class="text-[12px] text-black/40 dark:text-white/40">用时</span>
+        <span id="timeCount" class="text-[15px] font-semibold tabular-nums">00:00</span>
+      </div>
+    </div>
+
+    <button id="shuffleBtn" type="button"
+            class="h-9 px-3.5 rounded-[11px] bg-white dark:bg-[#1C1C1E] text-[14px] font-medium active:scale-95 transition
+                   shadow-[0_2px_10px_-6px_rgba(0,0,0,.2)] flex items-center gap-1.5">
+      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/>
+      </svg>
+      重新打乱
+    </button>
+  </div>
+
+  <div class="flex justify-center">
+    <div id="boardWrap" class="relative">
+      <div id="board" class="relative w-full h-full rounded-[18px] bg-black/[0.05] dark:bg-white/[0.07] overflow-hidden"></div>
+      <img id="peekImg" alt="原图" class="absolute inset-0 w-full h-full object-cover rounded-[18px] opacity-0 pointer-events-none transition-opacity duration-200">
+    </div>
+  </div>
+
+  <div class="mt-5 grid grid-cols-2 gap-3">
+    <button id="peekBtn" type="button"
+            class="h-12 rounded-[14px] bg-white dark:bg-[#1C1C1E] text-[15px] font-medium active:scale-[0.97] transition
+                   shadow-[0_2px_12px_-6px_rgba(0,0,0,.2)] flex items-center justify-center gap-2">
+      <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/>
+        <circle cx="12" cy="12" r="3"/>
+      </svg>
+      按住看原图
+    </button>
+    <button id="backBtn" type="button"
+            class="h-12 rounded-[14px] bg-white dark:bg-[#1C1C1E] text-[15px] font-medium active:scale-[0.97] transition
+                   shadow-[0_2px_12px_-6px_rgba(0,0,0,.2)] flex items-center justify-center gap-2">
+      <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h9"/>
+        <path d="M16 19l5-5-5-5M21 14h-8"/>
+      </svg>
+      换个图片
+    </button>
+  </div>
+
+  <p class="mt-4 text-center text-[12.5px] text-black/30 dark:text-white/30 leading-relaxed">
+    点击
+    <span class="inline-block w-3 h-3 align-[-2px] rounded-[3px] border-[1.5px] border-[#007AFF] bg-[#007AFF]/10"></span>
+    蓝色虚线空白格相邻的拼图块即可滑动 · 支持方向键
+  </p>
+</main>
+
+<!-- ============ 胜利弹窗 ============ -->
+<div id="winModal" class="is-hidden fixed inset-0 z-[60] items-center justify-center">
+  <div class="absolute inset-0 bg-black/45 backdrop-blur-md fade"></div>
+  <div class="relative w-[86%] max-w-[320px] rounded-[26px] bg-white/92 dark:bg-[#1C1C1E]/92 backdrop-blur-xl p-6 text-center pop shadow-2xl">
+    <div class="text-[46px] leading-none">🎉</div>
+    <h3 class="text-[21px] font-bold mt-2.5">拼好啦！</h3>
+    <p class="text-[14px] text-black/50 dark:text-white/50 mt-1.5">
+      用时 <b class="text-[#007AFF] dark:text-[#0A84FF] font-semibold" id="winTime">00:00</b>
+      · <b class="text-[#007AFF] dark:text-[#0A84FF] font-semibold" id="winMoves">0</b> 步
+    </p>
+    <div class="mt-5 space-y-2.5">
+      <button id="againBtn" type="button"
+              class="w-full h-12 rounded-[14px] bg-[#007AFF] text-white text-[16px] font-semibold active:scale-[0.98] transition">
+        再来一局
+      </button>
+      <button id="newImgBtn" type="button"
+              class="w-full h-12 rounded-[14px] bg-black/[0.06] dark:bg-white/[0.12] text-[16px] font-medium active:scale-[0.98] transition">
+        换张图片
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* =========================================================
+     元素引用
+  ========================================================= */
+  const setupView    = document.getElementById('setupView');
+  const gameView     = document.getElementById('gameView');
+  const dropZone     = document.getElementById('dropZone');
+  const previewWrap  = document.getElementById('previewWrap');
+  const previewBox   = document.getElementById('previewBox');
+  const previewImg   = document.getElementById('previewImg');
+  const gridOverlay  = document.getElementById('gridOverlay');
+  const ratioHint    = document.getElementById('ratioHint');
+  const rowInput     = document.getElementById('rowInput');
+  const colInput     = document.getElementById('colInput');
+  const tileCountHint= document.getElementById('tileCountHint');
+  const startBtn     = document.getElementById('startBtn');
+  const presetRow    = document.getElementById('presetRow');
+  const pickBtn      = document.getElementById('pickBtn');
+  const reselectBtn  = document.getElementById('reselectBtn');
+  const changeImgBtn = document.getElementById('changeImgBtn');
+  const boardEl      = document.getElementById('board');
+  const boardWrap    = document.getElementById('boardWrap');
+  const moveCountEl  = document.getElementById('moveCount');
+  const timeCountEl  = document.getElementById('timeCount');
+  const shuffleBtn   = document.getElementById('shuffleBtn');
+  const peekBtn      = document.getElementById('peekBtn');
+  const peekImg      = document.getElementById('peekImg');
+  const backBtn      = document.getElementById('backBtn');
+  const winModal     = document.getElementById('winModal');
+  const winTime      = document.getElementById('winTime');
+  const winMoves     = document.getElementById('winMoves');
+  const againBtn     = document.getElementById('againBtn');
+  const newImgBtn    = document.getElementById('newImgBtn');
+
+  /* =========================================================
+     全局状态
+  ========================================================= */
+  const state = {
+    imgSrc: '',
+    imgW: 0,
+    imgH: 0,
+    rows: 4,
+    cols: 4,
+    board: [],       // 每格存放的拼块编号，-1 表示空白
+    blank: -1,       // 空白所在的位置索引
+    tileEls: [],     // tileEls[编号] = DOM
+    moves: 0,
+    seconds: 0,
+    timer: null,
+    playing: false,
+    solved: false
+  };
+  let blankSlotEl = null;
+
+  /* =========================================================
+     工具
+  ========================================================= */
+  function fmtTime(s) {
+    const m = Math.floor(s / 60);
+    const ss = s % 60;
+    return String(m).padStart(2, '0') + ':' + String(ss).padStart(2, '0');
+  }
+
+  function toast(msg) {
+    const t = document.createElement('div');
+    t.className = 'toast fixed left-1/2 bottom-12 z-[120] px-4 py-2.5 rounded-2xl ' +
+                  'bg-black/80 dark:bg-white/90 text-white dark:text-black text-[14px] font-medium ' +
+                  'backdrop-blur-xl shadow-lg pointer-events-none whitespace-nowrap';
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(function () {
+      t.style.transition = 'opacity .25s';
+      t.style.opacity = '0';
+      setTimeout(function () { t.remove(); }, 260);
+    }, 1900);
+  }
+
+  function showModal(el) { el.classList.remove('is-hidden'); el.classList.add('flex'); }
+  function hideModal(el) { el.classList.add('is-hidden'); el.classList.remove('flex'); }
+
+  /* =========================================================
+     图片载入（保持原比例）
+  ========================================================= */
+  const fileInput = document.createElement('input');
+  fileInput.type = 'file';
+  fileInput.accept = 'image/*';
+  fileInput.style.display = 'none';
+  document.body.appendChild(fileInput);
+
+  fileInput.addEventListener('change', function (e) {
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    if (!f.type.startsWith('image/')) { toast('请选择图片文件'); return; }
+    loadImage(URL.createObjectURL(f));
+    fileInput.value = '';
+  });
+
+  function loadImage(src) {
+    const img = new Image();
+    img.onload = function () {
+      if (!img.naturalWidth || !img.naturalHeight) { toast('图片无效'); return; }
+      state.imgSrc = src;
+      state.imgW = img.naturalWidth;
+      state.imgH = img.naturalHeight;
+
+      previewImg.src = src;
+      dropZone.classList.add('is-hidden');
+      previewWrap.classList.remove('is-hidden');
+
+      ratioHint.textContent = state.imgW + ' × ' + state.imgH + ' px';
+
+      requestAnimationFrame(function () { buildGridOverlay(); });
+
+      startBtn.disabled = false;
+      toast('图片已就绪');
+    };
+    img.onerror = function () { toast('图片加载失败'); };
+    img.src = src;
+  }
+
+  /** 预览网格（行 × 列） */
+  function buildGridOverlay() {
+    const r = state.rows, c = state.cols;
+    gridOverlay.innerHTML = '';
+    gridOverlay.style.gridTemplateColumns = 'repeat(' + c + ', 1fr)';
+    gridOverlay.style.gridTemplateRows = 'repeat(' + r + ', 1fr)';
+
+    const frag = document.createDocumentFragment();
+    const total = r * c;
+    for (let i = 0; i < total; i++) {
+      const d = document.createElement('div');
+      d.style.border = '0.5px solid rgba(255,255,255,.55)';
+      d.style.boxShadow = 'inset 0 0 0 0.5px rgba(0,0,0,.06)';
+      frag.appendChild(d);
+    }
+    gridOverlay.appendChild(frag);
+  }
+
+  /* =========================================================
+     文件入口
+  ========================================================= */
+  dropZone.addEventListener('click', function () { fileInput.click(); });
+  pickBtn.addEventListener('click', function (e) { e.stopPropagation(); fileInput.click(); });
+  reselectBtn.addEventListener('click', function () { fileInput.click(); });
+
+  ['dragenter', 'dragover'].forEach(function (ev) {
+    dropZone.addEventListener(ev, function (e) {
+      e.preventDefault(); e.stopPropagation();
+      dropZone.classList.add('bg-[#007AFF]/[0.06]', 'border-[#007AFF]');
+    });
+  });
+  ['dragleave', 'drop'].forEach(function (ev) {
+    dropZone.addEventListener(ev, function (e) {
+      e.preventDefault(); e.stopPropagation();
+      dropZone.classList.remove('bg-[#007AFF]/[0.06]', 'border-[#007AFF]');
+    });
+  });
+  dropZone.addEventListener('drop', function (e) {
+    const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    if (f && f.type.startsWith('image/')) loadImage(URL.createObjectURL(f));
+  });
+
+  /* =========================================================
+     规格设置
+  ========================================================= */
+  const MIN_N = 2, MAX_N = 12;
+
+  function clampN(v, fallback) {
+    v = parseInt(v, 10);
+    if (isNaN(v)) return fallback;
+    return Math.max(MIN_N, Math.min(MAX_N, v));
+  }
+
+  function updateTileHint() {
+    tileCountHint.textContent = (state.rows * state.cols) + ' 块';
+  }
+
+  function syncPresets() {
+    Array.prototype.forEach.call(presetRow.children, function (btn) {
+      const r = parseInt(btn.dataset.r, 10);
+      const c = parseInt(btn.dataset.c, 10);
+      btn.classList.toggle('active', r === state.rows && c === state.cols);
+    });
+  }
+
+  function applySpec(rows, cols, rebuildGrid) {
+    state.rows = clampN(rows, state.rows);
+    state.cols = clampN(cols, state.cols);
+    rowInput.value = state.rows;
+    colInput.value = state.cols;
+    syncPresets();
+    updateTileHint();
+    if (rebuildGrid !== false && !previewWrap.classList.contains('is-hidden')) {
+      buildGridOverlay();
+    }
+  }
+
+  presetRow.addEventListener('click', function (e) {
+    const btn = e.target.closest('.preset');
+    if (!btn) return;
+    applySpec(btn.dataset.r, btn.dataset.c);
+  });
+
+  rowInput.addEventListener('input', function () {
+    const v = parseInt(rowInput.value, 10);
+    if (isNaN(v) || v < MIN_N || v > MAX_N) return;
+    applySpec(v, state.cols);
+  });
+  colInput.addEventListener('input', function () {
+    const v = parseInt(colInput.value, 10);
+    if (isNaN(v) || v < MIN_N || v > MAX_N) return;
+    applySpec(state.rows, v);
+  });
+
+  rowInput.addEventListener('blur', function () {
+    applySpec(rowInput.value, state.cols);
+  });
+  colInput.addEventListener('blur', function () {
+    applySpec(state.rows, colInput.value);
+  });
+
+  [rowInput, colInput].forEach(function (el) {
+    el.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { el.blur(); }
+    });
+  });
+
+  applySpec(4, 4);
+
+  /* =========================================================
+     棋盘构建
+  ========================================================= */
+  function buildTiles() {
+    const total = state.rows * state.cols;
+    boardEl.innerHTML = '';
+    state.tileEls = new Array(total).fill(null);
+
+    // 空白格指示器（最底层）
+    const slot = document.createElement('div');
+    slot.id = 'blankSlot';
+    boardEl.appendChild(slot);
+    blankSlotEl = slot;
+
+    const frag = document.createDocumentFragment();
+    for (let id = 0; id < total - 1; id++) {
+      const el = document.createElement('div');
+      el.className = 'tile';
+      el.dataset.id = String(id);
+      frag.appendChild(el);
+      state.tileEls[id] = el;
+    }
+    boardEl.appendChild(frag);
+  }
+
+  /** 计算棋盘尺寸（保持图片比例，并适配视口） */
+  function applyBoardSize() {
+    if (!state.imgW || !state.imgH) return;
+
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const maxW = Math.min(vw * 0.92, 520);
+    const maxH = Math.min(vh * 0.58, 620);
+    const ratio = state.imgH / state.imgW;
+
+    let w = maxW;
+    let h = w * ratio;
+    if (h > maxH) { h = maxH; w = h / ratio; }
+
+    const minSide = 170;
+    if (w < minSide && h < minSide) {
+      if (ratio >= 1) { h = minSide; w = h / ratio; }
+      else { w = minSide; h = w * ratio; }
+    }
+
+    boardWrap.style.width = Math.round(w) + 'px';
+    boardWrap.style.height = Math.round(h) + 'px';
+    void boardWrap.offsetWidth;
+  }
+
+  /** 设置每个拼块的尺寸、背景图、背景位置（整图铺满棋盘，不裁剪） */
+  function layoutBoard() {
+    const rows = state.rows, cols = state.cols;
+    const bw = boardEl.clientWidth;
+    const bh = boardEl.clientHeight;
+    if (!bw || !bh || !state.imgW) return;
+
+    const tileW = bw / cols;
+    const tileH = bh / rows;
+
+    for (let id = 0; id < rows * cols - 1; id++) {
+      const el = state.tileEls[id];
+      if (!el) continue;
+      const r0 = Math.floor(id / cols);
+      const c0 = id % cols;
+
+      el.style.width = tileW + 'px';
+      el.style.height = tileH + 'px';
+      el.style.backgroundImage = 'url("' + state.imgSrc + '")';
+      el.style.backgroundSize = bw + 'px ' + bh + 'px';
+      el.style.backgroundPosition = (-(c0 * tileW)) + 'px ' + (-(r0 * tileH)) + 'px';
+    }
+  }
+
+  /** 将拼块与空白格移动到 board 数组对应的位置 */
+  function positionTiles(instant) {
+    const rows = state.rows, cols = state.cols;
+    const bw = boardEl.clientWidth;
+    const bh = boardEl.clientHeight;
+    if (!bw || !bh) return;
+
+    const tileW = bw / cols;
+    const tileH = bh / rows;
+
+    if (instant) boardEl.classList.add('no-anim');
+
+    for (let pos = 0; pos < rows * cols; pos++) {
+      const id = state.board[pos];
+      if (id < 0) continue;
+      const el = state.tileEls[id];
+      if (!el) continue;
+      const r = Math.floor(pos / cols);
+      const c = pos % cols;
+      el.style.transform =
+        'translate3d(' + (c * tileW) + 'px,' + (r * tileH) + 'px,0)';
+    }
+
+    if (blankSlotEl && state.blank >= 0) {
+      const br = Math.floor(state.blank / cols);
+      const bc = state.blank % cols;
+      blankSlotEl.style.width = tileW + 'px';
+      blankSlotEl.style.height = tileH + 'px';
+      blankSlotEl.style.transform =
+        'translate3d(' + (bc * tileW) + 'px,' + (br * tileH) + 'px,0)';
+    }
+
+    if (instant) {
+      void boardEl.offsetWidth;
+      boardEl.classList.remove('no-anim');
+    }
+  }
+
+  /* =========================================================
+     打乱：随机游走 + 确保没有拼块一开始就在正确位置
+  ========================================================= */
+  function neighborList(pos) {
+    const rows = state.rows, cols = state.cols;
+    const r = Math.floor(pos / cols);
+    const c = pos % cols;
+    const out = [];
+    if (r > 0) out.push(pos - cols);
+    if (r < rows - 1) out.push(pos + cols);
+    if (c > 0) out.push(pos - 1);
+    if (c < cols - 1) out.push(pos + 1);
+    return out;
+  }
+
+  /** 从当前位置随机游走 steps 步，原地修改 b 与 blank，返回新的 blank */
+  function randomWalk(b, blank, steps) {
+    const rows = state.rows, cols = state.cols;
+    let prev = -1;
+    for (let i = 0; i < steps; i++) {
+      let nbrs = neighborList(blank);
+      if (nbrs.length > 1 && prev >= 0) {
+        const filtered = nbrs.filter(function (p) { return p !== prev; });
+        if (filtered.length) nbrs = filtered;
+      }
+      const pick = nbrs[(Math.random() * nbrs.length) | 0];
+      b[blank] = b[pick];
+      b[pick] = -1;
+      prev = blank;
+      blank = pick;
+    }
+    return blank;
+  }
+
+  /** 统计有多少拼块正好处在正确位置（空白不算） */
+  function countTilesInPlace(b) {
+    let cnt = 0;
+    for (let i = 0; i < b.length; i++) {
+      if (b[i] !== -1 && b[i] === i) cnt++;
+    }
+    return cnt;
+  }
+
+  function isSolvedState(b) {
+    for (let i = 0; i < b.length - 1; i++) {
+      if (b[i] !== i) return false;
+    }
+    return true;
+  }
+
+  function shuffleBoard() {
+    const rows = state.rows, cols = state.cols;
+    const total = rows * cols;
+
+    // 初始：目标状态
+    let b = new Array(total);
+    for (let i = 0; i < total - 1; i++) b[i] = i;
+    b[total - 1] = -1;
+    let blank = total - 1;
+
+    // 第一轮充分打乱
+    blank = randomWalk(b, blank, total * 45);
+
+    // 反复检查：不能处于已解状态，且不能有拼块在原位
+    let guard = 0;
+    const maxGuard = 80;
+    while ((countTilesInPlace(b) > 0 || isSolvedState(b)) && guard < maxGuard) {
+      blank = randomWalk(b, blank, Math.max(8, total * 6));
+      guard++;
+    }
+
+    state.board = b;
+    state.blank = blank;
+  }
+
+  /* =========================================================
+     移动
+  ========================================================= */
+  function isNeighbor(a, b) {
+    const cols = state.cols;
+    const ar = Math.floor(a / cols), ac = a % cols;
+    const br = Math.floor(b / cols), bc = b % cols;
+    return Math.abs(ar - br) + Math.abs(ac - bc) === 1;
+  }
+
+  function tryMove(pos) {
+    if (!state.playing || state.solved) return;
+    const total = state.rows * state.cols;
+    if (pos < 0 || pos >= total) return;
+    if (state.board[pos] < 0) return;
+    if (!isNeighbor(pos, state.blank)) return;
+
+    state.board[state.blank] = state.board[pos];
+    state.board[pos] = -1;
+    state.blank = pos;
+
+    state.moves++;
+    moveCountEl.textContent = String(state.moves);
+
+    if (!state.timer) startTimer();
+
+    positionTiles();
+
+    if (checkSolved()) win();
+  }
+
+  function checkSolved() {
+    const total = state.rows * state.cols;
+    for (let i = 0; i < total - 1; i++) {
+      if (state.board[i] !== i) return false;
+    }
+    return true;
+  }
+
+  boardEl.addEventListener('click', function (e) {
+    if (!state.playing || state.solved) return;
+    const rect = boardEl.getBoundingClientRect();
+    const cols = state.cols, rows = state.rows;
+    const tileW = rect.width / cols;
+    const tileH = rect.height / rows;
+    const c = Math.floor((e.clientX - rect.left) / tileW);
+    const r = Math.floor((e.clientY - rect.top) / tileH);
+    if (c < 0 || c >= cols || r < 0 || r >= rows) return;
+    tryMove(r * cols + c);
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (!state.playing || state.solved) return;
+    if (gameView.classList.contains('is-hidden')) return;
+
+    const rows = state.rows, cols = state.cols;
+    const blank = state.blank;
+    const br = Math.floor(blank / cols);
+    const bc = blank % cols;
+    let target = -1;
+
+    if (e.key === 'ArrowUp'    && br < rows - 1) target = blank + cols;
+    else if (e.key === 'ArrowDown'  && br > 0)        target = blank - cols;
+    else if (e.key === 'ArrowLeft'  && bc < cols - 1) target = blank + 1;
+    else if (e.key === 'ArrowRight' && bc > 0)        target = blank - 1;
+
+    if (target >= 0) {
+      e.preventDefault();
+      tryMove(target);
+    }
+  });
+
+  /* =========================================================
+     计时 / 统计
+  ========================================================= */
+  function startTimer() {
+    if (state.timer) return;
+    const t0 = Date.now() - state.seconds * 1000;
+    state.timer = setInterval(function () {
+      state.seconds = Math.floor((Date.now() - t0) / 1000);
+      timeCountEl.textContent = fmtTime(state.seconds);
+    }, 200);
+  }
+
+  function stopTimer() {
+    if (state.timer) {
+      clearInterval(state.timer);
+      state.timer = null;
+    }
+  }
+
+  function resetStats() {
+    stopTimer();
+    state.moves = 0;
+    state.seconds = 0;
+    moveCountEl.textContent = '0';
+    timeCountEl.textContent = '00:00';
+  }
+
+  /* =========================================================
+     游戏流程
+  ========================================================= */
+  function startGame() {
+    if (!state.imgSrc) { toast('请先选择图片'); return; }
+
+    setupView.classList.add('is-hidden');
+    gameView.classList.remove('is-hidden');
+    changeImgBtn.classList.remove('is-hidden');
+    window.scrollTo(0, 0);
+
+    boardWrap.classList.remove('win-glow');
+
+    applyBoardSize();
+    buildTiles();
+    layoutBoard();
+    shuffleBoard();
+    positionTiles(true);
+
+    resetStats();
+    state.solved = false;
+    state.playing = true;
+    peekImg.src = state.imgSrc;
+  }
+
+  function reshuffle() {
+    if (!state.imgSrc) return;
+    hideModal(winModal);
+    boardWrap.classList.remove('win-glow');
+    state.solved = false;
+    shuffleBoard();
+    positionTiles(true);
+    resetStats();
+    state.playing = true;
+  }
+
+  function win() {
+    state.solved = true;
+    state.playing = false;
+    stopTimer();
+
+    winTime.textContent = fmtTime(state.seconds);
+    winMoves.textContent = String(state.moves);
+
+    // 棋盘发光 + Toast 提示，再弹窗
+    boardWrap.classList.add('win-glow');
+    toast('🎉 拼图完成！');
+    setTimeout(function () { showModal(winModal); }, 620);
+  }
+
+  function backToSetup() {
+    state.playing = false;
+    stopTimer();
+    hideModal(winModal);
+    boardWrap.classList.remove('win-glow');
+    gameView.classList.add('is-hidden');
+    setupView.classList.remove('is-hidden');
+    changeImgBtn.classList.add('is-hidden');
+    window.scrollTo(0, 0);
+  }
+
+  /* =========================================================
+     事件绑定
+  ========================================================= */
+  startBtn.addEventListener('click', startGame);
+  shuffleBtn.addEventListener('click', reshuffle);
+  againBtn.addEventListener('click', reshuffle);
+  backBtn.addEventListener('click', backToSetup);
+  changeImgBtn.addEventListener('click', backToSetup);
+  newImgBtn.addEventListener('click', function () {
+    hideModal(winModal);
+    backToSetup();
+    setTimeout(function () { fileInput.click(); }, 180);
+  });
+
+  /* 按住看原图 */
+  function showPeek() {
+    if (!state.imgSrc) return;
+    peekImg.src = state.imgSrc;
+    peekImg.style.opacity = '1';
+  }
+  function hidePeek() { peekImg.style.opacity = '0'; }
+
+  peekBtn.addEventListener('pointerdown', function (e) { e.preventDefault(); showPeek(); });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(function (ev) {
+    peekBtn.addEventListener(ev, hidePeek);
+  });
+  window.addEventListener('blur', hidePeek);
+
+  /* 尺寸自适应 */
+  let resizeTimer = null;
+  function handleResize() {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function () {
+      if (!gameView.classList.contains('is-hidden') && state.imgW) {
+        applyBoardSize();
+        layoutBoard();
+        positionTiles(true);
+      }
+    }, 140);
+  }
+  window.addEventListener('resize', handleResize);
+  window.addEventListener('orientationchange', handleResize);
+
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) hidePeek();
+  });
+
+  /* 初始状态 */
+  startBtn.disabled = true;
+})();
+</script>
+</body>
+</html>
