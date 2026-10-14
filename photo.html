@@ -1,0 +1,1640 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>照片工坊</title>
+
+<!-- Favicon -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%2343A0FF'/%3E%3Cstop offset='1' stop-color='%23007AFF'/%3E%3C/linearGradient%3E%3ClinearGradient id='h' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23FFFFFF' stop-opacity='.35'/%3E%3Cstop offset='1' stop-color='%23FFFFFF' stop-opacity='0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='2' y='2' width='60' height='60' rx='14' fill='url(%23g)'/%3E%3Crect x='2' y='2' width='60' height='30' rx='14' fill='url(%23h)'/%3E%3Cpath d='M32 16.5c-5.2 0-9.4 4.2-9.4 9.4s4.2 9.4 9.4 9.4 9.4-4.2 9.4-9.4-4.2-9.4-9.4-9.4z' fill='%23fff'/%3E%3Cpath d='M32 38.5c-7.7 0-14 4.6-14 10.3 0 .6.4 1.1 1 1.1h26c.6 0 1-.5 1-1.1 0-5.7-6.3-10.3-14-10.3z' fill='%23fff'/%3E%3C/svg%3E" />
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%2343A0FF'/%3E%3Cstop offset='1' stop-color='%23007AFF'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='2' y='2' width='60' height='60' rx='14' fill='url(%23g)'/%3E%3Cpath d='M32 16.5c-5.2 0-9.4 4.2-9.4 9.4s4.2 9.4 9.4 9.4 9.4-4.2 9.4-9.4-4.2-9.4-9.4-9.4z' fill='%23fff'/%3E%3Cpath d='M32 38.5c-7.7 0-14 4.6-14 10.3 0 .6.4 1.1 1 1.1h26c.6 0 1-.5 1-1.1 0-5.7-6.3-10.3-14-10.3z' fill='%23fff'/%3E%3C/svg%3E" />
+
+<script src="./utils/tailwindcss.js"></script>
+<script>
+  tailwind.config = {
+    darkMode: 'media',
+    theme: {
+      extend: {
+        colors: {
+          ios: { blue: '#007AFF', blueDark: '#0A84FF', green: '#34C759', red: '#FF3B30', orange: '#FF9500', purple: '#5856D6', gray: '#8E8E93' }
+        }
+      }
+    }
+  };
+</script>
+<script src="./utils/jszip.min.js"></script>
+
+<style>
+  * { -webkit-tap-highlight-color: transparent; }
+  html, body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+                 "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  body { background-color: #F2F2F7; color: #000; min-height: 100vh; min-height: 100dvh; }
+  @media (prefers-color-scheme: dark) { body { background-color: #000; color: #fff; } }
+
+  /* iOS Switch */
+  .ios-switch { position: relative; display: inline-block; width: 51px; height: 31px; flex-shrink: 0; cursor: pointer; }
+  .ios-switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; z-index: 2; }
+  .ios-switch .track {
+    position: absolute; inset: 0; background: rgba(120, 120, 128, 0.16);
+    border-radius: 999px; transition: background-color .25s cubic-bezier(.4,0,.2,1); pointer-events: none;
+  }
+  .ios-switch .track::before {
+    content: ''; position: absolute; left: 2px; top: 2px; width: 27px; height: 27px;
+    border-radius: 50%; background: #fff; transition: transform .25s cubic-bezier(.4,0,.2,1);
+    box-shadow: 0 3px 8px rgba(0,0,0,.15), 0 1px 1px rgba(0,0,0,.16);
+  }
+  .ios-switch input:checked + .track { background: #34C759; }
+  .ios-switch input:checked + .track::before { transform: translateX(20px); }
+  @media (prefers-color-scheme: dark) { .ios-switch .track { background: rgba(120, 120, 128, 0.32); } }
+
+  /* iOS Range */
+  input[type="range"].ios-range {
+    -webkit-appearance: none; appearance: none; width: 100%; height: 4px; border-radius: 2px; outline: none;
+    background: linear-gradient(to right, #007AFF var(--fill, 0%), rgba(120, 120, 128, 0.2) var(--fill, 0%));
+  }
+  @media (prefers-color-scheme: dark) {
+    input[type="range"].ios-range {
+      background: linear-gradient(to right, #0A84FF var(--fill, 0%), rgba(120, 120, 128, 0.4) var(--fill, 0%));
+    }
+  }
+  input[type="range"].ios-range::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none; width: 28px; height: 28px; border-radius: 50%; background: #fff;
+    cursor: pointer; box-shadow: 0 3px 8px rgba(0,0,0,.15), 0 1px 1px rgba(0,0,0,.16);
+  }
+  input[type="range"].ios-range::-moz-range-thumb {
+    width: 28px; height: 28px; border-radius: 50%; border: none; background: #fff;
+    cursor: pointer; box-shadow: 0 3px 8px rgba(0,0,0,.15), 0 1px 1px rgba(0,0,0,.16);
+  }
+
+  input[type="color"] { -webkit-appearance: none; appearance: none; border: none; padding: 0; background: transparent; cursor: pointer; }
+  input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+  input[type="color"]::-webkit-color-swatch { border: 1px solid rgba(0,0,0,.1); border-radius: 8px; }
+  @media (prefers-color-scheme: dark) {
+    input[type="color"]::-webkit-color-swatch { border-color: rgba(255,255,255,.15); }
+  }
+
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type="number"] { -moz-appearance: textfield; }
+
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  /* 预览棋盘格 */
+  .checker {
+    background-color: #fff;
+    background-image:
+      linear-gradient(45deg, rgba(0,0,0,.045) 25%, transparent 25%),
+      linear-gradient(-45deg, rgba(0,0,0,.045) 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, rgba(0,0,0,.045) 75%),
+      linear-gradient(-45deg, transparent 75%, rgba(0,0,0,.045) 75%);
+    background-size: 20px 20px;
+    background-position: 0 0, 0 10px, 10px -10px, -10px 0;
+  }
+  @media (prefers-color-scheme: dark) {
+    .checker {
+      background-color: #1C1C1E;
+      background-image:
+        linear-gradient(45deg, rgba(255,255,255,.05) 25%, transparent 25%),
+        linear-gradient(-45deg, rgba(255,255,255,.05) 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, rgba(255,255,255,.05) 75%),
+        linear-gradient(-45deg, transparent 75%, rgba(255,255,255,.05) 75%);
+    }
+  }
+
+  .seg-btn {
+    flex: 1; min-width: 52px; padding: 6px 8px; font-size: 13px; font-weight: 500;
+    border-radius: 7px; white-space: nowrap; transition: background-color .2s, color .2s, box-shadow .2s;
+    color: rgba(60, 60, 67, 0.6);
+  }
+  .seg-btn.active { background: #fff; color: #000; box-shadow: 0 1px 3px rgba(0,0,0,.12), 0 1px 1px rgba(0,0,0,.04); }
+  @media (prefers-color-scheme: dark) {
+    .seg-btn { color: rgba(235, 235, 245, 0.6); }
+    .seg-btn.active { background: #636366; color: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.4); }
+  }
+
+  .chip {
+    display: inline-flex; align-items: center; font-size: 11px; padding: 3px 8px; border-radius: 6px;
+    background: rgba(120, 120, 128, 0.12); color: rgba(60, 60, 67, 0.6); line-height: 1.4;
+  }
+  .chip.on { background: rgba(0, 122, 255, 0.12); color: #007AFF; }
+  @media (prefers-color-scheme: dark) {
+    .chip { background: rgba(120, 120, 128, 0.24); color: rgba(235, 235, 245, 0.6); }
+    .chip.on { background: rgba(10, 132, 255, 0.22); color: #0A84FF; }
+  }
+
+  .toast-item {
+    background: rgba(30, 30, 32, 0.92); color: #fff; font-size: 14px; padding: 10px 16px;
+    border-radius: 12px; -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);
+    box-shadow: 0 8px 32px rgba(0,0,0,.2); opacity: 0; transform: translateY(8px);
+    transition: opacity .25s, transform .25s; max-width: 80vw;
+  }
+  .toast-item.show { opacity: 1; transform: translateY(0); }
+  @media (prefers-color-scheme: light) {
+    .toast-item { background: rgba(255, 255, 255, 0.95); color: #000; box-shadow: 0 8px 32px rgba(0,0,0,.15); }
+  }
+
+  .pressable { transition: background-color .15s, opacity .15s, transform .1s; }
+  .pressable:active { background-color: rgba(0,0,0,.05); }
+  @media (prefers-color-scheme: dark) {
+    .pressable:active { background-color: rgba(255,255,255,.06); }
+  }
+
+  .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
+
+  #previewCanvas {
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  #previewCanvas.dragging { cursor: grabbing; }
+
+  #previewHint { opacity: 0; transition: opacity .35s ease; }
+  #previewHint.show { opacity: 1; }
+</style>
+</head>
+
+<body>
+
+<!-- ================= 顶部导航栏 ================= -->
+<header class="sticky top-0 z-40 border-b border-black/[0.08] dark:border-white/[0.1]"
+  style="background-color: rgba(242,242,247,.78); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);">
+  <div class="max-w-6xl mx-auto px-4 h-12 flex items-center justify-between relative">
+    <button id="resetAllBtn"
+      class="text-[15px] text-[#007AFF] dark:text-[#0A84FF] active:opacity-40 transition-opacity">
+      重置
+    </button>
+    <h1 class="absolute left-1/2 -translate-x-1/2 text-[16px] font-semibold tracking-tight">
+      照片工坊
+    </h1>
+    <span id="sizeInfo" class="text-[11px] font-mono text-black/35 dark:text-white/35">--×--</span>
+  </div>
+</header>
+<style>
+  @media (prefers-color-scheme: dark) { header { background-color: rgba(0,0,0,.72) !important; } }
+</style>
+
+<!-- ================= 主内容 ================= -->
+<main class="max-w-6xl mx-auto px-4 pt-4 pb-10">
+  <div class="grid lg:grid-cols-[minmax(320px,380px)_1fr] gap-4 lg:gap-6 items-start">
+
+    <!-- ============ 左列 / 下区：控制面板 ============ -->
+    <div class="order-2 lg:order-1 space-y-4 w-full">
+
+      <!-- 上传卡片 -->
+      <section class="bg-white dark:bg-[#1C1C1E] rounded-2xl overflow-hidden shadow-sm dark:shadow-none">
+        <label id="dropZone" for="fileInput"
+          class="block px-5 py-6 text-center cursor-pointer pressable rounded-2xl">
+          <div class="w-12 h-12 mx-auto mb-2.5 rounded-full bg-[#007AFF]/10 dark:bg-[#0A84FF]/15 flex items-center justify-center">
+            <svg class="w-6 h-6 text-[#007AFF] dark:text-[#0A84FF]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+          </div>
+          <div class="text-[15px] font-medium">选择图片</div>
+          <div class="text-[12px] text-black/40 dark:text-white/40 mt-0.5">点击选择或拖拽 · JPG / PNG / WEBP</div>
+        </label>
+        <input id="fileInput" type="file" accept="image/*" class="hidden" />
+        <div id="fileInfo" class="hidden border-t border-black/[0.08] dark:border-white/[0.08] px-4 py-3 text-[12px] space-y-1">
+          <div class="flex justify-between gap-3">
+            <span class="text-black/45 dark:text-white/45 shrink-0">文件名</span>
+            <span id="fileName" class="font-mono truncate"></span>
+          </div>
+          <div class="flex justify-between gap-3">
+            <span class="text-black/45 dark:text-white/45 shrink-0">原始尺寸</span>
+            <span id="fileSize" class="font-mono"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 分段控件 -->
+      <div class="bg-black/[0.05] dark:bg-white/[0.08] rounded-[10px] p-[3px] flex gap-0.5 overflow-x-auto no-scrollbar">
+        <nav id="tabs" class="contents"></nav>
+      </div>
+
+      <!-- 抠图（仅纯色抠图） -->
+      <section id="panel-cutout" class="panel bg-white dark:bg-[#1C1C1E] rounded-2xl overflow-hidden shadow-sm dark:shadow-none">
+        <div class="px-4 pt-4 pb-1">
+          <div class="text-[12px] text-black/45 dark:text-white/45 mb-1">按边缘颜色抠图</div>
+          <div class="text-[11px] text-black/40 dark:text-white/40 leading-relaxed">
+            适合纯色幕布拍摄的照片（白幕 / 蓝幕 / 红幕）。自动识别四角背景色并向内扩散去除。
+          </div>
+        </div>
+
+        <div class="h-px bg-black/[0.08] dark:bg-white/[0.08] mt-3"></div>
+
+        <div class="px-4 py-3.5">
+          <div class="flex justify-between text-[13px] mb-3">
+            <span>颜色容差</span>
+            <span id="tolVal" class="font-mono text-[#007AFF] dark:text-[#0A84FF]">30</span>
+          </div>
+          <input id="tolRange" type="range" min="5" max="100" value="30" class="ios-range" />
+          <div class="text-[11px] text-black/40 dark:text-white/40 mt-2 leading-relaxed">
+            容差越大去除越彻底，但可能误伤边缘。
+          </div>
+        </div>
+
+        <div class="h-px bg-black/[0.08] dark:bg-white/[0.08]"></div>
+
+        <button id="colorCutBtn" class="w-full flex items-center gap-3 px-4 py-3.5 pressable">
+          <span class="w-8 h-8 rounded-lg bg-[#5856D6] flex items-center justify-center text-white text-[15px] shrink-0">🪄</span>
+          <span class="flex-1 text-left min-w-0">
+            <div class="text-[15px] font-medium">执行抠图</div>
+            <div class="text-[12px] text-black/40 dark:text-white/40 mt-0.5">去除纯色背景，保留人像</div>
+          </span>
+          <svg class="w-4 h-4 text-black/25 dark:text-white/25 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+
+        <div class="h-px bg-black/[0.08] dark:bg-white/[0.08]"></div>
+
+        <button id="resetCutBtn" class="w-full px-4 py-3.5 text-[15px] text-[#FF3B30] pressable">恢复原图</button>
+      </section>
+
+      <!-- 换底 -->
+      <section id="panel-bg" class="panel hidden bg-white dark:bg-[#1C1C1E] rounded-2xl overflow-hidden shadow-sm dark:shadow-none">
+        <div class="px-4 pt-4 pb-3">
+          <div class="text-[12px] text-black/45 dark:text-white/45 mb-2.5">常用颜色</div>
+          <div id="swatches" class="grid grid-cols-8 gap-2"></div>
+        </div>
+        <div class="h-px bg-black/[0.08] dark:bg-white/[0.08]"></div>
+        <div class="px-4 py-3 flex items-center gap-3">
+          <span class="text-[15px] shrink-0">自定义</span>
+          <input type="color" id="bgColor" value="#ffffff" class="w-8 h-8 rounded-lg shrink-0" />
+          <input id="bgColorText" type="text" value="#FFFFFF"
+            class="flex-1 min-w-0 bg-black/[0.04] dark:bg-white/[0.08] rounded-lg px-3 py-2 text-[13px] font-mono uppercase outline-none focus:ring-2 focus:ring-[#007AFF]/30 dark:focus:ring-[#0A84FF]/30" />
+        </div>
+        <div class="h-px bg-black/[0.08] dark:bg-white/[0.08]"></div>
+        <div class="px-4 py-3 flex items-center justify-between">
+          <span class="text-[15px]">透明背景</span>
+          <label class="ios-switch">
+            <input type="checkbox" id="bgTransparent" checked />
+            <span class="track"></span>
+          </label>
+        </div>
+        <div class="h-px bg-black/[0.08] dark:bg-white/[0.08]"></div>
+        <p class="px-4 py-3 text-[11px] text-black/40 dark:text-white/40 leading-relaxed">
+          💡 背景色只在抠图后才可见。若需换底，请先到「抠图」去除原背景，再选择颜色。
+        </p>
+      </section>
+
+      <!-- 尺寸 -->
+      <section id="panel-crop" class="panel hidden bg-white dark:bg-[#1C1C1E] rounded-2xl overflow-hidden shadow-sm dark:shadow-none">
+        <div class="px-4 py-3">
+          <select id="sizeSelect"
+            class="w-full bg-transparent text-[15px] py-1 outline-none appearance-none cursor-pointer pr-6"
+            style="background-image: url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%238E8E93%22 stroke-width=%223%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><polyline points=%226 9 12 15 18 9%22/></svg>'); background-repeat: no-repeat; background-position: right center;"></select>
+        </div>
+        <div id="customSize" class="hidden border-t border-black/[0.08] dark:border-white/[0.08] px-4 py-3">
+          <div class="flex items-center gap-3">
+            <div class="flex-1 min-w-0">
+              <label class="text-[12px] text-black/45 dark:text-white/45 block mb-1.5">宽度 (px)</label>
+              <input id="customW" type="number" min="16" max="4000" value="295"
+                class="w-full bg-black/[0.04] dark:bg-white/[0.08] rounded-lg px-3 py-2 text-[15px] outline-none focus:ring-2 focus:ring-[#007AFF]/30 dark:focus:ring-[#0A84FF]/30" />
+            </div>
+            <div class="flex-1 min-w-0">
+              <label class="text-[12px] text-black/45 dark:text-white/45 block mb-1.5">高度 (px)</label>
+              <input id="customH" type="number" min="16" max="4000" value="413"
+                class="w-full bg-black/[0.04] dark:bg-white/[0.08] rounded-lg px-3 py-2 text-[15px] outline-none focus:ring-2 focus:ring-[#007AFF]/30 dark:focus:ring-[#0A84FF]/30" />
+            </div>
+          </div>
+        </div>
+        <div class="h-px bg-black/[0.08] dark:bg-white/[0.08]"></div>
+        <div class="px-4 py-3.5">
+          <div class="text-[12px] text-black/45 dark:text-white/45 mb-2.5">适配方式</div>
+          <div class="bg-black/[0.04] dark:bg-white/[0.08] rounded-lg p-[3px] flex gap-0.5">
+            <label class="flex-1 cursor-pointer">
+              <input type="radio" name="fit" value="cover" class="peer sr-only" checked />
+              <div class="text-center text-[13px] py-1.5 rounded-md transition-all peer-checked:bg-white peer-checked:shadow-sm dark:peer-checked:bg-[#636366]">裁剪填充</div>
+            </label>
+            <label class="flex-1 cursor-pointer">
+              <input type="radio" name="fit" value="contain" class="peer sr-only" />
+              <div class="text-center text-[13px] py-1.5 rounded-md transition-all peer-checked:bg-white peer-checked:shadow-sm dark:peer-checked:bg-[#636366]">完整显示</div>
+            </label>
+          </div>
+        </div>
+        <div class="h-px bg-black/[0.08] dark:bg-white/[0.08]"></div>
+        <button id="resetPosBtn" class="w-full px-4 py-3.5 text-[15px] text-[#007AFF] dark:text-[#0A84FF] pressable">
+          重置位置与缩放
+        </button>
+        <div class="h-px bg-black/[0.08] dark:bg-white/[0.08]"></div>
+        <p class="px-4 py-3 text-[11px] text-black/40 dark:text-white/40 leading-relaxed">
+          💡 在右侧预览区可拖拽移动人物、滚轮/双指缩放。
+        </p>
+      </section>
+
+      <!-- 水印 -->
+      <section id="panel-wm" class="panel hidden bg-white dark:bg-[#1C1C1E] rounded-2xl overflow-hidden shadow-sm dark:shadow-none">
+        <div class="px-4 py-3">
+          <input id="wmText" type="text" value="" placeholder="输入水印文字即可开启水印"
+            class="w-full bg-black/[0.04] dark:bg-white/[0.08] rounded-lg px-3 py-2.5 text-[15px] outline-none focus:ring-2 focus:ring-[#007AFF]/30 dark:focus:ring-[#0A84FF]/30" />
+          <div class="text-[11px] text-black/40 dark:text-white/40 mt-2">输入文字后水印自动生效，清空即关闭。</div>
+        </div>
+        <div class="h-px bg-black/[0.08] dark:bg-white/[0.08]"></div>
+        <div class="px-4 py-4 space-y-4 opacity-50 transition-opacity" id="wmControls">
+          <div>
+            <div class="flex justify-between text-[13px] mb-2.5">
+              <span>旋转角度</span>
+              <span id="wmAngleVal" class="font-mono text-[#007AFF] dark:text-[#0A84FF]">30°</span>
+            </div>
+            <input id="wmAngle" type="range" min="-90" max="90" value="30" class="ios-range" />
+          </div>
+          <div>
+            <div class="flex justify-between text-[13px] mb-2.5">
+              <span>透明度</span>
+              <span id="wmOpacityVal" class="font-mono text-[#007AFF] dark:text-[#0A84FF]">20%</span>
+            </div>
+            <input id="wmOpacity" type="range" min="0" max="100" value="20" class="ios-range" />
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <div class="flex justify-between text-[13px] mb-2.5">
+                <span>字号</span>
+                <span id="wmSizeVal" class="font-mono text-[#007AFF] dark:text-[#0A84FF]">6%</span>
+              </div>
+              <input id="wmSize" type="range" min="2" max="20" value="6" class="ios-range" />
+            </div>
+            <div>
+              <div class="flex justify-between text-[13px] mb-2.5">
+                <span>密集度</span>
+                <span id="wmDensityVal" class="font-mono text-[#007AFF] dark:text-[#0A84FF]">5</span>
+              </div>
+              <input id="wmDensity" type="range" min="1" max="10" value="5" class="ios-range" />
+            </div>
+          </div>
+        </div>
+        <div class="h-px bg-black/[0.08] dark:bg-white/[0.08]"></div>
+        <div class="px-4 py-3 flex items-center justify-between">
+          <span class="text-[15px]">平铺水印</span>
+          <label class="ios-switch">
+            <input type="checkbox" id="wmTile" checked />
+            <span class="track"></span>
+          </label>
+        </div>
+        <div class="h-px bg-black/[0.08] dark:bg-white/[0.08]"></div>
+        <div class="px-4 py-3 flex items-center justify-between">
+          <span class="text-[15px]">水印颜色</span>
+          <input type="color" id="wmColor" value="#000000" class="w-8 h-8 rounded-lg" />
+        </div>
+      </section>
+
+      <!-- 宫格 -->
+      <section id="panel-grid" class="panel hidden bg-white dark:bg-[#1C1C1E] rounded-2xl overflow-hidden shadow-sm dark:shadow-none">
+        <div class="px-4 py-3.5 flex items-center gap-3">
+          <div class="flex-1 min-w-0">
+            <label class="text-[12px] text-black/45 dark:text-white/45 block mb-1.5">行数</label>
+            <input id="gridRows" type="number" min="1" max="12" value="1"
+              class="w-full bg-black/[0.04] dark:bg-white/[0.08] rounded-lg px-3 py-2 text-[15px] outline-none focus:ring-2 focus:ring-[#007AFF]/30 dark:focus:ring-[#0A84FF]/30" />
+          </div>
+          <div class="flex-1 min-w-0">
+            <label class="text-[12px] text-black/45 dark:text-white/45 block mb-1.5">列数</label>
+            <input id="gridCols" type="number" min="1" max="12" value="1"
+              class="w-full bg-black/[0.04] dark:bg-white/[0.08] rounded-lg px-3 py-2 text-[15px] outline-none focus:ring-2 focus:ring-[#007AFF]/30 dark:focus:ring-[#0A84FF]/30" />
+          </div>
+        </div>
+        <div class="h-px bg-black/[0.08] dark:bg-white/[0.08]"></div>
+        <div class="px-4 py-3.5">
+          <div class="text-[12px] text-black/45 dark:text-white/45 mb-2.5">快捷预设</div>
+          <div class="flex flex-wrap gap-2">
+            <button data-r="1" data-c="1" class="grid-preset px-3 py-1.5 text-[13px] rounded-lg bg-black/[0.06] dark:bg-white/[0.1] active:opacity-50 transition-opacity">1 × 1</button>
+            <button data-r="1" data-c="2" class="grid-preset px-3 py-1.5 text-[13px] rounded-lg bg-black/[0.06] dark:bg-white/[0.1] active:opacity-50 transition-opacity">1 × 2</button>
+            <button data-r="2" data-c="2" class="grid-preset px-3 py-1.5 text-[13px] rounded-lg bg-black/[0.06] dark:bg-white/[0.1] active:opacity-50 transition-opacity">2 × 2</button>
+            <button data-r="3" data-c="3" class="grid-preset px-3 py-1.5 text-[13px] rounded-lg bg-black/[0.06] dark:bg-white/[0.1] active:opacity-50 transition-opacity">3 × 3</button>
+            <button data-r="4" data-c="4" class="grid-preset px-3 py-1.5 text-[13px] rounded-lg bg-black/[0.06] dark:bg-white/[0.1] active:opacity-50 transition-opacity">4 × 4</button>
+            <button data-r="2" data-c="3" class="grid-preset px-3 py-1.5 text-[13px] rounded-lg bg-black/[0.06] dark:bg-white/[0.1] active:opacity-50 transition-opacity">2 × 3</button>
+          </div>
+        </div>
+        <div class="h-px bg-black/[0.08] dark:bg-white/[0.08]"></div>
+        <p class="px-4 py-3 text-[11px] text-black/40 dark:text-white/40 leading-relaxed">
+          宫格大于 1×1 时，导出自动打包为 ZIP，每格一张图。
+        </p>
+      </section>
+
+      <!-- 导出 -->
+      <section id="panel-export" class="panel hidden bg-white dark:bg-[#1C1C1E] rounded-2xl overflow-hidden shadow-sm dark:shadow-none">
+        <div class="px-4 py-3.5 flex items-center justify-between">
+          <span class="text-[15px]">图片格式</span>
+          <select id="format"
+            class="bg-transparent text-[15px] text-[#007AFF] dark:text-[#0A84FF] outline-none cursor-pointer text-right appearance-none pr-5"
+            style="background-image: url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2210%22 height=%2210%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23007AFF%22 stroke-width=%223%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><polyline points=%226 9 12 15 18 9%22/></svg>'); background-repeat: no-repeat; background-position: right center;">
+            <option value="png">PNG</option>
+            <option value="jpeg">JPEG</option>
+          </select>
+        </div>
+        <div id="qualityWrap" class="hidden border-t border-black/[0.08] dark:border-white/[0.08] px-4 py-3.5">
+          <div class="flex justify-between text-[13px] mb-2.5">
+            <span>图片质量</span>
+            <span id="qualityVal" class="font-mono text-[#007AFF] dark:text-[#0A84FF]">92%</span>
+          </div>
+          <input id="quality" type="range" min="50" max="100" value="92" class="ios-range" />
+        </div>
+        <div class="h-px bg-black/[0.08] dark:bg-white/[0.08]"></div>
+        <div class="p-4">
+          <button id="exportBtn"
+            class="w-full bg-[#007AFF] dark:bg-[#0A84FF] text-white text-[17px] font-semibold py-3 rounded-xl active:opacity-70 transition-opacity flex items-center justify-center gap-2">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            下载导出
+          </button>
+        </div>
+        <div class="h-px bg-black/[0.08] dark:bg-white/[0.08]"></div>
+        <p class="px-4 py-3 text-[11px] text-black/40 dark:text-white/40 leading-relaxed">
+          导出结果 = 原图 + 当前所有已启用功能。
+        </p>
+      </section>
+
+    </div>
+
+    <!-- ============ 右列 / 上区：预览 ============ -->
+    <div class="order-1 lg:order-2 w-full">
+      <div class="lg:sticky lg:top-16">
+        <div id="previewStage"
+          class="relative checker rounded-2xl overflow-hidden h-[38vh] min-h-[220px] lg:h-[min(620px,calc(100vh-140px))] flex items-center justify-center p-4 shadow-sm dark:shadow-none">
+          <canvas id="previewCanvas" class="hidden max-w-full max-h-full rounded-lg shadow-xl"></canvas>
+          <div id="emptyHint" class="text-center select-none text-black/25 dark:text-white/25">
+            <div class="text-[44px] leading-none mb-2.5">📷</div>
+            <p class="text-[13px]">请先上传一张图片</p>
+          </div>
+
+          <div id="previewHint"
+            class="absolute bottom-3 left-1/2 -translate-x-1/2 pointer-events-none px-3 py-1.5 rounded-full
+                   text-[11px] bg-black/70 text-white dark:bg-white/85 dark:text-black whitespace-nowrap">
+            拖拽调整位置 · 滚轮 / 双指缩放
+          </div>
+
+          <div id="zoomBadge"
+            class="hidden absolute top-3 right-3 px-2.5 py-1 rounded-lg font-mono text-[11px]
+                   bg-black/55 text-white dark:bg-white/15">
+            100%
+          </div>
+        </div>
+
+        <div id="statusBar" class="hidden lg:flex mt-3 flex-wrap gap-1.5 min-h-[22px]"></div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- ================= Busy 遮罩 ================= -->
+<div id="busy" class="fixed inset-0 z-50 hidden items-center justify-center"
+  style="background: rgba(0,0,0,.3); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);">
+  <div class="bg-white dark:bg-[#1C1C1E] rounded-2xl px-8 py-6 flex flex-col items-center gap-3 shadow-2xl">
+    <div class="w-9 h-9 rounded-full border-[3px] border-[#007AFF] dark:border-[#0A84FF] border-t-transparent animate-spin"></div>
+    <div id="busyText" class="text-[13px] text-black/70 dark:text-white/70">处理中…</div>
+  </div>
+</div>
+
+<!-- ================= Toast ================= -->
+<div id="toastBox" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] flex flex-col items-center gap-2 pointer-events-none safe-bottom"></div>
+
+
+<script>
+/* =====================================================================
+ *  0. 基础工具
+ * ===================================================================== */
+const $ = (s) => document.querySelector(s);
+const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error('图片加载失败'));
+    img.src = src;
+  });
+}
+function imageToCanvas(img) {
+  const c = document.createElement('canvas');
+  c.width = img.naturalWidth;
+  c.height = img.naturalHeight;
+  c.getContext('2d').drawImage(img, 0, 0);
+  return c;
+}
+function cloneCanvas(src) {
+  const c = document.createElement('canvas');
+  c.width = src.width;
+  c.height = src.height;
+  c.getContext('2d').drawImage(src, 0, 0);
+  return c;
+}
+function toast(msg) {
+  const box = $('#toastBox');
+  const d = document.createElement('div');
+  d.className = 'toast-item';
+  d.textContent = msg;
+  box.appendChild(d);
+  requestAnimationFrame(() => d.classList.add('show'));
+  setTimeout(() => {
+    d.classList.remove('show');
+    setTimeout(() => d.remove(), 300);
+  }, 2300);
+}
+function showBusy(text = '处理中…') {
+  $('#busyText').textContent = text;
+  $('#busy').classList.remove('hidden');
+  $('#busy').classList.add('flex');
+}
+function setBusyText(t) { $('#busyText').textContent = t; }
+function hideBusy() {
+  $('#busy').classList.add('hidden');
+  $('#busy').classList.remove('flex');
+}
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 6000);
+}
+function canvasToBlob(canvas, format, quality) {
+  return new Promise((resolve) => {
+    let target = canvas;
+    if (format === 'jpeg') {
+      const t = document.createElement('canvas');
+      t.width = canvas.width;
+      t.height = canvas.height;
+      const ctx = t.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, t.width, t.height);
+      ctx.drawImage(canvas, 0, 0);
+      target = t;
+    }
+    target.toBlob((b) => resolve(b), 'image/' + format, quality);
+  });
+}
+function updateRangeFill(el) {
+  const min = Number(el.min) || 0;
+  const max = Number(el.max) || 100;
+  const val = Number(el.value);
+  const pct = max === min ? 0 : ((val - min) / (max - min)) * 100;
+  el.style.setProperty('--fill', pct + '%');
+}
+function refreshAllRanges() {
+  document.querySelectorAll('.ios-range').forEach(updateRangeFill);
+}
+
+
+/* =====================================================================
+ *  1. 常量
+ * ===================================================================== */
+const PRESETS = [
+  { key: 'p1',  name: '一寸 25×35mm',     w: 295, h: 413 },
+  { key: 'p2',  name: '小一寸 22×32mm',   w: 260, h: 378 },
+  { key: 'p3',  name: '大一寸 33×48mm',   w: 390, h: 567 },
+  { key: 'p4',  name: '二寸 35×49mm',     w: 413, h: 579 },
+  { key: 'p5',  name: '小二寸 35×45mm',   w: 413, h: 531 },
+  { key: 'p6',  name: '大二寸 35×53mm',   w: 413, h: 626 },
+  { key: 'p7',  name: '护照 33×48mm',     w: 390, h: 567 },
+  { key: 'p8',  name: '签证 30×40mm',     w: 354, h: 472 },
+  { key: 'p9',  name: '美国签证 51×51mm', w: 600, h: 600 },
+  { key: 'p10', name: '驾照 22×32mm',     w: 260, h: 378 },
+  { key: 'p11', name: '社保卡 26×32mm',   w: 358, h: 441 },
+  { key: 'p12', name: '简历照 25×35mm',   w: 295, h: 413 },
+  { key: 'custom', name: '自定义尺寸…',   w: null, h: null },
+];
+
+const BG_SWATCHES = [
+  { name: '白底',  color: '#FFFFFF' },
+  { name: '浅蓝',  color: '#438EDB' },
+  { name: '深蓝',  color: '#2A6FBB' },
+  { name: '红底',  color: '#D93025' },
+  { name: '正红',  color: '#FF0000' },
+  { name: '灰底',  color: '#E5E7EB' },
+  { name: '浅绿',  color: '#A7D8B0' },
+  { name: '浅灰',  color: '#D1D5DB' },
+];
+
+const TABS = [
+  { id: 'cutout', label: '抠图' },
+  { id: 'bg',     label: '换底' },
+  { id: 'crop',   label: '尺寸' },
+  { id: 'wm',     label: '水印' },
+  { id: 'grid',   label: '宫格' },
+  { id: 'export', label: '导出' },
+];
+
+const DEFAULT_STATE = {
+  bgColor: '#FFFFFF',
+  bgTransparent: true,
+  sizeKey: 'original',
+  customW: 295,
+  customH: 413,
+  fit: 'cover',
+  transform: { scale: 1, offsetX: 0, offsetY: 0 },
+  watermark: {
+    text: '',
+    angle: 30,
+    color: '#000000',
+    opacity: 0.20,
+    sizePct: 6,
+    density: 5,
+    tile: true,
+  },
+  grid: { rows: 1, cols: 1 },
+  format: 'png',
+  quality: 0.92,
+};
+
+const state = {
+  originalImage: null,
+  originalCanvas: null,
+  cutoutCanvas: null,
+  bgCanvas: null,
+  cropCanvas: null,
+  wmCanvas: null,
+  ...JSON.parse(JSON.stringify(DEFAULT_STATE)),
+};
+
+let currentTab = 'cutout';
+let hintTimer = null;
+
+
+/* =====================================================================
+ *  2. 渲染管线
+ * ===================================================================== */
+function rebuildBg() {
+  if (!state.cutoutCanvas) {
+    state.bgCanvas = null;
+    rebuildCrop();
+    return;
+  }
+  const src = state.cutoutCanvas;
+  const c = document.createElement('canvas');
+  c.width = src.width;
+  c.height = src.height;
+  const ctx = c.getContext('2d');
+  if (!state.bgTransparent) {
+    ctx.fillStyle = state.bgColor;
+    ctx.fillRect(0, 0, c.width, c.height);
+  }
+  ctx.drawImage(src, 0, 0);
+  state.bgCanvas = c;
+  rebuildCrop();
+}
+
+function rebuildCrop() {
+  if (!state.bgCanvas) {
+    state.cropCanvas = null;
+    rebuildWm();
+    return;
+  }
+
+  let tw, th;
+  if (state.sizeKey === 'original') {
+    tw = state.bgCanvas.width;
+    th = state.bgCanvas.height;
+  } else if (state.sizeKey === 'custom') {
+    tw = Math.max(16, Math.min(4000, state.customW | 0));
+    th = Math.max(16, Math.min(4000, state.customH | 0));
+  } else {
+    const p = PRESETS.find((x) => x.key === state.sizeKey);
+    tw = p ? p.w : state.bgCanvas.width;
+    th = p ? p.h : state.bgCanvas.height;
+  }
+
+  const out = document.createElement('canvas');
+  out.width = tw;
+  out.height = th;
+  const ctx = out.getContext('2d');
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+
+  if (state.fit === 'contain' && !state.bgTransparent) {
+    ctx.fillStyle = state.bgColor;
+    ctx.fillRect(0, 0, tw, th);
+  }
+
+  const baseScale = state.fit === 'cover'
+    ? Math.max(tw / state.bgCanvas.width, th / state.bgCanvas.height)
+    : Math.min(tw / state.bgCanvas.width, th / state.bgCanvas.height);
+
+  const scale = baseScale * state.transform.scale;
+  const dw = state.bgCanvas.width * scale;
+  const dh = state.bgCanvas.height * scale;
+
+  const dx = (tw - dw) / 2 + state.transform.offsetX * tw;
+  const dy = (th - dh) / 2 + state.transform.offsetY * th;
+
+  ctx.drawImage(state.bgCanvas, dx, dy, dw, dh);
+
+  state.cropCanvas = out;
+  rebuildWm();
+}
+
+function rebuildWm() {
+  if (!state.cropCanvas) {
+    state.wmCanvas = null;
+    renderPreview();
+    return;
+  }
+  const c = document.createElement('canvas');
+  c.width = state.cropCanvas.width;
+  c.height = state.cropCanvas.height;
+  const ctx = c.getContext('2d');
+  ctx.drawImage(state.cropCanvas, 0, 0);
+  drawWatermark(ctx, c.width, c.height);
+  state.wmCanvas = c;
+  renderPreview();
+  syncWmControlsState();
+  updateZoomBadge();
+}
+
+function drawWatermark(ctx, w, h) {
+  const wm = state.watermark;
+  const text = (wm.text || '').trim();
+  if (!text) return;
+
+  const fontSize = Math.max(8, (Math.min(w, h) * wm.sizePct) / 100);
+  const gap = fontSize * Math.max(1.8, 11 - wm.density);
+
+  ctx.save();
+  ctx.globalAlpha = wm.opacity;
+  ctx.fillStyle = wm.color;
+  ctx.font = `600 ${fontSize}px "PingFang SC","Microsoft YaHei",system-ui,sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.translate(w / 2, h / 2);
+  ctx.rotate((wm.angle * Math.PI) / 180);
+
+  if (wm.tile) {
+    const diag = Math.sqrt(w * w + h * h) / 2 + fontSize * 2;
+    let row = 0;
+    for (let y = -diag; y <= diag; y += gap, row++) {
+      const offset = row % 2 ? gap / 2 : 0;
+      for (let x = -diag; x <= diag; x += gap) {
+        ctx.fillText(text, x + offset, y);
+      }
+    }
+  } else {
+    ctx.fillText(text, 0, 0);
+  }
+  ctx.restore();
+}
+
+function syncWmControlsState() {
+  const on = (state.watermark.text || '').trim().length > 0;
+  const box = $('#wmControls');
+  if (!box) return;
+  box.classList.toggle('opacity-50', !on);
+  box.classList.toggle('pointer-events-none', !on);
+}
+
+
+/* =====================================================================
+ *  3. 缩放与拖拽核心逻辑
+ * ===================================================================== */
+function applyZoom(factor, pivotX, pivotY) {
+  if (!state.cropCanvas) return;
+  const cropW = state.cropCanvas.width;
+  const cropH = state.cropCanvas.height;
+
+  const oldScale = state.transform.scale;
+  const newScale = clamp(oldScale * factor, 0.2, 5);
+  if (Math.abs(newScale - oldScale) < 1e-4) return;
+
+  const ratio = newScale / oldScale;
+  const cx = pivotX - cropW / 2;
+  const cy = pivotY - cropH / 2;
+
+  const oldOffPxX = state.transform.offsetX * cropW;
+  const oldOffPxY = state.transform.offsetY * cropH;
+
+  const newOffPxX = cx - (cx - oldOffPxX) * ratio;
+  const newOffPxY = cy - (cy - oldOffPxY) * ratio;
+
+  state.transform.scale = newScale;
+  state.transform.offsetX = newOffPxX / cropW;
+  state.transform.offsetY = newOffPxY / cropH;
+
+  updateZoomBadge();
+}
+
+function resetPosition(silent = false) {
+  state.transform = { scale: 1, offsetX: 0, offsetY: 0 };
+  rebuildCrop();
+  if (!silent) toast('位置与缩放已重置');
+}
+
+function updateZoomBadge() {
+  const badge = $('#zoomBadge');
+  if (!badge) return;
+  if (!state.cropCanvas) {
+    badge.classList.add('hidden');
+    return;
+  }
+  badge.classList.remove('hidden');
+  badge.textContent = Math.round(state.transform.scale * 100) + '%';
+}
+
+function showHint() {
+  const hint = $('#previewHint');
+  if (!hint) return;
+  hint.classList.add('show');
+  clearTimeout(hintTimer);
+  hintTimer = setTimeout(() => hint.classList.remove('show'), 3200);
+}
+
+function bindPreviewInteraction() {
+  const pc = $('#previewCanvas');
+
+  let dragging = false;
+  let dragStartX = 0, dragStartY = 0;
+  let dragStartOffX = 0, dragStartOffY = 0;
+
+  function toCropCoords(clientX, clientY) {
+    const rect = pc.getBoundingClientRect();
+    if (!rect.width || !state.cropCanvas) return { x: 0, y: 0 };
+    const scaleRatio = state.cropCanvas.width / rect.width;
+    return {
+      x: (clientX - rect.left) * scaleRatio,
+      y: (clientY - rect.top) * scaleRatio,
+    };
+  }
+
+  function startDrag(clientX, clientY) {
+    if (!state.cropCanvas) return;
+    dragging = true;
+    dragStartX = clientX;
+    dragStartY = clientY;
+    dragStartOffX = state.transform.offsetX;
+    dragStartOffY = state.transform.offsetY;
+    pc.classList.add('dragging');
+    showHint();
+  }
+
+  function moveDrag(clientX, clientY) {
+    if (!dragging || !state.cropCanvas) return;
+    const rect = pc.getBoundingClientRect();
+    if (!rect.width) return;
+
+    const scaleRatio = state.cropCanvas.width / rect.width;
+    const dCropX = (clientX - dragStartX) * scaleRatio;
+    const dCropY = (clientY - dragStartY) * scaleRatio;
+
+    state.transform.offsetX = dragStartOffX + dCropX / state.cropCanvas.width;
+    state.transform.offsetY = dragStartOffY + dCropY / state.cropCanvas.height;
+
+    rebuildCrop();
+  }
+
+  function endDrag() {
+    if (!dragging) return;
+    dragging = false;
+    pc.classList.remove('dragging');
+  }
+
+  /* 鼠标 */
+  pc.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return;
+    if (!state.cropCanvas) return;
+    e.preventDefault();
+    startDrag(e.clientX, e.clientY);
+  });
+  window.addEventListener('mousemove', (e) => {
+    if (dragging) moveDrag(e.clientX, e.clientY);
+  });
+  window.addEventListener('mouseup', endDrag);
+
+  /* 滚轮缩放 */
+  pc.addEventListener('wheel', (e) => {
+    if (!state.cropCanvas) return;
+    e.preventDefault();
+    const { x, y } = toCropCoords(e.clientX, e.clientY);
+    const factor = e.deltaY > 0 ? 0.92 : 1.08;
+    applyZoom(factor, x, y);
+    rebuildCrop();
+    showHint();
+  }, { passive: false });
+
+  /* 触摸 */
+  let touchStartDist = 0;
+  let touchStartScale = 1;
+
+  pc.addEventListener('touchstart', (e) => {
+    if (!state.cropCanvas) return;
+    e.preventDefault();
+
+    if (e.touches.length === 1) {
+      startDrag(e.touches[0].clientX, e.touches[0].clientY);
+    } else if (e.touches.length === 2) {
+      dragging = false;
+      pc.classList.remove('dragging');
+      const t1 = e.touches[0], t2 = e.touches[1];
+      touchStartDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+      touchStartScale = state.transform.scale;
+      showHint();
+    }
+  }, { passive: false });
+
+  pc.addEventListener('touchmove', (e) => {
+    if (!state.cropCanvas) return;
+    e.preventDefault();
+
+    if (e.touches.length === 1 && dragging) {
+      moveDrag(e.touches[0].clientX, e.touches[0].clientY);
+    } else if (e.touches.length === 2 && touchStartDist > 0) {
+      const t1 = e.touches[0], t2 = e.touches[1];
+      const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+      const factor = dist / touchStartDist;
+
+      const targetScale = clamp(touchStartScale * factor, 0.2, 5);
+      const realFactor = targetScale / state.transform.scale;
+
+      const midX = (t1.clientX + t2.clientX) / 2;
+      const midY = (t1.clientY + t2.clientY) / 2;
+      const { x, y } = toCropCoords(midX, midY);
+
+      applyZoom(realFactor, x, y);
+      rebuildCrop();
+    }
+  }, { passive: false });
+
+  pc.addEventListener('touchend', (e) => {
+    if (e.touches.length === 0) {
+      dragging = false;
+      touchStartDist = 0;
+      pc.classList.remove('dragging');
+    } else if (e.touches.length === 1) {
+      touchStartDist = 0;
+      startDrag(e.touches[0].clientX, e.touches[0].clientY);
+    }
+  });
+
+  pc.addEventListener('touchcancel', () => {
+    dragging = false;
+    touchStartDist = 0;
+    pc.classList.remove('dragging');
+  });
+
+  pc.addEventListener('dblclick', () => {
+    if (!state.cropCanvas) return;
+    resetPosition();
+  });
+}
+
+
+/* =====================================================================
+ *  4. 预览渲染
+ * ===================================================================== */
+function renderPreview() {
+  const pc = $('#previewCanvas');
+  const hint = $('#emptyHint');
+  const src = state.wmCanvas;
+
+  if (!src) {
+    pc.classList.add('hidden');
+    hint.classList.remove('hidden');
+    $('#sizeInfo').textContent = '--×--';
+    $('#zoomBadge').classList.add('hidden');
+    $('#previewHint').classList.remove('show');
+    renderStatusBar();
+    return;
+  }
+
+  pc.classList.remove('hidden');
+  hint.classList.add('hidden');
+
+  const stage = $('#previewStage');
+  const rect = stage.getBoundingClientRect();
+  const pad = window.innerWidth < 1024 ? 28 : 44;
+  const maxW = Math.max(60, rect.width - pad);
+  const maxH = Math.max(60, rect.height - pad);
+  const displayScale = Math.min(maxW / src.width, maxH / src.height, 3);
+
+  const displayW = Math.max(1, Math.round(src.width * displayScale));
+  const displayH = Math.max(1, Math.round(src.height * displayScale));
+  const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+
+  pc.width = Math.round(displayW * dpr);
+  pc.height = Math.round(displayH * dpr);
+  pc.style.width = displayW + 'px';
+  pc.style.height = displayH + 'px';
+
+  const ctx = pc.getContext('2d');
+  ctx.clearRect(0, 0, pc.width, pc.height);
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(src, 0, 0, pc.width, pc.height);
+
+  if (currentTab === 'grid') {
+    const { rows, cols } = state.grid;
+    if (rows > 1 || cols > 1) {
+      ctx.strokeStyle = 'rgba(255,59,48,0.9)';
+      ctx.lineWidth = Math.max(1, pc.width / 500);
+      for (let i = 1; i < cols; i++) {
+        const x = (pc.width * i) / cols;
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, pc.height); ctx.stroke();
+      }
+      for (let i = 1; i < rows; i++) {
+        const y = (pc.height * i) / rows;
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(pc.width, y); ctx.stroke();
+      }
+    }
+  }
+
+  $('#sizeInfo').textContent = `${src.width}×${src.height}`;
+  updateZoomBadge();
+  renderStatusBar();
+}
+
+function renderStatusBar() {
+  const bar = $('#statusBar');
+  if (!state.originalCanvas) { bar.innerHTML = ''; return; }
+
+  const chips = [];
+
+  const hasTransparency = (() => {
+    if (!state.cutoutCanvas) return false;
+    const c = state.cutoutCanvas;
+    const ctx = c.getContext('2d', { willReadFrequently: true });
+    const step = Math.max(1, Math.floor(Math.min(c.width, c.height) / 40));
+    const data = ctx.getImageData(0, 0, c.width, c.height).data;
+    for (let i = 3; i < data.length; i += 4 * step) {
+      if (data[i] < 250) return true;
+    }
+    return false;
+  })();
+
+  chips.push(hasTransparency ? { text: '已抠图', ok: true } : { text: '未抠图', ok: false });
+
+  if (hasTransparency) {
+    chips.push(state.bgTransparent
+      ? { text: '透明底', ok: false }
+      : { text: state.bgColor.toUpperCase(), ok: true });
+  }
+
+  if (state.sizeKey !== 'original') {
+    const name = state.sizeKey === 'custom'
+      ? `${state.customW}×${state.customH}`
+      : (PRESETS.find((p) => p.key === state.sizeKey)?.name.split(' ')[0] || '自定义');
+    chips.push({ text: name, ok: true });
+  } else {
+    chips.push({ text: '原始尺寸', ok: false });
+  }
+
+  const t = state.transform;
+  const posChanged = Math.abs(t.scale - 1) > 0.01 || Math.abs(t.offsetX) > 0.01 || Math.abs(t.offsetY) > 0.01;
+  if (posChanged) {
+    chips.push({ text: `位置 ${Math.round(t.scale * 100)}%`, ok: true });
+  }
+
+  const wmOn = (state.watermark.text || '').trim().length > 0;
+  chips.push(wmOn ? { text: '水印已开', ok: true } : { text: '无水印', ok: false });
+
+  const { rows, cols } = state.grid;
+  if (rows > 1 || cols > 1) {
+    chips.push({ text: `宫格 ${rows}×${cols}`, ok: true });
+  }
+
+  bar.innerHTML = chips.map((c) =>
+    `<span class="chip${c.ok ? ' on' : ''}">${c.text}</span>`
+  ).join('');
+}
+
+
+/* =====================================================================
+ *  5. 选项卡
+ * ===================================================================== */
+function buildTabs() {
+  const nav = $('#tabs');
+  nav.innerHTML = TABS.map(
+    (t) => `<button data-tab="${t.id}" class="seg-btn">${t.label}</button>`
+  ).join('');
+
+  nav.addEventListener('click', (e) => {
+    const btn = e.target.closest('.seg-btn');
+    if (!btn) return;
+    switchTab(btn.dataset.tab);
+  });
+}
+
+function switchTab(id) {
+  currentTab = id;
+
+  document.querySelectorAll('.seg-btn').forEach((b) => {
+    b.classList.toggle('active', b.dataset.tab === id);
+  });
+
+  document.querySelectorAll('.panel').forEach((p) => p.classList.add('hidden'));
+  const panel = document.getElementById('panel-' + id);
+  if (panel) panel.classList.remove('hidden');
+
+  renderPreview();
+
+  if (id === 'crop' && state.cropCanvas) {
+    setTimeout(showHint, 200);
+  }
+}
+
+
+/* =====================================================================
+ *  6. 图片导入
+ * ===================================================================== */
+async function handleFile(file) {
+  if (!file || !file.type.startsWith('image/')) {
+    toast('请选择图片文件');
+    return;
+  }
+  try {
+    const url = URL.createObjectURL(file);
+    const img = await loadImage(url);
+    URL.revokeObjectURL(url);
+
+    state.originalImage = img;
+    state.originalCanvas = imageToCanvas(img);
+    state.cutoutCanvas = cloneCanvas(state.originalCanvas);
+
+    state.transform = { scale: 1, offsetX: 0, offsetY: 0 };
+
+    $('#fileName').textContent = file.name;
+    $('#fileSize').textContent = `${img.naturalWidth} × ${img.naturalHeight} px`;
+    $('#fileInfo').classList.remove('hidden');
+
+    rebuildBg();
+    toast('图片已载入');
+
+    setTimeout(showHint, 400);
+  } catch (e) {
+    console.error(e);
+    toast('图片读取失败');
+  }
+}
+
+
+/* =====================================================================
+ *  7. 纯色背景抠图
+ * ===================================================================== */
+function buildColorCutout(tolerance) {
+  const img = state.originalImage;
+  const MAX = 1800;
+
+  let w = img.naturalWidth;
+  let h = img.naturalHeight;
+  const scale = Math.min(1, MAX / Math.max(w, h));
+  w = Math.max(1, Math.round(w * scale));
+  h = Math.max(1, Math.round(h * scale));
+
+  const c = document.createElement('canvas');
+  c.width = w;
+  c.height = h;
+  const ctx = c.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(img, 0, 0, w, h);
+
+  const imageData = ctx.getImageData(0, 0, w, h);
+  const d = imageData.data;
+
+  let rs = 0, gs = 0, bs = 0, n = 0;
+  const corners = [[0, 0], [w - 6, 0], [0, h - 6], [w - 6, h - 6]];
+  for (const [cx, cy] of corners) {
+    for (let y = cy; y < cy + 6; y++) {
+      for (let x = cx; x < cx + 6; x++) {
+        if (x < 0 || y < 0 || x >= w || y >= h) continue;
+        const i = (y * w + x) * 4;
+        rs += d[i]; gs += d[i + 1]; bs += d[i + 2]; n++;
+      }
+    }
+  }
+  if (n === 0) throw new Error('无法识别背景色');
+  rs /= n; gs /= n; bs /= n;
+
+  const thr = Math.max(1, tolerance) * 2.2;
+  const thr2 = thr * thr * 3;
+
+  const seen = new Uint8Array(w * h);
+  const stack = new Int32Array(w * h);
+  let sp = 0;
+
+  const tryPush = (x, y) => {
+    if (x < 0 || y < 0 || x >= w || y >= h) return;
+    const p = y * w + x;
+    if (seen[p]) return;
+    seen[p] = 1;
+    const i = p * 4;
+    const dr = d[i] - rs;
+    const dg = d[i + 1] - gs;
+    const db = d[i + 2] - bs;
+    if (dr * dr + dg * dg + db * db > thr2) return;
+    seen[p] = 2;
+    stack[sp++] = p;
+  };
+
+  for (let x = 0; x < w; x++) { tryPush(x, 0); tryPush(x, h - 1); }
+  for (let y = 0; y < h; y++) { tryPush(0, y); tryPush(w - 1, y); }
+
+  while (sp > 0) {
+    const p = stack[--sp];
+    const x = p % w;
+    const y = (p / w) | 0;
+    tryPush(x + 1, y);
+    tryPush(x - 1, y);
+    tryPush(x, y + 1);
+    tryPush(x, y - 1);
+  }
+
+  for (let p = 0; p < w * h; p++) {
+    if (seen[p] === 2) d[p * 4 + 3] = 0;
+  }
+
+  ctx.putImageData(imageData, 0, 0);
+  return c;
+}
+
+function colorCutout() {
+  if (!state.originalImage) return toast('请先上传图片');
+  const tolerance = Number($('#tolRange').value);
+
+  showBusy('正在抠图…');
+  setTimeout(() => {
+    try {
+      state.cutoutCanvas = buildColorCutout(tolerance);
+      rebuildBg();
+      toast('抠图完成');
+    } catch (e) {
+      console.error(e);
+      toast('抠图失败：' + e.message);
+    } finally {
+      hideBusy();
+    }
+  }, 40);
+}
+
+function resetCutout() {
+  if (!state.originalCanvas) return toast('请先上传图片');
+  state.cutoutCanvas = cloneCanvas(state.originalCanvas);
+  rebuildBg();
+  toast('已恢复原图');
+}
+
+
+/* =====================================================================
+ *  8. 导出
+ * ===================================================================== */
+function buildFileName() {
+  let sizeName = '原始尺寸';
+  if (state.sizeKey === 'custom') {
+    sizeName = `${state.customW}x${state.customH}`;
+  } else if (state.sizeKey !== 'original') {
+    const p = PRESETS.find((x) => x.key === state.sizeKey);
+    if (p) sizeName = p.name.split(' ')[0];
+  }
+  const d = new Date();
+  const pad = (v) => String(v).padStart(2, '0');
+  const ts = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}`;
+  return `证件照_${sizeName}_${ts}`;
+}
+
+async function doExport() {
+  if (!state.wmCanvas) return toast('请先上传图片');
+
+  const { rows, cols } = state.grid;
+  const base = buildFileName();
+  const fmt = state.format;
+  const ext = fmt === 'jpeg' ? 'jpg' : 'png';
+
+  if (rows <= 1 && cols <= 1) {
+    showBusy('正在导出…');
+    try {
+      const blob = await canvasToBlob(state.wmCanvas, fmt, state.quality);
+      downloadBlob(blob, `${base}.${ext}`);
+      toast('已开始下载');
+    } catch (e) {
+      console.error(e);
+      toast('导出失败');
+    } finally {
+      hideBusy();
+    }
+    return;
+  }
+
+  if (typeof JSZip === 'undefined') return toast('打包库未加载，请检查网络');
+
+  showBusy('正在切图打包…');
+  try {
+    const zip = new JSZip();
+    const cw = Math.floor(state.wmCanvas.width / cols);
+    const ch = Math.floor(state.wmCanvas.height / rows);
+
+    for (let r = 0; r < rows; r++) {
+      for (let cIdx = 0; cIdx < cols; cIdx++) {
+        const t = document.createElement('canvas');
+        t.width = cw;
+        t.height = ch;
+        t.getContext('2d').drawImage(
+          state.wmCanvas,
+          cIdx * cw, r * ch, cw, ch,
+          0, 0, cw, ch
+        );
+        const blob = await canvasToBlob(t, fmt, state.quality);
+        zip.file(`${base}_${r + 1}-${cIdx + 1}.${ext}`, blob);
+      }
+    }
+
+    const content = await zip.generateAsync({ type: 'blob' });
+    downloadBlob(content, `${base}_${rows}x${cols}.zip`);
+    toast(`已打包 ${rows * cols} 张`);
+  } catch (e) {
+    console.error(e);
+    toast('打包失败：' + e.message);
+  } finally {
+    hideBusy();
+  }
+}
+
+
+/* =====================================================================
+ *  9. 状态同步 & 重置
+ * ===================================================================== */
+function syncUIFromState() {
+  $('#tolRange').value = 30;
+  $('#tolVal').textContent = '30';
+
+  $('#bgColor').value = state.bgColor;
+  $('#bgColorText').value = state.bgColor.toUpperCase();
+  $('#bgTransparent').checked = state.bgTransparent;
+
+  $('#sizeSelect').value = state.sizeKey;
+  $('#customSize').classList.toggle('hidden', state.sizeKey !== 'custom');
+  $('#customW').value = state.customW;
+  $('#customH').value = state.customH;
+  document.querySelectorAll('input[name="fit"]').forEach((r) => {
+    r.checked = (r.value === state.fit);
+  });
+
+  $('#wmText').value = state.watermark.text;
+  $('#wmAngle').value = state.watermark.angle;
+  $('#wmAngleVal').textContent = state.watermark.angle + '°';
+  $('#wmOpacity').value = Math.round(state.watermark.opacity * 100);
+  $('#wmOpacityVal').textContent = Math.round(state.watermark.opacity * 100) + '%';
+  $('#wmSize').value = state.watermark.sizePct;
+  $('#wmSizeVal').textContent = state.watermark.sizePct + '%';
+  $('#wmDensity').value = state.watermark.density;
+  $('#wmDensityVal').textContent = state.watermark.density;
+  $('#wmColor').value = state.watermark.color;
+  $('#wmTile').checked = state.watermark.tile;
+
+  $('#gridRows').value = state.grid.rows;
+  $('#gridCols').value = state.grid.cols;
+
+  $('#format').value = state.format;
+  $('#quality').value = Math.round(state.quality * 100);
+  $('#qualityVal').textContent = Math.round(state.quality * 100) + '%';
+  $('#qualityWrap').classList.toggle('hidden', state.format !== 'jpeg');
+
+  refreshAllRanges();
+  syncWmControlsState();
+}
+
+function resetAll() {
+  if (!state.originalCanvas) return toast('请先上传图片');
+
+  const keepImg = state.originalImage;
+  const keepCanvas = state.originalCanvas;
+
+  Object.assign(state, JSON.parse(JSON.stringify(DEFAULT_STATE)));
+  state.originalImage = keepImg;
+  state.originalCanvas = keepCanvas;
+  state.cutoutCanvas = cloneCanvas(keepCanvas);
+
+  syncUIFromState();
+  rebuildBg();
+  toast('已重置为原图');
+}
+
+
+/* =====================================================================
+ *  10. 初始化
+ * ===================================================================== */
+function initUI() {
+
+  buildTabs();
+
+  $('#sizeSelect').innerHTML =
+    `<option value="original">原始尺寸（不裁剪）</option>` +
+    PRESETS.map((p) => `<option value="${p.key}">${p.name}</option>`).join('');
+
+  $('#swatches').innerHTML = BG_SWATCHES.map(
+    (s) => `<button title="${s.name}" data-color="${s.color}"
+      class="swatch w-full aspect-square rounded-lg border border-black/10 dark:border-white/15 active:scale-90 transition-transform"
+      style="background:${s.color}"></button>`
+  ).join('');
+
+  /* 上传 */
+  $('#fileInput').addEventListener('change', (e) => {
+    const f = e.target.files && e.target.files[0];
+    if (f) handleFile(f);
+    e.target.value = '';
+  });
+
+  const dz = $('#dropZone');
+  ['dragenter', 'dragover'].forEach((ev) =>
+    dz.addEventListener(ev, (e) => {
+      e.preventDefault();
+      dz.classList.add('bg-[#007AFF]/5');
+    })
+  );
+  ['dragleave', 'drop'].forEach((ev) =>
+    dz.addEventListener(ev, (e) => {
+      e.preventDefault();
+      dz.classList.remove('bg-[#007AFF]/5');
+    })
+  );
+  dz.addEventListener('drop', (e) => {
+    const f = e.dataTransfer.files && e.dataTransfer.files[0];
+    if (f) handleFile(f);
+  });
+
+  /* 抠图 */
+  $('#colorCutBtn').addEventListener('click', colorCutout);
+  $('#resetCutBtn').addEventListener('click', resetCutout);
+  $('#tolRange').addEventListener('input', (e) => {
+    $('#tolVal').textContent = e.target.value;
+    updateRangeFill(e.target);
+  });
+
+  /* 背景 */
+  $('#swatches').addEventListener('click', (e) => {
+    const btn = e.target.closest('.swatch');
+    if (!btn) return;
+    const color = btn.dataset.color;
+    state.bgColor = color;
+    state.bgTransparent = false;
+    $('#bgColor').value = color;
+    $('#bgColorText').value = color.toUpperCase();
+    $('#bgTransparent').checked = false;
+    rebuildBg();
+  });
+
+  $('#bgColor').addEventListener('input', (e) => {
+    state.bgColor = e.target.value;
+    state.bgTransparent = false;
+    $('#bgColorText').value = e.target.value.toUpperCase();
+    $('#bgTransparent').checked = false;
+    rebuildBg();
+  });
+
+  $('#bgColorText').addEventListener('change', (e) => {
+    let v = e.target.value.trim();
+    if (!v.startsWith('#')) v = '#' + v;
+    if (/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(v)) {
+      state.bgColor = v;
+      state.bgTransparent = false;
+      $('#bgColor').value = v.length === 4
+        ? '#' + v[1] + v[1] + v[2] + v[2] + v[3] + v[3]
+        : v;
+      $('#bgTransparent').checked = false;
+      e.target.value = v.toUpperCase();
+      rebuildBg();
+    } else {
+      e.target.value = state.bgColor.toUpperCase();
+      toast('颜色格式不正确');
+    }
+  });
+
+  $('#bgTransparent').addEventListener('change', (e) => {
+    state.bgTransparent = e.target.checked;
+    rebuildBg();
+  });
+
+  /* 尺寸 */
+  $('#sizeSelect').addEventListener('change', (e) => {
+    state.sizeKey = e.target.value;
+    state.transform = { scale: 1, offsetX: 0, offsetY: 0 };
+    $('#customSize').classList.toggle('hidden', state.sizeKey !== 'custom');
+    rebuildCrop();
+    if (state.cropCanvas) setTimeout(showHint, 200);
+  });
+
+  $('#customW').addEventListener('input', (e) => {
+    state.customW = Math.max(16, Math.min(4000, Number(e.target.value) || 16));
+    state.transform = { scale: 1, offsetX: 0, offsetY: 0 };
+    rebuildCrop();
+  });
+  $('#customH').addEventListener('input', (e) => {
+    state.customH = Math.max(16, Math.min(4000, Number(e.target.value) || 16));
+    state.transform = { scale: 1, offsetX: 0, offsetY: 0 };
+    rebuildCrop();
+  });
+
+  document.querySelectorAll('input[name="fit"]').forEach((r) => {
+    r.addEventListener('change', (e) => {
+      state.fit = e.target.value;
+      state.transform = { scale: 1, offsetX: 0, offsetY: 0 };
+      rebuildCrop();
+    });
+  });
+
+  $('#resetPosBtn').addEventListener('click', () => resetPosition());
+
+  /* 水印 */
+  $('#wmText').addEventListener('input', (e) => {
+    state.watermark.text = e.target.value;
+    rebuildWm();
+  });
+  $('#wmAngle').addEventListener('input', (e) => {
+    state.watermark.angle = Number(e.target.value);
+    $('#wmAngleVal').textContent = e.target.value + '°';
+    updateRangeFill(e.target);
+    rebuildWm();
+  });
+  $('#wmOpacity').addEventListener('input', (e) => {
+    state.watermark.opacity = Number(e.target.value) / 100;
+    $('#wmOpacityVal').textContent = e.target.value + '%';
+    updateRangeFill(e.target);
+    rebuildWm();
+  });
+  $('#wmSize').addEventListener('input', (e) => {
+    state.watermark.sizePct = Number(e.target.value);
+    $('#wmSizeVal').textContent = e.target.value + '%';
+    updateRangeFill(e.target);
+    rebuildWm();
+  });
+  $('#wmDensity').addEventListener('input', (e) => {
+    state.watermark.density = Number(e.target.value);
+    $('#wmDensityVal').textContent = e.target.value;
+    updateRangeFill(e.target);
+    rebuildWm();
+  });
+  $('#wmColor').addEventListener('input', (e) => {
+    state.watermark.color = e.target.value;
+    rebuildWm();
+  });
+  $('#wmTile').addEventListener('change', (e) => {
+    state.watermark.tile = e.target.checked;
+    rebuildWm();
+  });
+
+  /* 宫格 */
+  const syncGrid = () => {
+    const r = Math.max(1, Math.min(12, Number($('#gridRows').value) || 1));
+    const c = Math.max(1, Math.min(12, Number($('#gridCols').value) || 1));
+    state.grid.rows = r;
+    state.grid.cols = c;
+    renderPreview();
+  };
+  $('#gridRows').addEventListener('input', syncGrid);
+  $('#gridCols').addEventListener('input', syncGrid);
+
+  document.querySelectorAll('.grid-preset').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      $('#gridRows').value = btn.dataset.r;
+      $('#gridCols').value = btn.dataset.c;
+      syncGrid();
+      toast(`宫格 ${btn.dataset.r} × ${btn.dataset.c}`);
+    });
+  });
+
+  /* 导出 */
+  $('#format').addEventListener('change', (e) => {
+    state.format = e.target.value;
+    $('#qualityWrap').classList.toggle('hidden', state.format !== 'jpeg');
+  });
+  $('#quality').addEventListener('input', (e) => {
+    state.quality = Number(e.target.value) / 100;
+    $('#qualityVal').textContent = e.target.value + '%';
+    updateRangeFill(e.target);
+  });
+  $('#exportBtn').addEventListener('click', doExport);
+
+  /* 重置 */
+  $('#resetAllBtn').addEventListener('click', resetAll);
+
+  /* 拖拽 / 缩放交互 */
+  bindPreviewInteraction();
+
+  /* 窗口尺寸变化 */
+  let resizeTimer = null;
+  const onResize = () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(renderPreview, 120);
+  };
+  window.addEventListener('resize', onResize);
+  window.addEventListener('orientationchange', onResize);
+
+  if (window.ResizeObserver) {
+    const ro = new ResizeObserver(onResize);
+    ro.observe($('#previewStage'));
+  }
+
+  /* 初始化 */
+  syncUIFromState();
+  switchTab('cutout');
+}
+
+initUI();
+</script>
+
+</body>
+</html>
