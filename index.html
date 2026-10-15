@@ -1,264 +1,224 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
-<meta name="description" content="工具箱 —— 文件传输、小说阅读、共享标点等常用工具的集中入口。">
-<title>工具箱</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+  <meta name="description" content="工具箱 —— 文件传输、小说阅读、共享标点等常用工具的集中入口。">
+  <title>工具箱</title>
 
-<!-- 站点图标：内联 SVG（渐变圆角底 + 2×2 方块，呼应“工具箱”） -->
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%230A84FF'/%3E%3Cstop offset='1' stop-color='%230060DF'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='15' fill='url(%23g)'/%3E%3Crect x='14' y='14' width='16' height='16' rx='5' fill='%23FFFFFF'/%3E%3Crect x='34' y='14' width='16' height='16' rx='5' fill='%23FFFFFF' fill-opacity='.72'/%3E%3Crect x='14' y='34' width='16' height='16' rx='5' fill='%23FFFFFF' fill-opacity='.72'/%3E%3Crect x='34' y='34' width='16' height='16' rx='5' fill='%23FFFFFF' fill-opacity='.45'/%3E%3C/svg%3E">
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%230A84FF'/%3E%3Cstop offset='1' stop-color='%230060DF'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='15' fill='url(%23g)'/%3E%3Crect x='14' y='14' width='16' height='16' rx='5' fill='%23FFFFFF'/%3E%3Crect x='34' y='14' width='16' height='16' rx='5' fill='%23FFFFFF' fill-opacity='.72'/%3E%3Crect x='14' y='34' width='16' height='16' rx='5' fill='%23FFFFFF' fill-opacity='.72'/%3E%3Crect x='34' y='34' width='16' height='16' rx='5' fill='%23FFFFFF' fill-opacity='.45'/%3E%3C/svg%3E">
+  <!-- 站点图标：内联 SVG（渐变圆角底 + 2×2 方块，呼应“工具箱”） -->
+  <link rel="icon"
+    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%230A84FF'/%3E%3Cstop offset='1' stop-color='%230060DF'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='15' fill='url(%23g)'/%3E%3Crect x='14' y='14' width='16' height='16' rx='5' fill='%23FFFFFF'/%3E%3Crect x='34' y='14' width='16' height='16' rx='5' fill='%23FFFFFF' fill-opacity='.72'/%3E%3Crect x='14' y='34' width='16' height='16' rx='5' fill='%23FFFFFF' fill-opacity='.72'/%3E%3Crect x='34' y='34' width='16' height='16' rx='5' fill='%23FFFFFF' fill-opacity='.45'/%3E%3C/svg%3E">
+  <link rel="apple-touch-icon"
+    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%230A84FF'/%3E%3Cstop offset='1' stop-color='%230060DF'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='15' fill='url(%23g)'/%3E%3Crect x='14' y='14' width='16' height='16' rx='5' fill='%23FFFFFF'/%3E%3Crect x='34' y='14' width='16' height='16' rx='5' fill='%23FFFFFF' fill-opacity='.72'/%3E%3Crect x='14' y='34' width='16' height='16' rx='5' fill='%23FFFFFF' fill-opacity='.72'/%3E%3Crect x='34' y='34' width='16' height='16' rx='5' fill='%23FFFFFF' fill-opacity='.45'/%3E%3C/svg%3E">
 
-<!-- Tailwind CSS -->
-<script src="./utils/tailwindcss.js"></script>
-<script>
-  tailwind.config = {
-    darkMode: 'media',
-    theme: {
-      extend: {
-        fontFamily: {
-          sans: ['-apple-system', 'BlinkMacSystemFont', 'SF Pro SC', 'PingFang SC',
-                 'Helvetica Neue', 'Microsoft YaHei', 'system-ui', 'sans-serif'],
+  <!-- Tailwind CSS -->
+  <script src="./utils/tailwindcss.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'media',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', 'SF Pro SC', 'PingFang SC',
+              'Helvetica Neue', 'Microsoft YaHei', 'system-ui', 'sans-serif'],
+          },
         },
       },
-    },
-  };
-</script>
+    };
+  </script>
 
-<style>
-  html {
-    -webkit-text-size-adjust: 100%;
-    background: #F2F2F7;
-  }
-  @media (prefers-color-scheme: dark) {
-    html { background: #000; }
-  }
+  <!-- Vue 3 -->
+  <script src="./utils/vue.global.prod.js"></script>
 
-  body {
-    -webkit-tap-highlight-color: transparent;
-    overflow-x: hidden;
-  }
+  <style>
+    html {
+      -webkit-text-size-adjust: 100%;
+      background: #F2F2F7;
+    }
 
-  /* ── iOS 主屏幕壁纸：多层柔和光晕 ───────────────────────── */
-  .wallpaper {
-    background:
-      radial-gradient(52% 38% at 14% 10%, rgba(10, 132, 255, .26), transparent 72%),
-      radial-gradient(48% 34% at 88% 6%,  rgba(175, 82, 222, .22), transparent 72%),
-      radial-gradient(52% 38% at 86% 88%, rgba(255, 159, 10, .18), transparent 72%),
-      radial-gradient(52% 38% at 8% 92%,  rgba(48, 209, 88, .18), transparent 72%),
-      radial-gradient(120% 70% at 50% -18%, #FFFFFF, transparent 62%),
-      #F2F2F7;
-  }
-  @media (prefers-color-scheme: dark) {
+    @media (prefers-color-scheme: dark) {
+      html {
+        background: #000;
+      }
+    }
+
+    body {
+      -webkit-tap-highlight-color: transparent;
+      overflow-x: hidden;
+    }
+
+    /* ── iOS 主屏幕壁纸：多层柔和光晕 ───────────────────────── */
     .wallpaper {
       background:
-        radial-gradient(52% 38% at 14% 10%, rgba(10, 132, 255, .42), transparent 72%),
-        radial-gradient(48% 34% at 88% 6%,  rgba(191, 90, 242, .36), transparent 72%),
-        radial-gradient(52% 38% at 86% 88%, rgba(255, 159, 10, .24), transparent 72%),
-        radial-gradient(52% 38% at 8% 92%,  rgba(48, 209, 88, .22), transparent 72%),
-        #000;
+        radial-gradient(52% 38% at 14% 10%, rgba(10, 132, 255, .26), transparent 72%),
+        radial-gradient(48% 34% at 88% 6%, rgba(175, 82, 222, .22), transparent 72%),
+        radial-gradient(52% 38% at 86% 88%, rgba(255, 159, 10, .18), transparent 72%),
+        radial-gradient(52% 38% at 8% 92%, rgba(48, 209, 88, .18), transparent 72%),
+        radial-gradient(120% 70% at 50% -18%, #FFFFFF, transparent 62%),
+        #F2F2F7;
     }
-  }
 
-  /* ── 图标入场：轻微回弹，结束后不锁死 transform ─────────── */
-  @keyframes iconPop {
-    from { opacity: 0; transform: scale(.84) translateY(12px); }
-    to   { opacity: 1; transform: scale(1)   translateY(0); }
-  }
-  .icon-pop {
-    animation: iconPop .56s cubic-bezier(.22, 1, .36, 1) backwards;
-  }
-
-  /* ── 数字等宽，跳秒不抖动 ──────────────────────────────── */
-  .tnum { font-variant-numeric: tabular-nums; }
-
-  /* ── 无障碍：尊重「减弱动态效果」 ───────────────────────── */
-  @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after {
-      animation-duration: .001ms !important;
-      animation-delay: 0s !important;
-      transition-duration: .001ms !important;
+    @media (prefers-color-scheme: dark) {
+      .wallpaper {
+        background:
+          radial-gradient(52% 38% at 14% 10%, rgba(10, 132, 255, .42), transparent 72%),
+          radial-gradient(48% 34% at 88% 6%, rgba(191, 90, 242, .36), transparent 72%),
+          radial-gradient(52% 38% at 86% 88%, rgba(255, 159, 10, .24), transparent 72%),
+          radial-gradient(52% 38% at 8% 92%, rgba(48, 209, 88, .22), transparent 72%),
+          #000;
+      }
     }
-  }
-</style>
+
+    /* ── 图标入场：轻微回弹，结束后不锁死 transform ─────────── */
+    @keyframes iconPop {
+      from {
+        opacity: 0;
+        transform: scale(.84) translateY(12px);
+      }
+
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    .icon-pop {
+      animation: iconPop .56s cubic-bezier(.22, 1, .36, 1) backwards;
+    }
+
+    /* ── 数字等宽，跳秒不抖动 ──────────────────────────────── */
+    .tnum {
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ── Vue 根节点占满视口 ───────────────────────────────── */
+    #app {
+      min-height: 100vh;
+      min-height: 100dvh;
+    }
+
+    /* ── 无障碍：尊重「减弱动态效果」 ───────────────────────── */
+    @media (prefers-reduced-motion: reduce) {
+
+      *,
+      *::before,
+      *::after {
+        animation-duration: .001ms !important;
+        animation-delay: 0s !important;
+        transition-duration: .001ms !important;
+      }
+    }
+  </style>
 </head>
 
 <body class="min-h-screen font-sans text-black antialiased selection:bg-[#007AFF]/25 dark:text-white overflow-hidden">
 
-  <!-- 壁纸 -->
-  <div class="wallpaper pointer-events-none fixed inset-0 -z-10" aria-hidden="true"></div>
+  <div id="app">
 
-  <div class="mx-auto flex min-h-screen w-full max-w-[560px] flex-col px-6 pt-[calc(env(safe-area-inset-top)+52px)] sm:pt-[calc(env(safe-area-inset-top)+70px)]">
+    <!-- 壁纸 -->
+    <div class="wallpaper pointer-events-none fixed inset-0 -z-10" aria-hidden="true"></div>
 
-    <!-- ══ 今日 · 农历 · 时辰 ═══════════════════════════════ -->
-    <section class="icon-pop pb-9" style="animation-delay:.06s" aria-label="今日日期与农历">
-      <div class="overflow-hidden rounded-[24px] border border-white/60 bg-white/60 shadow-[0_18px_40px_-26px_rgba(0,0,0,.6)] backdrop-blur-2xl dark:border-white/[0.08] dark:bg-white/[0.06]">
+    <div
+      class="mx-auto flex min-h-screen w-full max-w-[560px] flex-col px-6 pt-[calc(env(safe-area-inset-top)+52px)] sm:pt-[calc(env(safe-area-inset-top)+70px)]">
 
-        <!-- 公历 + 农历 -->
-        <div class="flex items-center gap-4 px-4 py-4 sm:px-5">
-          <!-- 日号 -->
-          <div class="flex shrink-0 flex-col items-center justify-center">
-            <span id="solar-day"
-                  class="tnum text-[38px] font-semibold leading-none tracking-[-0.045em] sm:text-[42px]">--</span>
-            <span id="solar-week"
-                  class="mt-1.5 text-[11px] font-medium text-black/45 dark:text-white/45 sm:text-[11.5px]">—</span>
+      <!-- ══ 今日 · 农历 · 时辰 ═══════════════════════════════ -->
+      <section class="icon-pop pb-9" style="animation-delay:.06s" aria-label="今日日期与农历">
+        <div
+          class="overflow-hidden rounded-[24px] border border-white/60 bg-white/60 shadow-[0_18px_40px_-26px_rgba(0,0,0,.6)] backdrop-blur-2xl dark:border-white/[0.08] dark:bg-white/[0.06]">
+
+          <!-- 公历 + 农历 -->
+          <div class="flex items-center gap-4 px-4 py-4 sm:px-5">
+            <!-- 日号 -->
+            <div class="flex shrink-0 flex-col items-center justify-center">
+              <span class="tnum text-[38px] font-semibold leading-none tracking-[-0.045em] sm:text-[42px]">{{ cal.day }}</span>
+              <span class="mt-1.5 text-[11px] font-medium text-black/45 dark:text-white/45 sm:text-[11.5px]">{{ cal.week }}</span>
+            </div>
+
+            <div class="h-11 w-px shrink-0 bg-black/[0.09] dark:bg-white/[0.14]"></div>
+
+            <!-- 年月 / 农历 / 干支 -->
+            <div class="min-w-0 flex-1">
+              <p class="text-[14px] font-semibold tracking-[-0.015em]">{{ cal.ym }}</p>
+              <p class="mt-1 truncate text-[12.5px] text-black/50 dark:text-white/50">{{ cal.lunarDate }}</p>
+              <p class="mt-0.5 truncate text-[11.5px] text-black/35 dark:text-white/35">{{ cal.gzYear }}</p>
+            </div>
           </div>
 
-          <div class="h-11 w-px shrink-0 bg-black/[0.09] dark:bg-white/[0.14]"></div>
+          <div class="h-px bg-black/[0.07] dark:bg-white/[0.09]"></div>
 
-          <!-- 年月 / 农历 / 干支 -->
-          <div class="min-w-0 flex-1">
-            <p id="solar-ym" class="text-[14px] font-semibold tracking-[-0.015em]">—</p>
-            <p id="lunar-date" class="mt-1 truncate text-[12.5px] text-black/50 dark:text-white/50">—</p>
-            <p id="ganzhi-year" class="mt-0.5 truncate text-[11.5px] text-black/35 dark:text-white/35">—</p>
+          <!-- 时辰 / 实时钟 -->
+          <div class="flex items-center justify-between gap-3 px-4 py-3.5 sm:px-5">
+            <div class="flex min-w-0 items-center gap-2">
+              <span
+                class="grid h-7 w-7 shrink-0 place-items-center rounded-[9px] bg-black/[0.06] text-black/55 dark:bg-white/10 dark:text-white/70">
+                <i data-lucide="clock" class="h-3.5 w-3.5"></i>
+              </span>
+              <span class="text-[13.5px] font-semibold tracking-[-0.01em]">{{ cal.shichen }}</span>
+              <span class="tnum truncate text-[11.5px] text-black/40 dark:text-white/40">{{ cal.shichenRange }}</span>
+            </div>
+
+            <div class="shrink-0 text-right">
+              <p class="tnum text-[13.5px] font-semibold tracking-[-0.01em]">{{ cal.clock }}</p>
+              <p class="mt-0.5 text-[11px] text-black/40 dark:text-white/40">{{ cal.gzDay }}</p>
+            </div>
           </div>
+
         </div>
+      </section>
 
-        <div class="h-px bg-black/[0.07] dark:bg-white/[0.09]"></div>
+      <!-- 工具图标网格 -->
+      <main class="grid grid-cols-4 gap-x-1 gap-y-8 sm:gap-x-3">
 
-        <!-- 时辰 / 实时钟 -->
-        <div class="flex items-center justify-between gap-3 px-4 py-3.5 sm:px-5">
-          <div class="flex min-w-0 items-center gap-2">
-            <span class="grid h-7 w-7 shrink-0 place-items-center rounded-[9px] bg-black/[0.06] text-black/55 dark:bg-white/10 dark:text-white/70">
-              <i data-lucide="clock" class="h-3.5 w-3.5"></i>
-            </span>
-            <span id="shichen" class="text-[13.5px] font-semibold tracking-[-0.01em]">—</span>
-            <span id="shichen-range"
-                  class="tnum truncate text-[11.5px] text-black/40 dark:text-white/40">—</span>
-          </div>
-
-          <div class="shrink-0 text-right">
-            <p id="clock" class="tnum text-[13.5px] font-semibold tracking-[-0.01em]">--:--:--</p>
-            <p id="day-ganzhi" class="mt-0.5 text-[11px] text-black/40 dark:text-white/40">—</p>
-          </div>
-        </div>
-
-      </div>
-    </section>
-
-    <!-- 工具图标网格 -->
-    <main class="grid grid-cols-4 gap-x-1 gap-y-8 sm:gap-x-3">
-
-      <!-- 文件传输助手 -->
-      <a href="./transfer" target="_blank" rel="noopener noreferrer"
-         class="icon-pop group flex flex-col items-center gap-2.5 rounded-2xl py-1 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[#007AFF]/60 focus-visible:ring-offset-4 focus-visible:ring-offset-transparent dark:focus-visible:ring-offset-transparent"
-         style="animation-delay:.12s">
-        <span class="grid aspect-square w-full max-w-[68px] place-items-center rounded-[22.5%] bg-gradient-to-b from-[#4DA2FF] to-[#0060DF] text-white shadow-[0_12px_22px_-10px_rgba(0,96,223,.85),inset_0_1px_0_rgba(255,255,255,.45)] transition-transform duration-300 ease-out group-hover:-translate-y-1 group-active:scale-[0.88] group-active:duration-100 sm:max-w-[76px]">
-          <i data-lucide="arrow-up-down" class="h-7 w-7 sm:h-8 sm:w-8"></i>
-        </span>
-        <span class="text-center text-[11px] font-medium leading-[1.3] tracking-[-0.01em] text-black/80 transition-opacity duration-200 group-active:opacity-60 dark:text-white/85 sm:text-[12.5px]">
-          文件传输助手
-        </span>
-      </a>
-
-      <!-- 小说阅读器 -->
-      <a href="./reader" target="_blank" rel="noopener noreferrer"
-         class="icon-pop group flex flex-col items-center gap-2.5 rounded-2xl py-1 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[#5856D6]/60 focus-visible:ring-offset-4 focus-visible:ring-offset-transparent dark:focus-visible:ring-offset-transparent"
-         style="animation-delay:.18s">
-        <span class="grid aspect-square w-full max-w-[68px] place-items-center rounded-[22.5%] bg-gradient-to-b from-[#9B8AFF] to-[#5E5CE6] text-white shadow-[0_12px_22px_-10px_rgba(94,92,230,.85),inset_0_1px_0_rgba(255,255,255,.45)] transition-transform duration-300 ease-out group-hover:-translate-y-1 group-active:scale-[0.88] group-active:duration-100 sm:max-w-[76px]">
-          <i data-lucide="book-open" class="h-7 w-7 sm:h-8 sm:w-8"></i>
-        </span>
-        <span class="text-center text-[11px] font-medium leading-[1.3] tracking-[-0.01em] text-black/80 transition-opacity duration-200 group-active:opacity-60 dark:text-white/85 sm:text-[12.5px]">
-          小说阅读器
-        </span>
-      </a>
-
-      <!-- 共享标点 -->
-      <a href="./marker" target="_blank" rel="noopener noreferrer"
-         class="icon-pop group flex flex-col items-center gap-2.5 rounded-2xl py-1 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[#34C759]/60 focus-visible:ring-offset-4 focus-visible:ring-offset-transparent dark:focus-visible:ring-offset-transparent"
-         style="animation-delay:.24s">
-        <span class="grid aspect-square w-full max-w-[68px] place-items-center rounded-[22.5%] bg-gradient-to-b from-[#5BD96B] to-[#1E9E3E] text-white shadow-[0_12px_22px_-10px_rgba(30,158,62,.85),inset_0_1px_0_rgba(255,255,255,.45)] transition-transform duration-300 ease-out group-hover:-translate-y-1 group-active:scale-[0.88] group-active:duration-100 sm:max-w-[76px]">
-          <i data-lucide="map-pin" class="h-7 w-7 sm:h-8 sm:w-8"></i>
-        </span>
-        <span class="text-center text-[11px] font-medium leading-[1.3] tracking-[-0.01em] text-black/80 transition-opacity duration-200 group-active:opacity-60 dark:text-white/85 sm:text-[12.5px]">
-          共享标点
-        </span>
-      </a>
-
-      <!-- 二维码生成器 -->
-      <a href="./qrcode" target="_blank" rel="noopener noreferrer"
-         class="icon-pop group flex flex-col items-center gap-2.5 rounded-2xl py-1 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[#FF9F0A]/60 focus-visible:ring-offset-4 focus-visible:ring-offset-transparent dark:focus-visible:ring-offset-transparent"
-         style="animation-delay:.30s">
-        <span class="grid aspect-square w-full max-w-[68px] place-items-center rounded-[22.5%] bg-gradient-to-b from-[#FFC65C] to-[#F08C00] text-white shadow-[0_12px_22px_-10px_rgba(240,140,0,.85),inset_0_1px_0_rgba(255,255,255,.45)] transition-transform duration-300 ease-out group-hover:-translate-y-1 group-active:scale-[0.88] group-active:duration-100 sm:max-w-[76px]">
-          <i data-lucide="qr-code" class="h-7 w-7 sm:h-8 sm:w-8"></i>
-        </span>
-        <span class="text-center text-[11px] font-medium leading-[1.3] tracking-[-0.01em] text-black/80 transition-opacity duration-200 group-active:opacity-60 dark:text-white/85 sm:text-[12.5px]">
-          二维码生成器
-        </span>
-      </a>
-
-      <!-- 拼图游戏 -->
-      <a href="./puzzle" target="_blank" rel="noopener noreferrer"
-         class="icon-pop group flex flex-col items-center gap-2.5 rounded-2xl py-1 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[#0A84FF]/60 focus-visible:ring-offset-4 focus-visible:ring-offset-transparent dark:focus-visible:ring-offset-transparent"
-         style="animation-delay:.42s">
-        <span class="grid aspect-square w-full max-w-[68px] place-items-center rounded-[22.5%] bg-gradient-to-b from-[#6FD6FF] to-[#0A84FF] text-white shadow-[0_12px_22px_-10px_rgba(10,132,255,.85),inset_0_1px_0_rgba(255,255,255,.45)] transition-transform duration-300 ease-out group-hover:-translate-y-1 group-active:scale-[0.88] group-active:duration-100 sm:max-w-[76px]">
-          <i data-lucide="puzzle" class="h-7 w-7 sm:h-8 sm:w-8"></i>
-        </span>
-        <span class="text-center text-[11px] font-medium leading-[1.3] tracking-[-0.01em] text-black/80 transition-opacity duration-200 group-active:opacity-60 dark:text-white/85 sm:text-[12.5px]">
-          拼图游戏
-        </span>
-      </a>
-
-      <!-- 照片工坊 -->
-      <a href="./photo" target="_blank" rel="noopener noreferrer"
-         class="icon-pop group flex flex-col items-center gap-2.5 rounded-2xl py-1 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[#2DD4BF]/60 focus-visible:ring-offset-4 focus-visible:ring-offset-transparent dark:focus-visible:ring-offset-transparent"
-         style="animation-delay:.36s">
-        <span class="grid aspect-square w-full max-w-[68px] place-items-center rounded-[22.5%] bg-gradient-to-b from-[#3FD8C8] to-[#0E9A8E] text-white shadow-[0_12px_22px_-10px_rgba(14,154,142,.85),inset_0_1px_0_rgba(255,255,255,.45)] transition-transform duration-300 ease-out group-hover:-translate-y-1 group-active:scale-[0.88] group-active:duration-100 sm:max-w-[76px]">
-          <i data-lucide="images" class="h-7 w-7 sm:h-8 sm:w-8"></i>
-        </span>
-        <span class="text-center text-[11px] font-medium leading-[1.3] tracking-[-0.01em] text-black/80 transition-opacity duration-200 group-active:opacity-60 dark:text-white/85 sm:text-[12.5px]">
-          照片工坊
-        </span>
-      </a>
-
-
-      <!-- 每日提醒 -->
-      <a href="./warn" target="_blank" rel="noopener noreferrer"
-         class="icon-pop group flex flex-col items-center gap-2.5 rounded-2xl py-1 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[#FF6B95]/60 focus-visible:ring-offset-4 focus-visible:ring-offset-transparent dark:focus-visible:ring-offset-transparent"
-         style="animation-delay:.36s">
-        <span class="grid aspect-square w-full max-w-[68px] place-items-center rounded-[22.5%] bg-gradient-to-b from-[#FF6B95] to-[#E0305C] text-white shadow-[0_12px_22px_-10px_rgba(224,48,92,.85),inset_0_1px_0_rgba(255,255,255,.45)] transition-transform duration-300 ease-out group-hover:-translate-y-1 group-active:scale-[0.88] group-active:duration-100 sm:max-w-[76px]">
-          <i data-lucide="alarm-clock" class="h-7 w-7 sm:h-8 sm:w-8"></i>
-        </span>
-        <span class="text-center text-[11px] font-medium leading-[1.3] tracking-[-0.01em] text-black/80 transition-opacity duration-200 group-active:opacity-60 dark:text-white/85 sm:text-[12.5px]">
-          每日提醒
-        </span>
-      </a>
-
-      <!-- 新增工具时，复制上面任意一个 <a> 卡片，改 href / 图标 / 文案 / 渐变配色即可 -->
-
-    </main>
-
-    <!-- ══ 意见反馈入口（次级） ═══════════════════════════ -->
-    <section class="icon-pop mt-8" style="animation-delay:.34s" aria-label="意见反馈">
-      <a href="./feedback?f=工具箱" target="_blank" rel="noopener noreferrer"
-         class="group flex items-center gap-3.5 rounded-[22px] border border-white/60 bg-white/60 px-4 py-3.5 shadow-[0_18px_40px_-26px_rgba(0,0,0,.6)] backdrop-blur-2xl transition-transform duration-300 ease-out hover:-translate-y-0.5 active:scale-[.985] active:duration-100 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[#FF6B95]/50 focus-visible:ring-offset-4 focus-visible:ring-offset-transparent dark:border-white/[0.08] dark:bg-white/[0.06]">
-
-        <!-- 小尺寸渐变图标 -->
-        <span class="grid h-11 w-11 shrink-0 place-items-center rounded-[13px] bg-gradient-to-b from-[#FF6B95] to-[#E0305C] text-white shadow-[0_8px_16px_-8px_rgba(224,48,92,.8),inset_0_1px_0_rgba(255,255,255,.45)]">
-          <i data-lucide="message-square" class="h-5 w-5"></i>
-        </span>
-
-        <!-- 文案 -->
-        <span class="min-w-0 flex-1">
-          <span class="block text-[14.5px] font-semibold tracking-[-0.01em]">意见反馈</span>
-          <span class="mt-0.5 block truncate text-[12px] text-black/45 dark:text-white/45">
-            遇到问题或有建议？告诉我们
+        <a v-for="tool in tools" :key="tool.href" :href="tool.href" target="_blank" rel="noopener noreferrer"
+          class="icon-pop group flex flex-col items-center gap-2.5 rounded-2xl py-1 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-offset-4 focus-visible:ring-offset-transparent dark:focus-visible:ring-offset-transparent"
+          :class="tool.focusRing" :style="{ animationDelay: tool.delay }">
+          <span class="grid aspect-square w-full max-w-[68px] place-items-center rounded-[22.5%] text-white transition-transform duration-300 ease-out group-hover:-translate-y-1 group-active:scale-[0.88] group-active:duration-100 sm:max-w-[76px]"
+            :style="{ backgroundImage: tool.gradient, boxShadow: tool.shadow }">
+            <i :data-lucide="tool.icon" class="h-7 w-7 sm:h-8 sm:w-8"></i>
           </span>
-        </span>
+          <span
+            class="text-center text-[11px] font-medium leading-[1.3] tracking-[-0.01em] text-black/80 transition-opacity duration-200 group-active:opacity-60 dark:text-white/85 sm:text-[12.5px]">
+            {{ tool.name }}
+          </span>
+        </a>
 
-        <!-- 箭头 -->
-        <i data-lucide="chevron-right"
-           class="h-[18px] w-[18px] shrink-0 text-black/25 transition-transform duration-200 group-hover:translate-x-0.5 dark:text-white/30"></i>
-      </a>
-    </section>
+      </main>
 
-    <!-- 页脚 -->
-    <footer class="icon-pop mt-auto pb-[calc(env(safe-area-inset-bottom)+26px)] pt-10 text-center"
-            style="animation-delay:.38s">
-    </footer>
+      <!-- ══ 意见反馈入口（次级） ═══════════════════════════ -->
+      <section class="icon-pop mt-8" style="animation-delay:.34s" aria-label="意见反馈">
+        <a href="./feedback?f=工具箱" target="_blank" rel="noopener noreferrer"
+          class="group flex items-center gap-3.5 rounded-[22px] border border-white/60 bg-white/60 px-4 py-3.5 shadow-[0_18px_40px_-26px_rgba(0,0,0,.6)] backdrop-blur-2xl transition-transform duration-300 ease-out hover:-translate-y-0.5 active:scale-[.985] active:duration-100 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[#FF6B95]/50 focus-visible:ring-offset-4 focus-visible:ring-offset-transparent dark:border-white/[0.08] dark:bg-white/[0.06]">
+
+          <!-- 小尺寸渐变图标 -->
+          <span
+            class="grid h-11 w-11 shrink-0 place-items-center rounded-[13px] bg-gradient-to-b from-[#FF6B95] to-[#E0305C] text-white shadow-[0_8px_16px_-8px_rgba(224,48,92,.8),inset_0_1px_0_rgba(255,255,255,.45)]">
+            <i data-lucide="message-square" class="h-5 w-5"></i>
+          </span>
+
+          <!-- 文案 -->
+          <span class="min-w-0 flex-1">
+            <span class="block text-[14.5px] font-semibold tracking-[-0.01em]">意见反馈</span>
+            <span class="mt-0.5 block truncate text-[12px] text-black/45 dark:text-white/45">
+              遇到问题或有建议？告诉我们
+            </span>
+          </span>
+
+          <!-- 箭头 -->
+          <i data-lucide="chevron-right"
+            class="h-[18px] w-[18px] shrink-0 text-black/25 transition-transform duration-200 group-hover:translate-x-0.5 dark:text-white/30"></i>
+        </a>
+      </section>
+
+      <!-- 页脚 -->
+      <footer class="icon-pop mt-auto pb-[calc(env(safe-area-inset-bottom)+26px)] pt-10 text-center"
+        style="animation-delay:.38s">
+      </footer>
+
+    </div>
 
   </div>
 
@@ -274,25 +234,10 @@
   <script src="./utils/lunar.js"></script>
 
   <script>
-  (function () {
-    'use strict';
-
-    /* ── 0. 初始化图标 ───────────────────────────────── */
-    lucide.createIcons();
-
-    /* ── 1. 依赖校验 ─────────────────────────────────── */
-    if (typeof dayjs === 'undefined' || typeof Lunar === 'undefined') {
-      console.warn('[工具箱] 日期库加载失败，日历卡片将保持占位状态。');
-      return;
-    }
-
-    /* lunar-javascript 的 UMD 导出可能是 { Lunar, Solar, ... } 或直接是 Lunar */
-    var LunarCalendar = (Lunar && Lunar.Lunar) ? Lunar.Lunar : Lunar;
-
-    dayjs.locale('zh-cn');
-
-    /* ── 2. 常量表（仅做「地支 → 时段」静态映射）──────── */
-    var SHICHEN_RANGE = {
+    /* ============================================================
+       常量表（仅做「地支 → 时段」静态映射）
+       ============================================================ */
+    const SHICHEN_RANGE = {
       '子': '23:00–00:59',
       '丑': '01:00–02:59',
       '寅': '03:00–04:59',
@@ -307,64 +252,181 @@
       '亥': '21:00–22:59'
     };
 
-    /* ── 3. DOM 引用 ─────────────────────────────────── */
-    var el = {
-      solarDay:  document.getElementById('solar-day'),
-      solarWeek: document.getElementById('solar-week'),
-      solarYm:   document.getElementById('solar-ym'),
-      lunarDate: document.getElementById('lunar-date'),
-      gzYear:    document.getElementById('ganzhi-year'),
-      shichen:   document.getElementById('shichen'),
-      shRange:   document.getElementById('shichen-range'),
-      clock:     document.getElementById('clock'),
-      gzDay:     document.getElementById('day-ganzhi')
-    };
-
-    /* ── 4. 渲染 ─────────────────────────────────────── */
-
-    // 每天只更新一次的部分
-    var lastDayKey = '';
-    function renderDate(now, lunar) {
-      el.solarDay.textContent  = now.format('D');
-      el.solarWeek.textContent = now.format('dddd');
-      el.solarYm.textContent   = now.format('YYYY年M月');
-
-      el.lunarDate.textContent =
-        '农历' + lunar.getMonthInChinese() + '月' + lunar.getDayInChinese();
-
-      el.gzYear.textContent =
-        lunar.getYearInGanZhi() + lunar.getYearShengXiao() + '年';
-    }
-
-    // 每秒更新的部分
-    function renderTime(now, lunar) {
-      el.clock.textContent = now.format('HH:mm:ss');
-
-      var zhi = lunar.getTimeZhi();
-      el.shichen.textContent = zhi + '时';
-      el.shRange.textContent = SHICHEN_RANGE[zhi] || '';
-
-      el.gzDay.textContent =
-        lunar.getDayInGanZhi() + '日 · ' + lunar.getTimeInGanZhi() + '时';
-    }
-
-    /* ── 5. 主循环 ───────────────────────────────────── */
-    function tick() {
-      var now   = dayjs();
-      var lunar = LunarCalendar.fromDate(now.toDate());
-
-      var dayKey = now.format('YYYY-MM-DD');
-      if (dayKey !== lastDayKey) {
-        lastDayKey = dayKey;
-        renderDate(now, lunar);
+    /* ============================================================
+       工具列表（后续新增工具：往数组里追加一项即可）
+       ============================================================ */
+    const TOOLS = [
+      {
+        name: '文件传输助手',
+        href: './transfer',
+        icon: 'arrow-up-down',
+        gradient: 'linear-gradient(to bottom, #4DA2FF, #0060DF)',
+        shadow: '0 12px 22px -10px rgba(0,96,223,.85), inset 0 1px 0 rgba(255,255,255,.45)',
+        focusRing: 'focus-visible:ring-[#007AFF]/60',
+        delay: '.12s'
+      },
+      {
+        name: '小说阅读器',
+        href: './reader',
+        icon: 'book-open',
+        gradient: 'linear-gradient(to bottom, #9B8AFF, #5E5CE6)',
+        shadow: '0 12px 22px -10px rgba(94,92,230,.85), inset 0 1px 0 rgba(255,255,255,.45)',
+        focusRing: 'focus-visible:ring-[#5856D6]/60',
+        delay: '.18s'
+      },
+      {
+        name: '共享标点',
+        href: './marker',
+        icon: 'map-pin',
+        gradient: 'linear-gradient(to bottom, #5BD96B, #1E9E3E)',
+        shadow: '0 12px 22px -10px rgba(30,158,62,.85), inset 0 1px 0 rgba(255,255,255,.45)',
+        focusRing: 'focus-visible:ring-[#34C759]/60',
+        delay: '.24s'
+      },
+      {
+        name: '二维码生成器',
+        href: './qrcode',
+        icon: 'qr-code',
+        gradient: 'linear-gradient(to bottom, #FFC65C, #F08C00)',
+        shadow: '0 12px 22px -10px rgba(240,140,0,.85), inset 0 1px 0 rgba(255,255,255,.45)',
+        focusRing: 'focus-visible:ring-[#FF9F0A]/60',
+        delay: '.30s'
+      },
+      {
+        name: '拼图游戏',
+        href: './puzzle',
+        icon: 'puzzle',
+        gradient: 'linear-gradient(to bottom, #6FD6FF, #0A84FF)',
+        shadow: '0 12px 22px -10px rgba(10,132,255,.85), inset 0 1px 0 rgba(255,255,255,.45)',
+        focusRing: 'focus-visible:ring-[#0A84FF]/60',
+        delay: '.42s'
+      },
+      {
+        name: '照片工坊',
+        href: './photo',
+        icon: 'images',
+        gradient: 'linear-gradient(to bottom, #3FD8C8, #0E9A8E)',
+        shadow: '0 12px 22px -10px rgba(14,154,142,.85), inset 0 1px 0 rgba(255,255,255,.45)',
+        focusRing: 'focus-visible:ring-[#2DD4BF]/60',
+        delay: '.36s'
+      },
+      {
+        name: '每日提醒',
+        href: './warn',
+        icon: 'alarm-clock',
+        gradient: 'linear-gradient(to bottom, #FF6B95, #E0305C)',
+        shadow: '0 12px 22px -10px rgba(224,48,92,.85), inset 0 1px 0 rgba(255,255,255,.45)',
+        focusRing: 'focus-visible:ring-[#FF6B95]/60',
+        delay: '.36s'
       }
-      renderTime(now, lunar);
-    }
+    ];
 
-    tick();
-    setInterval(tick, 1000);
-  })();
+    /* ============================================================
+       Vue 应用
+       ============================================================ */
+    const { createApp, reactive, onMounted, onBeforeUnmount } = Vue;
+
+    createApp({
+      setup() {
+        /* ---------- 日历数据 ---------- */
+        const cal = reactive({
+          day: '--',
+          week: '—',
+          ym: '—',
+          lunarDate: '—',
+          gzYear: '—',
+          shichen: '—',
+          shichenRange: '—',
+          clock: '--:--:--',
+          gzDay: '—'
+        });
+
+        /* ---------- 内部状态 ---------- */
+        let LunarCalendar = null;
+        let timerId = null;
+        let lastDayKey = '';
+
+        /* ============================================================
+           初始化依赖
+           ============================================================ */
+        function initDeps() {
+          if (typeof dayjs === 'undefined' || typeof Lunar === 'undefined') {
+            console.warn('[工具箱] 日期库加载失败，日历卡片将保持占位状态。');
+            return false;
+          }
+          /* lunar-javascript 的 UMD 导出可能是 { Lunar, Solar, ... } 或直接是 Lunar */
+          LunarCalendar = (Lunar && Lunar.Lunar) ? Lunar.Lunar : Lunar;
+          dayjs.locale('zh-cn');
+          return true;
+        }
+
+        /* ============================================================
+           渲染：每天只更新一次的部分
+           ============================================================ */
+        function renderDate(now, lunar) {
+          cal.day = now.format('D');
+          cal.week = now.format('dddd');
+          cal.ym = now.format('YYYY年M月');
+          cal.lunarDate = '农历' + lunar.getMonthInChinese() + '月' + lunar.getDayInChinese();
+          cal.gzYear = lunar.getYearInGanZhi() + lunar.getYearShengXiao() + '年';
+        }
+
+        /* ============================================================
+           渲染：每秒更新的部分
+           ============================================================ */
+        function renderTime(now, lunar) {
+          cal.clock = now.format('HH:mm:ss');
+
+          const zhi = lunar.getTimeZhi();
+          cal.shichen = zhi + '时';
+          cal.shichenRange = SHICHEN_RANGE[zhi] || '';
+
+          cal.gzDay = lunar.getDayInGanZhi() + '日 · ' + lunar.getTimeInGanZhi() + '时';
+        }
+
+        /* ============================================================
+           主循环
+           ============================================================ */
+        function tick() {
+          const now = dayjs();
+          const lunar = LunarCalendar.fromDate(now.toDate());
+
+          const dayKey = now.format('YYYY-MM-DD');
+          if (dayKey !== lastDayKey) {
+            lastDayKey = dayKey;
+            renderDate(now, lunar);
+          }
+          renderTime(now, lunar);
+        }
+
+        /* ============================================================
+           生命周期
+           ============================================================ */
+        onMounted(() => {
+          /* 0. 初始化 Lucide 图标 */
+          if (typeof lucide !== 'undefined') lucide.createIcons();
+
+          /* 1. 依赖校验 */
+          if (!initDeps()) return;
+
+          /* 2. 启动日期时钟 */
+          tick();
+          timerId = setInterval(tick, 1000);
+        });
+
+        onBeforeUnmount(() => {
+          if (timerId) clearInterval(timerId);
+        });
+
+        /* ---------- 暴露给模板 ---------- */
+        return {
+          cal,
+          tools: TOOLS
+        };
+      }
+    }).mount('#app');
   </script>
 
 </body>
+
 </html>
