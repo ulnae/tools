@@ -1,1125 +1,1351 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>小说阅读器</title>
-    <style>
-        :root {
-            --bg-color: #ffffff;
-            --text-color: #333333;
-            --sidebar-bg: #f5f5f5;
-            --border-color: #e0e0e0;
-            --active-color: #4a90d9;
-            --card-bg: #ffffff;
-            --hover-bg: #f0f0f0;
-            --safe-area-top: env(safe-area-inset-top);
-            --safe-area-bottom: env(safe-area-inset-bottom);
-            --reader-font-size: 18px;
-            --reader-line-height: 1.9;
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#F5F5F7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0A0A0C" media="(prefers-color-scheme: dark)">
+<title>小说阅读器</title>
+
+<!-- ============ Favicon ============ -->
+<link rel="icon" type="image/svg+xml"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%230071E3'/%3E%3Cstop offset='1' stop-color='%235E5CE6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23g)'/%3E%3Cpath d='M32 18c-4-2.7-9-4-14-4v30c5 0 10 1.3 14 4 4-2.7 9-4 14-4V14c-5 0-10 1.3-14 4z' fill='%23fff'/%3E%3Cpath d='M32 18v30' stroke='%230071E3' stroke-width='1.5' opacity='.35'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%230071E3'/%3E%3Cstop offset='1' stop-color='%235E5CE6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23g)'/%3E%3Cpath d='M32 18c-4-2.7-9-4-14-4v30c5 0 10 1.3 14 4 4-2.7 9-4 14-4V14c-5 0-10 1.3-14 4z' fill='%23fff'/%3E%3Cpath d='M32 18v30' stroke='%230071E3' stroke-width='1.5' opacity='.35'/%3E%3C/svg%3E">
+
+<script>
+  (function () {
+    try {
+      var pref = localStorage.getItem('reader-theme');
+      var dark = pref === 'dark' ||
+        (pref !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      if (dark) document.documentElement.classList.add('dark');
+    } catch (e) {}
+  })();
+</script>
+
+<!-- Tailwind CSS -->
+<script src="./utils/tailwindcss.js"></script>
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        colors: {
+          app: {
+            bg:      'rgb(var(--c-bg) / <alpha-value>)',
+            surface: 'rgb(var(--c-surface) / <alpha-value>)',
+            elev:    'rgb(var(--c-elev) / <alpha-value>)',
+            ink:     'rgb(var(--c-ink) / <alpha-value>)',
+            muted:   'rgb(var(--c-muted) / <alpha-value>)',
+            accent:  'rgb(var(--c-accent) / <alpha-value>)',
+            sep:     'rgb(var(--c-sep) / <alpha-value>)',
+            fill:    'rgb(var(--c-fill) / <alpha-value>)'
+          }
+        },
+        fontFamily: {
+          sans: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Text"', '"PingFang SC"',
+                 '"HarmonyOS Sans SC"', '"Source Han Sans SC"', '"Noto Sans SC"',
+                 '"Microsoft YaHei"', 'sans-serif']
+        },
+        transitionTimingFunction: {
+          ios: 'cubic-bezier(0.32, 0.72, 0, 1)',
+          spring: 'cubic-bezier(0.34, 1.56, 0.64, 1)'
         }
-
-        .dark-mode {
-            --bg-color: #1a1a2e;
-            --text-color: #e0e0e0;
-            --sidebar-bg: #16213e;
-            --border-color: #2a2a4a;
-            --active-color: #7ab8ff;
-            --card-bg: #16213e;
-            --hover-bg: #2a2a4a;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        html, body {
-            height: 100%;
-            width: 100%;
-            overflow: hidden;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            transition: background-color 0.3s, color 0.3s;
-        }
-
-        .container {
-            display: flex;
-            height: 100%;
-            width: 100%;
-        }
-
-        .sidebar {
-            width: 280px;
-            background-color: var(--sidebar-bg);
-            border-right: 1px solid var(--border-color);
-            display: flex;
-            flex-direction: column;
-            transition: background-color 0.3s;
-            flex-shrink: 0;
-        }
-
-        .sidebar-header {
-            padding: 16px;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .sidebar-header h1 {
-            font-size: 18px;
-            font-weight: 600;
-        }
-
-        .upload-btn {
-            background-color: var(--active-color);
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: background-color 0.3s;
-        }
-
-        .upload-btn:hover {
-            opacity: 0.9;
-        }
-
-        #fileInput {
-            display: none;
-        }
-
-        .novel-list {
-            flex: 1;
-            overflow-y: auto;
-            padding: 8px;
-        }
-
-        .novel-item {
-            background-color: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 12px;
-            margin-bottom: 8px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-
-        .novel-item:hover {
-            background-color: var(--hover-bg);
-        }
-
-        .novel-item.active {
-            border-color: var(--active-color);
-            background-color: rgba(74, 144, 217, 0.1);
-        }
-
-        .novel-title {
-            font-weight: 600;
-            margin-bottom: 4px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .novel-info {
-            font-size: 12px;
-            color: #999;
-            display: flex;
-            justify-content: space-between;
-        }
-
-        .sidebar-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(0, 0, 0, 0.5);
-            z-index: 99;
-            display: none;
-        }
-
-        .sidebar-overlay.show {
-            display: block;
-        }
-
-        .main-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            min-width: 0;
-        }
-
-        .toolbar {
-            padding: 10px 12px;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 8px;
-            flex-shrink: 0;
-        }
-
-        .toolbar-left {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            min-width: 0;
-        }
-
-        .toolbar-right {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            flex-shrink: 0;
-        }
-
-        .menu-btn {
-            width: 36px;
-            height: 36px;
-            background: none;
-            border: none;
-            font-size: 20px;
-            cursor: pointer;
-            color: var(--text-color);
-            align-items: center;
-            justify-content: center;
-            border-radius: 4px;
-            display: none;
-        }
-
-        .menu-btn:hover {
-            background-color: var(--hover-bg);
-        }
-
-        .back-btn, .catalog-btn, .mode-btn, .font-btn {
-            background: none;
-            border: 1px solid var(--border-color);
-            color: var(--text-color);
-            padding: 6px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-            line-height: 1;
-            transition: all 0.3s;
-        }
-
-        .font-btn {
-            font-weight: 600;
-            min-width: 38px;
-            text-align: center;
-        }
-
-        .back-btn:hover, .catalog-btn:hover, .mode-btn:hover, .font-btn:hover:not(:disabled) {
-            background-color: var(--hover-bg);
-        }
-
-        .font-btn:disabled {
-            opacity: 0.35;
-            cursor: not-allowed;
-        }
-
-        .current-novel-title {
-            font-size: 16px;
-            font-weight: 600;
-            max-width: 200px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .reader-area {
-            flex: 1;
-            overflow-y: auto;
-            overflow-x: hidden;
-            padding: 20px;
-            max-width: 800px;
-            margin: 0 auto;
-            width: 100%;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        .chapter-title {
-            font-size: calc(var(--reader-font-size) * 1.33);
-            font-weight: 700;
-            text-align: center;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .chapter-content {
-            font-size: var(--reader-font-size);
-            line-height: var(--reader-line-height);
-            text-indent: 2em;
-            white-space: pre-wrap;
-        }
-
-        .chapter-content p {
-            margin-bottom: 1em;
-        }
-
-        .pagination {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px;
-            border-top: 1px solid var(--border-color);
-            flex-shrink: 0;
-        }
-
-        .page-btn {
-            background: none;
-            border: 1px solid var(--border-color);
-            color: var(--text-color);
-            padding: 8px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.3s;
-            min-width: 80px;
-        }
-
-        .page-btn:hover:not(:disabled) {
-            background-color: var(--hover-bg);
-        }
-
-        .page-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .catalog-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
-            display: none;
-            justify-content: flex-end;
-        }
-
-        .catalog-overlay.show {
-            display: flex;
-        }
-
-        .catalog-panel {
-            width: 360px;
-            max-width: 90%;
-            background-color: var(--sidebar-bg);
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            transition: background-color 0.3s;
-        }
-
-        .catalog-header {
-            padding: 16px;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .catalog-header h2 {
-            font-size: 18px;
-        }
-
-        .close-btn {
-            background: none;
-            border: none;
-            font-size: 24px;
-            cursor: pointer;
-            color: var(--text-color);
-            width: 36px;
-            height: 36px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .chapter-list {
-            flex: 1;
-            overflow-y: auto;
-            padding: 8px;
-        }
-
-        .chapter-item {
-            padding: 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 15px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            transition: background-color 0.3s;
-        }
-
-        .chapter-item:hover {
-            background-color: var(--hover-bg);
-        }
-
-        .chapter-item.current {
-            color: var(--active-color);
-            font-weight: 600;
-            background-color: rgba(74, 144, 217, 0.1);
-        }
-
-        .empty-state {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 100%;
-            color: #999;
-        }
-
-        .empty-state-icon {
-            font-size: 64px;
-            margin-bottom: 16px;
-        }
-
-        .empty-state-text {
-            font-size: 18px;
-            margin-bottom: 24px;
-        }
-
-        .toast {
-            position: fixed;
-            bottom: 80px;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: rgba(0, 0, 0, 0.7);
-            color: white;
-            padding: 12px 24px;
-            border-radius: 4px;
-            font-size: 14px;
-            opacity: 0;
-            transition: opacity 0.3s;
-            z-index: 2000;
-            max-width: 90%;
-            text-align: center;
-            pointer-events: none;
-        }
-
-        .toast.show {
-            opacity: 1;
-        }
-
-        @media (max-width: 768px) {
-            .sidebar {
-                position: fixed;
-                top: 0;
-                left: 0;
-                height: 100%;
-                z-index: 100;
-                transform: translateX(-100%);
-                transition: transform 0.3s ease;
-                width: 85%;
-                max-width: 300px;
-            }
-
-            .sidebar.open {
-                transform: translateX(0);
-            }
-
-            .menu-btn {
-                display: flex;
-            }
-
-            .sidebar-header {
-                padding-top: calc(16px + var(--safe-area-top));
-            }
-
-            .novel-list {
-                padding-bottom: calc(8px + var(--safe-area-bottom));
-            }
-
-            .toolbar {
-                padding-top: calc(10px + var(--safe-area-top));
-            }
-
-            .reader-area {
-                padding: 12px;
-            }
-
-            .chapter-title {
-                margin-bottom: 20px;
-                padding-bottom: 15px;
-            }
-
-            .catalog-panel {
-                width: 85%;
-                max-width: 300px;
-            }
-
-            .catalog-header {
-                padding-top: calc(16px + var(--safe-area-top));
-            }
-
-            .chapter-list {
-                padding-bottom: calc(8px + var(--safe-area-bottom));
-            }
-
-            .current-novel-title {
-                max-width: 150px;
-                font-size: 14px;
-            }
-
-            .toolbar-left {
-                gap: 8px;
-            }
-
-            .back-btn, .catalog-btn, .mode-btn {
-                padding: 5px 10px;
-                font-size: 12px;
-            }
-
-            .font-btn {
-                padding: 5px 8px;
-                font-size: 12px;
-                min-width: 32px;
-            }
-
-            .toolbar-right {
-                gap: 4px;
-            }
-
-            .pagination {
-                padding: 10px;
-            }
-
-            .page-btn {
-                padding: 6px 14px;
-                font-size: 13px;
-                min-width: 70px;
-            }
-
-            .novel-item {
-                padding: 10px;
-            }
-
-            .novel-title {
-                font-size: 15px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .reader-area {
-                padding: 10px;
-            }
-
-            .current-novel-title {
-                max-width: 110px;
-            }
-        }
-    </style>
+      }
+    }
+  };
+</script>
+
+<!-- Vue 3 & idb -->
+<script src="./utils/vue.global.prod.js"></script>
+<script src="./utils/idb.js"></script>
+
+<style>
+  :root {
+    --c-bg:      245 245 247;
+    --c-surface: 255 255 255;
+    --c-elev:    255 255 255;
+    --c-ink:     29 29 31;
+    --c-muted:   134 134 139;
+    --c-accent:  0 113 227;
+    --c-sep:     210 210 215;
+    --c-fill:    120 120 128;
+
+    --reader-font-size: 18px;
+    --reader-line-height: 1.9;
+  }
+  html.dark {
+    --c-bg:      10 10 12;
+    --c-surface: 28 28 30;
+    --c-elev:    44 44 46;
+    --c-ink:     245 245 247;
+    --c-muted:   152 152 157;
+    --c-accent:  10 132 255;
+    --c-sep:     56 56 58;
+    --c-fill:    152 152 157;
+  }
+
+  * { -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+  body {
+    background-color: rgb(var(--c-bg));
+    color: rgb(var(--c-ink));
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC",
+                 "HarmonyOS Sans SC", "Source Han Sans SC", "Noto Sans SC",
+                 "Microsoft YaHei", sans-serif;
+    font-feature-settings: "kern" 1, "liga" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    transition: background-color .4s ease, color .4s ease;
+  }
+
+  [v-cloak] { display: none !important; }
+
+  /* ---------- 阅读区排版 ---------- */
+  .reader-scroll { -webkit-overflow-scrolling: touch; }
+
+  .chapter-title {
+    font-size: calc(var(--reader-font-size) * 1.26);
+    line-height: 1.42;
+    font-weight: 700;
+    letter-spacing: -0.008em;
+  }
+
+  .chapter-body {
+    font-size: var(--reader-font-size);
+    line-height: var(--reader-line-height);
+    letter-spacing: 0.015em;
+    color: rgb(var(--c-ink) / .9);
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+  .chapter-body p {
+    text-indent: 2em;
+    margin-bottom: .85em;
+  }
+  .chapter-body p:last-child { margin-bottom: 0; }
+
+  /* ---------- 滚动条 ---------- */
+  .reader-scroll::-webkit-scrollbar,
+  .scroll-y::-webkit-scrollbar { width: 6px; height: 6px; }
+  .reader-scroll::-webkit-scrollbar-thumb,
+  .scroll-y::-webkit-scrollbar-thumb {
+    background: rgb(var(--c-fill) / .22);
+    border-radius: 8px;
+  }
+  .reader-scroll::-webkit-scrollbar-thumb:hover,
+  .scroll-y::-webkit-scrollbar-thumb:hover { background: rgb(var(--c-fill) / .38); }
+  .reader-scroll::-webkit-scrollbar-track,
+  .scroll-y::-webkit-scrollbar-track { background: transparent; }
+
+  /* ---------- 动效 ---------- */
+  @keyframes slideInRight {
+    from { transform: translateX(100%); }
+    to   { transform: translateX(0); }
+  }
+  .animate-slide-in { animation: slideInRight .36s cubic-bezier(.32,.72,0,1); }
+
+  @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+  .animate-fade-in { animation: fadeIn .22s ease; }
+
+  @keyframes popIn {
+    0%   { opacity: 0; transform: scale(.94) translateY(-4px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  .animate-pop-in { animation: popIn .24s cubic-bezier(.34,1.56,.64,1); }
+
+  .toast-enter-active, .toast-leave-active {
+    transition: opacity .25s ease, transform .3s cubic-bezier(.32,.72,0,1);
+  }
+  .toast-enter-from, .toast-leave-to {
+    opacity: 0;
+    transform: translate(-50%, 16px) scale(.96);
+  }
+
+  /* ---------- Range ---------- */
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+  }
+  input[type="range"]::-webkit-slider-runnable-track {
+    height: 4px; border-radius: 2px;
+    background: rgb(var(--c-fill) / .22);
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 22px; height: 22px; margin-top: -9px;
+    border-radius: 50%; background: #fff; border: none; cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0,0,0,.18), 0 2px 8px rgba(0,0,0,.12);
+  }
+  input[type="range"]::-moz-range-track {
+    height: 4px; border-radius: 2px;
+    background: rgb(var(--c-fill) / .22);
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 22px; height: 22px; border: none; border-radius: 50%;
+    background: #fff; cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0,0,0,.18), 0 2px 8px rgba(0,0,0,.12);
+  }
+
+  .safe-top    { padding-top: env(safe-area-inset-top, 0px); }
+  .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
+
+  /* ---------- 书籍封面 ---------- */
+  .book-cover {
+    position: relative;
+    overflow: hidden;
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.35),
+      0 1px 2px rgba(0,0,0,.06),
+      0 4px 12px rgba(0,0,0,.10);
+  }
+  .book-cover::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(155deg, rgba(255,255,255,.28) 0%, transparent 45%, rgba(0,0,0,.14) 100%);
+    pointer-events: none;
+  }
+  .book-cover::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 6px; bottom: 0; width: 1px;
+    background: linear-gradient(to right, rgba(0,0,0,.16), rgba(0,0,0,0));
+    z-index: 2;
+  }
+
+  /* ---------- 毛玻璃 & 交互 ---------- */
+  .glass-card {
+    background: rgb(var(--c-surface) / .78);
+    backdrop-filter: saturate(180%) blur(22px);
+    -webkit-backdrop-filter: saturate(180%) blur(22px);
+  }
+
+  .press { transition: transform .15s cubic-bezier(.34,1.56,.64,1), background-color .15s ease, border-color .15s ease, color .15s ease; }
+  .press:active { transform: scale(.96); }
+
+  .chapter-row { transition: background-color .15s ease, color .15s ease, transform .12s ease; }
+  .chapter-row:active { transform: scale(.985); }
+
+  .progress-bar {
+    height: 2px;
+    background: linear-gradient(90deg, rgb(var(--c-accent)) 0%, rgb(var(--c-accent) / .55) 100%);
+    border-radius: 2px;
+    transition: width .35s cubic-bezier(.32,.72,0,1);
+  }
+</style>
 </head>
+
 <body>
-    <div class="container">
-        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+<div id="app" v-cloak class="flex h-full w-full overflow-hidden">
 
-        <aside class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <h1>我的书架</h1>
-                <label class="upload-btn">
-                    导入
-                    <input type="file" id="fileInput" accept=".txt" multiple>
-                </label>
-            </div>
-            <div class="novel-list" id="novelList"></div>
-        </aside>
+  <!-- ============ 移动端遮罩 ============ -->
+  <transition name="toast">
+    <div
+      v-if="sidebarOpen"
+      class="fixed inset-0 z-30 bg-black/40 backdrop-blur-[3px] md:hidden"
+      @click="sidebarOpen = false"
+    ></div>
+  </transition>
 
-        <main class="main-content">
-            <div class="toolbar">
-                <div class="toolbar-left">
-                    <button class="menu-btn" id="menuBtn">☰</button>
-                    <button class="back-btn" id="backBtn" style="display: none;">←</button>
-                    <span class="current-novel-title" id="currentNovelTitle"></span>
-                </div>
-                <div class="toolbar-right">
-                    <button class="font-btn" id="fontDecrease" title="减小字号">A-</button>
-                    <button class="font-btn" id="fontIncrease" title="增大字号">A+</button>
-                    <button class="catalog-btn" id="catalogBtn" style="display: none;">目录</button>
-                    <button class="mode-btn" id="modeBtn">🌙</button>
-                </div>
-            </div>
-
-            <div class="reader-area" id="readerArea">
-                <div class="empty-state">
-                    <div class="empty-state-icon">📚</div>
-                    <div class="empty-state-text">暂无小说</div>
-                    <button class="upload-btn" onclick="document.getElementById('fileInput').click()">点击导入小说</button>
-                </div>
-            </div>
-
-            <div class="pagination" id="pagination" style="display: none;">
-                <button class="page-btn" id="prevBtn" disabled>上一章</button>
-                <span id="chapterIndicator"></span>
-                <button class="page-btn" id="nextBtn" disabled>下一章</button>
-            </div>
-        </main>
-    </div>
-
-    <div class="catalog-overlay" id="catalogOverlay">
-        <div class="catalog-panel">
-            <div class="catalog-header">
-                <h2>目录</h2>
-                <button class="close-btn" id="closeCatalogBtn">×</button>
-            </div>
-            <div class="chapter-list" id="chapterList"></div>
+  <!-- ============ 侧边栏：书架 ============ -->
+  <aside
+    class="fixed inset-y-0 left-0 z-40 flex w-[300px] shrink-0 flex-col
+           border-r border-app-sep/30 bg-app-bg
+           transition-transform duration-300 ease-ios
+           md:static md:translate-x-0"
+    :class="sidebarOpen ? 'translate-x-0 shadow-[0_0_40px_rgba(0,0,0,.22)]' : '-translate-x-full md:translate-x-0'"
+  >
+    <div class="safe-top px-5 pb-4 pt-5">
+      <div class="flex items-start justify-between">
+        <div>
+          <h1 class="text-[26px] font-bold leading-none tracking-tight">书架</h1>
+          <p class="mt-1.5 text-[12px] font-medium text-app-muted">
+            {{ novels.length ? novels.length + ' 本藏书' : '暂无藏书' }}
+          </p>
         </div>
+        <label
+          class="press flex cursor-pointer items-center gap-1.5 rounded-full bg-app-accent px-4 py-2
+                 text-[13px] font-semibold text-white
+                 shadow-lg shadow-app-accent/25"
+        >
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 5v14M5 12h14"/>
+          </svg>
+          导入
+          <input type="file" accept=".txt,text/plain" multiple class="hidden" @change="onFileInput">
+        </label>
+      </div>
     </div>
 
-    <div class="toast" id="toast"></div>
+    <div class="scroll-y safe-bottom flex-1 overflow-y-auto overscroll-contain px-3 pb-6">
+      <!-- 空状态 -->
+      <div v-if="!novels.length"
+           class="flex flex-col items-center justify-center gap-4 px-4 py-20 text-center">
+        <div class="flex h-20 w-20 items-center justify-center rounded-[24px]
+                    bg-gradient-to-br from-app-accent/15 to-app-accent/5">
+          <svg class="h-9 w-9 text-app-accent/75" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 19.5A2.5 2.5 0 016.5 17H20"/>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/>
+            <path d="M9 7h7M9 11h5"/>
+          </svg>
+        </div>
+        <div>
+          <p class="text-[15px] font-semibold">书架空空如也</p>
+          <p class="mt-1 text-[13px] leading-relaxed text-app-muted">
+            点击上方「导入」添加 TXT 小说
+          </p>
+        </div>
+      </div>
 
-    <script>
-        const DB_NAME = 'NovelReaderDB';
-        const DB_VERSION = 1;
+      <!-- 书目 -->
+      <ul v-else class="space-y-1">
+        <li v-for="(n, idx) in novels" :key="n.id">
+          <div
+            class="group relative flex cursor-pointer items-center gap-3 rounded-[14px] p-2.5 press"
+            :class="isActiveNovel(n) ? 'bg-app-accent/12' : 'hover:bg-app-fill/8'"
+            @click="selectNovel(n)"
+          >
+            <div
+              class="book-cover flex h-[52px] w-[40px] shrink-0 items-center justify-center
+                     rounded-[8px] text-[18px] font-bold text-white"
+              :style="coverStyle(n, idx)"
+            >
+              <span class="relative z-[3] drop-shadow-sm">{{ n.title.slice(0, 1) }}</span>
+            </div>
 
-        const stores = {
-            NOVELS: 'novels',
-            CHAPTERS: 'chapters',
-            PROGRESS: 'progress'
-        };
+            <div class="min-w-0 flex-1">
+              <p class="truncate text-[15px] font-semibold leading-snug"
+                 :class="isActiveNovel(n) ? 'text-app-accent' : ''">{{ n.title }}</p>
+              <p class="mt-1 flex items-center gap-1.5 truncate text-[12px] text-app-muted">
+                <span>{{ n.totalChapters }} 章</span>
+                <span class="h-[3px] w-[3px] rounded-full bg-app-muted/50"></span>
+                <span>{{ formatDate(n.createdAt) }}</span>
+              </p>
+            </div>
 
-        const FONT_MIN = 12;
-        const FONT_MAX = 36;
-        const FONT_STEP = 2;
+            <button
+              class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-app-muted
+                     opacity-0 transition hover:bg-red-500/12 hover:text-red-500
+                     group-hover:opacity-100 focus:opacity-100 active:scale-90 max-md:opacity-70"
+              title="删除"
+              aria-label="删除"
+              @click.stop="deleteNovel(n)"
+            >
+              <svg class="h-[15px] w-[15px]" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="2.2" stroke-linecap="round">
+                <path d="M6 6l12 12M18 6L6 18"/>
+              </svg>
+            </button>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </aside>
 
-        let db = null;
-        let currentNovel = null;
-        let currentChapter = null;
-        let chapters = [];
-        let isDarkMode = false;
-        let readerFontSize = 18;
-        let touchStartX = 0;
-        let touchStartY = 0;
-        let toastTimer = null;
+  <!-- ============ 主内容区 ============ -->
+  <main class="relative flex min-w-0 flex-1 flex-col bg-app-surface">
 
-        function openDB() {
-            return new Promise((resolve, reject) => {
-                const request = indexedDB.open(DB_NAME, DB_VERSION);
+    <!-- 顶部工具栏 -->
+    <header class="safe-top z-20 shrink-0 border-b border-app-sep/25 glass-card">
+      <div class="flex h-[54px] items-center gap-1 px-3">
+        <div class="flex min-w-0 flex-1 items-center gap-1">
+          <button
+            class="press flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px]
+                   transition hover:bg-app-fill/12 md:hidden"
+            aria-label="打开书架"
+            @click="sidebarOpen = true"
+          >
+            <svg class="h-[19px] w-[19px]" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round">
+              <path d="M3.5 7h17M3.5 12h17M3.5 17h17"/>
+            </svg>
+          </button>
 
-                request.onerror = () => reject(request.error);
+          <button
+            v-if="currentNovel"
+            class="press flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px]
+                   transition hover:bg-app-fill/12"
+            aria-label="返回书架"
+            @click="goHome"
+          >
+            <svg class="h-[19px] w-[19px]" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M15 18l-6-6 6-6"/>
+            </svg>
+          </button>
 
-                request.onsuccess = () => {
-                    db = request.result;
-                    resolve(db);
-                };
+          <h2 class="ml-1 min-w-0 flex-1 truncate text-[16px] font-semibold leading-tight">
+            {{ currentNovel ? currentNovel.title : '阅读器' }}
+          </h2>
+        </div>
 
-                request.onupgradeneeded = (event) => {
-                    const database = event.target.result;
+        <div class="flex shrink-0 items-center gap-0.5">
+          <button
+            class="press flex h-9 w-9 items-center justify-center rounded-[10px] text-[16px]
+                   font-semibold transition hover:bg-app-fill/12"
+            :class="showFontPanel ? 'bg-app-accent/12 text-app-accent' : ''"
+            title="调节字号"
+            @click.stop="showFontPanel = !showFontPanel"
+          >
+            <span class="leading-none">Aa</span>
+          </button>
 
-                    if (!database.objectStoreNames.contains(stores.NOVELS)) {
-                        const novelStore = database.createObjectStore(stores.NOVELS, { keyPath: 'id' });
-                        novelStore.createIndex('title', 'title', { unique: false });
-                        novelStore.createIndex('createdAt', 'createdAt', { unique: false });
-                    }
+          <button
+            v-if="currentNovel"
+            class="press flex h-9 items-center justify-center rounded-[10px] px-2.5
+                   text-[14px] font-medium transition hover:bg-app-fill/12 sm:px-3"
+            title="目录"
+            @click="openCatalog"
+          >
+            <svg class="h-[16px] w-[16px] sm:mr-1.5" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 6h16M4 12h16M4 18h10"/>
+            </svg>
+            <span class="hidden sm:inline">目录</span>
+          </button>
 
-                    if (!database.objectStoreNames.contains(stores.CHAPTERS)) {
-                        const chapterStore = database.createObjectStore(stores.CHAPTERS, { keyPath: 'id' });
-                        chapterStore.createIndex('novelId', 'novelId', { unique: false });
-                        chapterStore.createIndex('order', 'order', { unique: false });
-                    }
+          <button
+            class="press flex h-9 w-9 items-center justify-center rounded-[10px] transition
+                   hover:bg-app-fill/12"
+            :title="themeTitle"
+            aria-label="切换主题"
+            @click="toggleTheme"
+          >
+            <svg v-if="isDark" class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="4"/>
+              <path d="M12 3v2M12 19v2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M3 12h2M19 12h2M5.6 18.4L7 17M17 7l1.4-1.4"/>
+            </svg>
+            <svg v-else class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20.5 14.5A8.5 8.5 0 019.5 3.5a8.5 8.5 0 1011 11z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
 
-                    if (!database.objectStoreNames.contains(stores.PROGRESS)) {
-                        database.createObjectStore(stores.PROGRESS, { keyPath: 'novelId' });
-                    }
-                };
-            });
+      <!-- 顶部阅读进度条 -->
+      <div v-if="currentNovel && chapters.length > 1" class="px-3 pb-1.5">
+        <div class="h-[2px] w-full overflow-hidden rounded-full bg-app-fill/10">
+          <div class="progress-bar" :style="{ width: ((currentIndex + 1) / chapters.length * 100) + '%' }"></div>
+        </div>
+      </div>
+    </header>
+
+    <!-- 字号浮层 -->
+    <div v-if="showFontPanel" class="fixed inset-0 z-30" @click="showFontPanel = false"></div>
+    <div
+      v-if="showFontPanel"
+      class="absolute right-3 z-40 w-[262px] animate-pop-in rounded-[18px]
+             border border-app-sep/40 bg-app-elev p-4 shadow-[0_12px_40px_rgba(0,0,0,.16)]"
+      style="top: calc(env(safe-area-inset-top, 0px) + 62px);"
+      @click.stop
+    >
+      <div class="mb-3.5 flex items-center justify-between">
+        <p class="text-[12px] font-semibold uppercase tracking-wider text-app-muted">阅读字号</p>
+        <span class="rounded-full bg-app-accent/12 px-2.5 py-0.5 text-[11px] font-bold text-app-accent tabular-nums">
+          {{ fontSize }}px
+        </span>
+      </div>
+
+      <div class="mb-3.5 flex items-center justify-between gap-3">
+        <button
+          class="press flex h-11 w-11 items-center justify-center rounded-[13px] bg-app-fill/10
+                 text-[13px] font-bold transition hover:bg-app-fill/16
+                 disabled:opacity-25 disabled:active:scale-100"
+          :disabled="fontSize <= FONT_MIN"
+          @click="changeFontSize(-FONT_STEP)"
+        >A</button>
+
+        <input
+          type="range"
+          class="h-6 flex-1 cursor-pointer"
+          :min="FONT_MIN" :max="FONT_MAX" :step="1"
+          :value="fontSize"
+          @input="setFontSize(Number($event.target.value))"
+        >
+
+        <button
+          class="press flex h-11 w-11 items-center justify-center rounded-[13px] bg-app-fill/10
+                 text-[19px] font-bold transition hover:bg-app-fill/16
+                 disabled:opacity-25 disabled:active:scale-100"
+          :disabled="fontSize >= FONT_MAX"
+          @click="changeFontSize(FONT_STEP)"
+        >A</button>
+      </div>
+
+      <div class="flex justify-between text-[10px] font-medium text-app-muted">
+        <span>小</span><span>默认</span><span>大</span>
+      </div>
+    </div>
+
+    <!-- 阅读区 -->
+    <div
+      ref="readerEl"
+      class="reader-scroll relative flex-1 overflow-y-auto overscroll-contain"
+      @scroll.passive="onScroll"
+      @touchstart.passive="onTouchStart"
+      @touchend.passive="onTouchEnd"
+    >
+      <article
+        v-if="currentChapter"
+        class="mx-auto w-full max-w-[42rem] px-6 pb-24 pt-8 md:px-12 md:pt-12"
+      >
+        <!-- 章节标题（已移除顶部阅读进度） -->
+        <div class="mb-9 text-center">
+          <h1 class="chapter-title text-app-ink">
+            {{ cleanChapterTitle(currentChapter.title) }}
+          </h1>
+          <div class="mx-auto mt-5 flex items-center justify-center gap-2">
+            <span class="h-px w-8 bg-gradient-to-r from-transparent to-app-sep"></span>
+            <span class="h-[3px] w-[3px] rounded-full bg-app-accent/45"></span>
+            <span class="h-px w-8 bg-gradient-to-l from-transparent to-app-sep"></span>
+          </div>
+        </div>
+
+        <!-- 正文 -->
+        <div class="chapter-body">
+          <p v-for="(p, i) in paragraphs" :key="i">{{ p }}</p>
+        </div>
+
+        <!-- 章节末尾（已移除“继续阅读下一章”按钮） -->
+        <div class="mt-16 flex items-center justify-center gap-2 text-app-muted/45">
+          <span class="h-px w-10 bg-current"></span>
+          <span class="text-[11px] font-medium tracking-[0.2em]">本章完</span>
+          <span class="h-px w-10 bg-current"></span>
+        </div>
+      </article>
+
+      <!-- 空状态 -->
+      <div v-else class="flex h-full flex-col items-center justify-center gap-6 px-8 text-center">
+        <div class="relative">
+          <div class="absolute inset-0 -z-10 rounded-[36px] bg-gradient-to-br from-app-accent/25 to-indigo-500/15 blur-2xl"></div>
+          <div class="flex h-28 w-28 items-center justify-center rounded-[32px]
+                      bg-gradient-to-br from-app-accent to-indigo-500
+                      shadow-[0_16px_48px_rgba(0,113,227,.32)]">
+            <svg class="h-14 w-14 text-white" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 19.5A2.5 2.5 0 016.5 17H20"/>
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/>
+              <path d="M9 7h7M9 11h5"/>
+            </svg>
+          </div>
+        </div>
+
+        <div class="max-w-[280px]">
+          <h2 class="text-[20px] font-bold tracking-tight">
+            {{ novels.length ? '选择一本开始阅读' : '开启你的阅读之旅' }}
+          </h2>
+          <p class="mt-2 text-[14px] leading-relaxed text-app-muted">
+            {{ novels.length
+              ? '从左侧书架挑选一本小说，沉浸在文字的海洋里'
+              : '导入本地 TXT 小说，随时随地享受阅读' }}
+          </p>
+        </div>
+
+        <button
+          class="press mt-1 rounded-full bg-app-accent px-7 py-3 text-[15px] font-semibold
+                 text-white shadow-xl shadow-app-accent/30 transition"
+          @click="triggerImport"
+        >
+          <span class="flex items-center gap-2">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 5v14M5 12h14"/>
+            </svg>
+            导入小说
+          </span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 底部翻页栏 -->
+    <footer
+      v-if="currentNovel && chapters.length"
+      class="safe-bottom z-20 shrink-0 border-t border-app-sep/25 glass-card"
+    >
+      <div class="mx-auto flex w-full max-w-xl items-center justify-between gap-3 px-4 py-2.5 md:px-6 md:py-3">
+        <button
+          class="press flex h-9 flex-1 items-center justify-center gap-1.5 rounded-full
+                 border border-app-sep/50 bg-app-surface px-4 text-[13px] font-medium
+                 transition hover:border-app-accent/40 hover:bg-app-accent/8 hover:text-app-accent
+                 disabled:opacity-30 disabled:hover:border-app-sep/50
+                 disabled:hover:bg-app-surface disabled:hover:text-app-ink
+                 disabled:active:scale-100
+                 md:h-9 md:flex-none md:min-w-[112px] md:px-5"
+          :disabled="currentIndex === 0"
+          @click="goToChapter(currentIndex - 1)"
+        >
+          <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M15 18l-6-6 6-6"/>
+          </svg>
+          上一章
+        </button>
+
+        <div class="flex shrink-0 items-baseline gap-1 px-2">
+          <span class="text-[15px] font-bold tabular-nums leading-none">{{ currentIndex + 1 }}</span>
+          <span class="text-[11px] font-medium text-app-muted leading-none">/ {{ chapters.length }}</span>
+        </div>
+
+        <button
+          class="press flex h-9 flex-1 items-center justify-center gap-1.5 rounded-full
+                 bg-app-accent px-4 text-[13px] font-semibold text-white
+                 shadow-md shadow-app-accent/25 transition
+                 disabled:bg-app-fill/15 disabled:text-app-muted disabled:shadow-none
+                 disabled:active:scale-100
+                 md:h-9 md:flex-none md:min-w-[112px] md:px-5"
+          :disabled="currentIndex === chapters.length - 1"
+          @click="goToChapter(currentIndex + 1)"
+        >
+          下一章
+          <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 18l6-6-6-6"/>
+          </svg>
+        </button>
+      </div>
+    </footer>
+  </main>
+
+  <!-- ============ 目录抽屉 ============ -->
+  <transition name="toast">
+    <div v-if="catalogOpen" class="fixed inset-0 z-50 flex justify-end">
+      <div class="absolute inset-0 bg-black/40 backdrop-blur-[3px]" @click="closeCatalog"></div>
+
+      <div
+        class="relative flex h-full w-[340px] max-w-[88vw] animate-slide-in flex-col
+               border-l border-app-sep/30 bg-app-elev shadow-[-8px_0_40px_rgba(0,0,0,.14)]"
+      >
+        <div class="safe-top flex items-center justify-between gap-3 border-b border-app-sep/25 px-5 pb-3.5 pt-5">
+          <div>
+            <h2 class="text-[20px] font-bold leading-none tracking-tight">目录</h2>
+            <p class="mt-1.5 text-[12px] font-medium text-app-muted">共 {{ chapters.length }} 章</p>
+          </div>
+          <button
+            class="press flex h-8 w-8 items-center justify-center rounded-full text-app-muted
+                   transition hover:bg-app-fill/12"
+            aria-label="关闭目录"
+            @click="closeCatalog"
+          >
+            <svg class="h-[17px] w-[17px]" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2.2" stroke-linecap="round">
+              <path d="M6 6l12 12M18 6L6 18"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="px-4 pb-2 pt-3">
+          <div class="relative">
+            <svg class="pointer-events-none absolute left-3 top-1/2 h-[15px] w-[15px] -translate-y-1/2 text-app-muted"
+                 viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round">
+              <circle cx="11" cy="11" r="7"/>
+              <path d="M20 20l-3.2-3.2"/>
+            </svg>
+            <input
+              v-model="searchQuery"
+              type="search"
+              placeholder="搜索章节标题"
+              class="h-9 w-full rounded-[10px] bg-app-fill/12 pl-9 pr-3 text-[14px] outline-none
+                     transition placeholder:text-app-muted focus:bg-app-fill/16
+                     focus:ring-2 focus:ring-app-accent/20"
+            >
+          </div>
+        </div>
+
+        <div class="scroll-y safe-bottom flex-1 overflow-y-auto overscroll-contain px-2 pb-4 pt-1">
+          <p v-if="!filteredChapters.length" class="px-3 py-12 text-center text-[13px] text-app-muted">
+            没有找到匹配的章节
+          </p>
+
+          <button
+            v-for="item in filteredChapters"
+            :key="item.chapter.id"
+            class="chapter-row flex w-full items-center gap-3 rounded-[10px] px-3 py-2.5 text-left"
+            :class="item.index === currentIndex
+              ? 'chapter-current bg-app-accent/12 text-app-accent'
+              : 'hover:bg-app-fill/10'"
+            @click="selectChapter(item.index)"
+          >
+            <span
+              class="flex h-6 min-w-[26px] shrink-0 items-center justify-center rounded-md
+                     px-1.5 text-[11px] font-bold tabular-nums"
+              :class="item.index === currentIndex
+                ? 'bg-app-accent text-white'
+                : 'bg-app-fill/12 text-app-muted'"
+            >{{ item.index + 1 }}</span>
+
+            <span class="min-w-0 flex-1 truncate text-[14px]"
+                  :class="item.index === currentIndex ? 'font-semibold' : ''">
+              {{ cleanChapterTitle(item.chapter.title) }}
+            </span>
+
+            <svg v-if="item.index === currentIndex" class="h-4 w-4 shrink-0" viewBox="0 0 24 24"
+                 fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 6L9 17l-5-5"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </transition>
+
+  <!-- ============ 导入遮罩 ============ -->
+  <transition name="toast">
+    <div
+      v-if="importState.active"
+      class="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 backdrop-blur-md"
+    >
+      <div class="w-[280px] animate-pop-in rounded-[22px] bg-app-elev px-7 py-8 text-center
+                  shadow-[0_20px_60px_rgba(0,0,0,.28)]">
+        <div class="relative mx-auto mb-5 h-12 w-12">
+          <div class="absolute inset-0 rounded-full border-[3px] border-app-fill/15"></div>
+          <div class="absolute inset-0 animate-spin rounded-full border-[3px] border-transparent
+                      border-t-app-accent"></div>
+        </div>
+        <p class="text-[15px] font-semibold">正在导入</p>
+        <p class="mt-1.5 truncate text-[12px] text-app-muted">{{ importState.text }}</p>
+      </div>
+    </div>
+  </transition>
+
+  <!-- ============ Toast ============ -->
+  <transition name="toast">
+    <div
+      v-if="toast.show"
+      class="pointer-events-none fixed left-1/2 z-[80] max-w-[85vw] -translate-x-1/2
+             rounded-full bg-black/85 px-5 py-2.5 text-[13px] font-semibold text-white
+             shadow-xl backdrop-blur-xl dark:bg-white/95 dark:text-black"
+      style="bottom: calc(env(safe-area-inset-bottom, 0px) + 90px);"
+    >{{ toast.text }}</div>
+  </transition>
+
+  <input
+    ref="hiddenInput"
+    type="file"
+    accept=".txt,text/plain"
+    multiple
+    class="hidden"
+    @change="onFileInput"
+  >
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  const { createApp, ref, computed, watch, nextTick, onMounted, onBeforeUnmount } = Vue;
+
+  const DB_NAME = 'NovelReaderDB';
+  const DB_VERSION = 1;
+  const FONT_MIN = 12;
+  const FONT_MAX = 36;
+  const FONT_STEP = 2;
+
+  const COVER_GRADIENTS = [
+    ['#FF6B8A', '#D64570'],
+    ['#5B8DEF', '#3A5FCB'],
+    ['#8B7CF6', '#5E48C9'],
+    ['#34C7A8', '#1A8A72'],
+    ['#FF9F43', '#E07B26'],
+    ['#F06292', '#B23A6D'],
+    ['#4DD0E1', '#2A8FA0'],
+    ['#7C6BE8', '#4F3EB8'],
+    ['#5C7CFA', '#3451C4'],
+    ['#48C774', '#2A9450']
+  ];
+
+  function hashString(str) {
+    let h = 0;
+    for (let i = 0; i < str.length; i++) {
+      h = ((h << 5) - h + str.charCodeAt(i)) | 0;
+    }
+    return Math.abs(h);
+  }
+
+  function uid() {
+    if (window.crypto && typeof crypto.randomUUID === 'function') {
+      return crypto.randomUUID();
+    }
+    return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+  }
+
+  function defaultFontSize() {
+    const w = window.innerWidth;
+    if (w <= 480) return 16;
+    if (w <= 768) return 17;
+    return 18;
+  }
+
+  function formatDate(ts) {
+    const d = new Date(ts);
+    const now = new Date();
+    if (d.getFullYear() === now.getFullYear()) {
+      return (d.getMonth() + 1) + '月' + d.getDate() + '日';
+    }
+    return d.getFullYear() + '/' + (d.getMonth() + 1) + '/' + d.getDate();
+  }
+
+  function decodeBuffer(buffer) {
+    const bytes = new Uint8Array(buffer);
+
+    if (bytes.length >= 3 && bytes[0] === 0xEF && bytes[1] === 0xBB && bytes[2] === 0xBF) {
+      return new TextDecoder('utf-8').decode(buffer.slice(3));
+    }
+    if (bytes.length >= 2 && bytes[0] === 0xFF && bytes[1] === 0xFE) {
+      return new TextDecoder('utf-16le').decode(buffer.slice(2));
+    }
+    if (bytes.length >= 2 && bytes[0] === 0xFE && bytes[1] === 0xFF) {
+      return new TextDecoder('utf-16be').decode(buffer.slice(2));
+    }
+
+    try {
+      return new TextDecoder('utf-8', { fatal: true }).decode(buffer);
+    } catch (e) { /* 继续 */ }
+
+    const fallbacks = ['gb18030', 'gbk', 'big5'];
+    for (let i = 0; i < fallbacks.length; i++) {
+      try { return new TextDecoder(fallbacks[i]).decode(buffer); } catch (e) { /* 继续 */ }
+    }
+    return new TextDecoder('utf-8').decode(buffer);
+  }
+
+  const CHAPTER_PATTERNS = [
+    /^第\s*[0-9零一二三四五六七八九十百千万两]+\s*[章回部卷节篇集话]/,
+    /^(序章|序言|楔子|引子|前言|后记|尾声|终章|尾章|番外)(\s|$|[:：、.．])/,
+    /^[Cc]hapter\s*\d+/,
+    /^\d{1,4}[、.．]\s*[^\s。！？，、；：""''）】]{0,20}$/,
+    /^【.{1,24}】$/,
+    /^[─—=\-·*]{3,}\s*\S{0,24}\s*[─—=\-·*]{3,}$/
+  ];
+
+  function isChapterTitle(line) {
+    if (!line || line.length > 50) return false;
+    for (let i = 0; i < CHAPTER_PATTERNS.length; i++) {
+      if (CHAPTER_PATTERNS[i].test(line)) return true;
+    }
+    return false;
+  }
+
+  function cleanTitle(line) {
+    const t = line
+      .replace(/^[─—=\-·*\s]+/, '')
+      .replace(/[─—=\-·*\s]+$/, '')
+      .replace(/^[【\[]/, '')
+      .replace(/[】\]]$/, '')
+      .trim();
+    return t || line;
+  }
+
+  function parseNovel(text, novelId) {
+    const lines = text.split(/\r\n|\r|\n/);
+    const result = [];
+    let title = '';
+    let buffer = [];
+    let order = 0;
+
+    function flush() {
+      const body = buffer.join('\n').trim();
+      if (body) {
+        order += 1;
+        result.push({
+          id: novelId + '_' + order,
+          novelId: novelId,
+          title: title || ('第' + order + '章'),
+          content: body,
+          order: order
+        });
+      }
+      title = '';
+      buffer = [];
+    }
+
+    for (let i = 0; i < lines.length; i++) {
+      const trimmed = lines[i].trim();
+      if (isChapterTitle(trimmed)) {
+        flush();
+        title = cleanTitle(trimmed);
+      } else {
+        buffer.push(lines[i]);
+      }
+    }
+    flush();
+
+    if (result.length === 0) {
+      const body = text.trim();
+      if (body) {
+        result.push({
+          id: novelId + '_1',
+          novelId: novelId,
+          title: '正文',
+          content: body,
+          order: 1
+        });
+      }
+    }
+    return result;
+  }
+
+  function splitParagraphs(content) {
+    return content
+      .split(/\r\n|\r|\n/)
+      .map(function (l) { return l.trim(); })
+      .filter(Boolean);
+  }
+
+  const app = createApp({
+    setup() {
+      const novels = ref([]);
+      const currentNovel = ref(null);
+      const chapters = ref([]);
+      const currentIndex = ref(0);
+
+      const sidebarOpen = ref(false);
+      const catalogOpen = ref(false);
+      const showFontPanel = ref(false);
+      const searchQuery = ref('');
+
+      const toast = ref({ show: false, text: '' });
+      const importState = ref({ active: false, text: '' });
+      const isDark = ref(document.documentElement.classList.contains('dark'));
+      const fontSize = ref(defaultFontSize());
+
+      const readerEl = ref(null);
+      const hiddenInput = ref(null);
+
+      let db = null;
+      let toastTimer = null;
+      let scrollTimer = null;
+      let touchStartX = 0;
+      let touchStartY = 0;
+      let touchStartTime = 0;
+
+      const currentChapter = computed(function () {
+        return chapters.value[currentIndex.value] || null;
+      });
+
+      const paragraphs = computed(function () {
+        const ch = currentChapter.value;
+        return ch ? splitParagraphs(ch.content) : [];
+      });
+
+      const filteredChapters = computed(function () {
+        const q = searchQuery.value.trim().toLowerCase();
+        const all = chapters.value.map(function (c, i) {
+          return { chapter: c, index: i };
+        });
+        if (!q) return all;
+        return all.filter(function (it) {
+          return it.chapter.title.toLowerCase().indexOf(q) !== -1;
+        });
+      });
+
+      const themeTitle = computed(function () {
+        return isDark.value ? '切换到浅色模式' : '切换到深色模式';
+      });
+
+      function coverStyle(novel, idx) {
+        const hash = hashString(novel.title || String(idx));
+        const pair = COVER_GRADIENTS[hash % COVER_GRADIENTS.length];
+        return { background: 'linear-gradient(145deg, ' + pair[0] + ' 0%, ' + pair[1] + ' 100%)' };
+      }
+
+      function cleanChapterTitle(title) {
+        if (!title) return '';
+        const m = title.match(/^第\s*[0-9零一二三四五六七八九十百千万两]+\s*[章回部卷节篇集话]\s*[·、.．:：\-—]*\s*(.*)$/);
+        if (m && m[1] && m[1].trim()) return m[1].trim();
+        return title;
+      }
+
+      function openDatabase() {
+        if (typeof idb === 'undefined') {
+          return Promise.reject(new Error('IndexedDB 封装库加载失败'));
+        }
+        return idb.openDB(DB_NAME, DB_VERSION, {
+          upgrade: function (database) {
+            if (!database.objectStoreNames.contains('novels')) {
+              const s = database.createObjectStore('novels', { keyPath: 'id' });
+              s.createIndex('title', 'title', { unique: false });
+              s.createIndex('createdAt', 'createdAt', { unique: false });
+            }
+            if (!database.objectStoreNames.contains('chapters')) {
+              const s = database.createObjectStore('chapters', { keyPath: 'id' });
+              s.createIndex('novelId', 'novelId', { unique: false });
+            }
+            if (!database.objectStoreNames.contains('progress')) {
+              database.createObjectStore('progress', { keyPath: 'novelId' });
+            }
+          }
+        });
+      }
+
+      function showToast(text) {
+        toast.value = { show: true, text: text };
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(function () { toast.value.show = false; }, 2000);
+      }
+
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      let themeOverride = null;
+      try {
+        const saved = localStorage.getItem('reader-theme');
+        if (saved === 'light' || saved === 'dark') themeOverride = saved;
+      } catch (e) { /* ignore */ }
+
+      function applyTheme() {
+        const dark = themeOverride ? themeOverride === 'dark' : mediaQuery.matches;
+        isDark.value = dark;
+        document.documentElement.classList.toggle('dark', dark);
+      }
+
+      function toggleTheme() {
+        themeOverride = isDark.value ? 'light' : 'dark';
+        try { localStorage.setItem('reader-theme', themeOverride); } catch (e) {}
+        applyTheme();
+      }
+
+      function onSystemThemeChange() {
+        if (!themeOverride) applyTheme();
+      }
+
+      try {
+        const saved = parseInt(localStorage.getItem('reader-font-size'), 10);
+        if (Number.isFinite(saved) && saved >= FONT_MIN && saved <= FONT_MAX) {
+          fontSize.value = saved;
+        }
+      } catch (e) { /* ignore */ }
+
+      watch(fontSize, function (v) {
+        document.documentElement.style.setProperty('--reader-font-size', v + 'px');
+        try { localStorage.setItem('reader-font-size', String(v)); } catch (e) {}
+      }, { immediate: true });
+
+      function setFontSize(size) {
+        fontSize.value = Math.min(FONT_MAX, Math.max(FONT_MIN, Math.round(size)));
+      }
+
+      function changeFontSize(delta) {
+        const next = Math.min(FONT_MAX, Math.max(FONT_MIN, fontSize.value + delta));
+        if (next === fontSize.value) {
+          showToast(delta > 0 ? '已是最大字号' : '已是最小字号');
+          return;
+        }
+        setFontSize(next);
+      }
+
+      async function loadNovels() {
+        const list = await db.getAll('novels');
+        list.sort(function (a, b) { return b.createdAt - a.createdAt; });
+        novels.value = list;
+      }
+
+      function isActiveNovel(n) {
+        return !!currentNovel.value && currentNovel.value.id === n.id;
+      }
+
+      async function selectNovel(novel) {
+        sidebarOpen.value = false;
+        await openNovel(novel);
+      }
+
+      async function openNovel(novel) {
+        try {
+          const list = await db.getAllFromIndex('chapters', 'novelId', novel.id);
+          list.sort(function (a, b) { return a.order - b.order; });
+
+          if (!list.length) { showToast('这本书没有可读内容'); return; }
+
+          currentNovel.value = novel;
+          chapters.value = list;
+          currentIndex.value = 0;
+          searchQuery.value = '';
+
+          let startIndex = 0;
+          let ratio = 0;
+          const progress = await db.get('progress', novel.id);
+          if (progress && progress.chapterId) {
+            const idx = list.findIndex(function (c) { return c.id === progress.chapterId; });
+            if (idx !== -1) {
+              startIndex = idx;
+              ratio = typeof progress.scrollRatio === 'number' ? progress.scrollRatio : 0;
+            }
+          }
+
+          await goToChapter(startIndex, ratio);
+        } catch (err) {
+          console.error(err);
+          showToast('打开失败：' + (err && err.message ? err.message : '未知错误'));
+        }
+      }
+
+      function goHome() {
+        currentNovel.value = null;
+        chapters.value = [];
+        currentIndex.value = 0;
+        searchQuery.value = '';
+        if (readerEl.value) readerEl.value.scrollTop = 0;
+      }
+
+      async function goToChapter(index, ratio) {
+        if (index < 0 || index >= chapters.value.length) return;
+
+        const targetRatio = typeof ratio === 'number' ? ratio : 0;
+        currentIndex.value = index;
+
+        await nextTick();
+
+        const el = readerEl.value;
+        if (el) {
+          if (targetRatio > 0) {
+            const max = el.scrollHeight - el.clientHeight;
+            el.scrollTop = max > 0 ? max * targetRatio : 0;
+          } else {
+            el.scrollTop = 0;
+          }
         }
 
-        function addNovel(novel) {
-            return new Promise((resolve, reject) => {
-                const transaction = db.transaction([stores.NOVELS], 'readwrite');
-                const store = transaction.objectStore(stores.NOVELS);
-                const request = store.add(novel);
-                request.onsuccess = () => resolve(request.result);
-                request.onerror = () => reject(request.error);
-            });
-        }
+        saveProgress();
+      }
 
-        function addChapters(chapterList) {
-            return new Promise((resolve, reject) => {
-                if (!chapterList || chapterList.length === 0) {
-                    resolve(0);
-                    return;
-                }
-                const transaction = db.transaction([stores.CHAPTERS], 'readwrite');
-                const store = transaction.objectStore(stores.CHAPTERS);
-                let count = 0;
+      function selectChapter(index) {
+        closeCatalog();
+        goToChapter(index, 0);
+      }
 
-                chapterList.forEach(chapter => {
-                    const request = store.add(chapter);
-                    request.onsuccess = () => {
-                        count++;
-                        if (count === chapterList.length) resolve(count);
-                    };
-                    request.onerror = () => reject(request.error);
-                });
-            });
-        }
+      function currentRatio() {
+        const el = readerEl.value;
+        if (!el) return 0;
+        const max = el.scrollHeight - el.clientHeight;
+        return max > 0 ? Math.min(1, Math.max(0, el.scrollTop / max)) : 0;
+      }
 
-        function getAllNovels() {
-            return new Promise((resolve, reject) => {
-                const transaction = db.transaction([stores.NOVELS], 'readonly');
-                const store = transaction.objectStore(stores.NOVELS);
-                const request = store.getAll();
-                request.onsuccess = () => resolve(request.result);
-                request.onerror = () => reject(request.error);
-            });
-        }
+      function saveProgress() {
+        const novel = currentNovel.value;
+        const chapter = currentChapter.value;
+        if (!novel || !chapter) return;
 
-        function getChaptersByNovelId(novelId) {
-            return new Promise((resolve, reject) => {
-                const transaction = db.transaction([stores.CHAPTERS], 'readonly');
-                const store = transaction.objectStore(stores.CHAPTERS);
-                const index = store.index('novelId');
-                const request = index.getAll(novelId);
-                request.onsuccess = () => {
-                    const result = request.result.sort((a, b) => a.order - b.order);
-                    resolve(result);
-                };
-                request.onerror = () => reject(request.error);
-            });
-        }
+        db.put('progress', {
+          novelId: novel.id,
+          chapterId: chapter.id,
+          chapterIndex: currentIndex.value,
+          scrollRatio: currentRatio(),
+          updatedAt: Date.now()
+        }).catch(function () {});
+      }
 
-        function saveProgress(progress) {
-            return new Promise((resolve, reject) => {
-                const transaction = db.transaction([stores.PROGRESS], 'readwrite');
-                const store = transaction.objectStore(stores.PROGRESS);
-                const request = store.put(progress);
-                request.onsuccess = () => resolve(request.result);
-                request.onerror = () => reject(request.error);
-            });
-        }
+      function onScroll() {
+        if (!currentNovel.value) return;
+        clearTimeout(scrollTimer);
+        scrollTimer = setTimeout(saveProgress, 800);
+      }
 
-        function getProgress(novelId) {
-            return new Promise((resolve, reject) => {
-                const transaction = db.transaction([stores.PROGRESS], 'readonly');
-                const store = transaction.objectStore(stores.PROGRESS);
-                const request = store.get(novelId);
-                request.onsuccess = () => resolve(request.result);
-                request.onerror = () => reject(request.error);
-            });
-        }
+      async function openCatalog() {
+        if (!chapters.value.length) return;
+        catalogOpen.value = true;
+        await nextTick();
+        const el = document.querySelector('.chapter-current');
+        if (el && el.scrollIntoView) el.scrollIntoView({ block: 'center' });
+      }
 
-        const chapterPatterns = [
-            /^第[零一二两三四五六七八九十百千万\d]+[章回部卷节]/,
-            /^[第]?[零一二两三四五六七八九十百千万\d]+[、.．]\s*/,
-            /^【.*】/,
-            /^──.*──$/,
-            /^===.*===/,
-            /^---.*---$/
-        ];
+      function closeCatalog() {
+        catalogOpen.value = false;
+        searchQuery.value = '';
+      }
 
-        function isChapterTitle(line) {
-            const trimmed = line.trim();
-            if (!trimmed || trimmed.length > 50) return false;
-            return chapterPatterns.some(pattern => pattern.test(trimmed));
-        }
+      function triggerImport() {
+        if (hiddenInput.value) hiddenInput.value.click();
+      }
 
-        function parseNovelContent(content, novelId) {
-            const chapters = [];
-            const lines = content.split(/\r?\n/);
+      async function onFileInput(event) {
+        const files = Array.from(event.target.files || []);
+        event.target.value = '';
+        if (!files.length) return;
+        await importFiles(files);
+      }
 
-            let currentChapterTitle = '';
-            let currentChapterContent = [];
-            let chapterOrder = 0;
+      async function importFiles(files) {
+        importState.value = { active: true, text: '' };
 
-            function finalizeChapter() {
-                if (currentChapterContent.length > 0) {
-                    const chapterText = currentChapterContent.join('\n').trim();
-                    if (chapterText) {
-                        chapterOrder++;
-                        chapters.push({
-                            id: `${novelId}_${chapterOrder}`,
-                            novelId: novelId,
-                            title: currentChapterTitle || `第${chapterOrder}章`,
-                            content: chapterText,
-                            order: chapterOrder
-                        });
-                    }
-                }
-                currentChapterTitle = '';
-                currentChapterContent = [];
+        let ok = 0, skipped = 0, failed = 0;
+
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          importState.value.text = (i + 1) + ' / ' + files.length + '　' + file.name;
+
+          try {
+            const title = file.name.replace(/\.[^./\\]+$/, '').trim() || file.name;
+
+            if (novels.value.some(function (n) { return n.title === title; })) {
+              skipped += 1;
+              continue;
             }
 
-            lines.forEach(line => {
-                const trimmed = line.trim();
+            const buffer = await file.arrayBuffer();
+            const text = decodeBuffer(buffer);
 
-                if (isChapterTitle(trimmed)) {
-                    finalizeChapter();
-                    currentChapterTitle = trimmed
-                        .replace(/^──|──$/g, '')
-                        .replace(/^===|===$/g, '')
-                        .replace(/^---|----$/g, '')
-                        .trim();
-                } else {
-                    currentChapterContent.push(line);
-                }
+            if (!text || !text.trim()) { failed += 1; continue; }
+
+            const novelId = uid();
+            const chapterList = parseNovel(text, novelId);
+
+            if (!chapterList.length) { failed += 1; continue; }
+
+            const tx = db.transaction(['novels', 'chapters'], 'readwrite');
+            tx.objectStore('novels').add({
+              id: novelId,
+              title: title,
+              totalChapters: chapterList.length,
+              createdAt: Date.now()
             });
 
-            finalizeChapter();
-
-            if (chapters.length === 0) {
-                chapters.push({
-                    id: `${novelId}_1`,
-                    novelId: novelId,
-                    title: novelId,
-                    content: content.trim(),
-                    order: 1
-                });
+            const chapterStore = tx.objectStore('chapters');
+            for (let c = 0; c < chapterList.length; c++) {
+              chapterStore.add(chapterList[c]);
             }
 
-            return chapters;
+            await tx.done;
+            ok += 1;
+          } catch (err) {
+            console.error('导入失败：', file.name, err);
+            failed += 1;
+          }
+
+          await new Promise(function (r) { setTimeout(r, 0); });
         }
 
-        async function handleFileUpload(event) {
-            const files = event.target.files;
-            if (!files || files.length === 0) return;
+        importState.value = { active: false, text: '' };
+        await loadNovels();
 
-            showToast('开始导入小说...');
+        const parts = ['成功 ' + ok + ' 本'];
+        if (skipped) parts.push('跳过 ' + skipped + ' 本');
+        if (failed) parts.push('失败 ' + failed + ' 本');
+        showToast('导入完成 · ' + parts.join(' · '));
+      }
 
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                try {
-                    const content = await readFileContent(file);
-                    const title = file.name.replace(/\.[^/.]+$/, '');
+      async function deleteNovel(novel) {
+        const confirmed = window.confirm('确定删除《' + novel.title + '》吗？此操作不可恢复。');
+        if (!confirmed) return;
 
-                    const existingNovels = await getAllNovels();
-                    if (existingNovels.some(n => n.id === title)) {
-                        showToast(`${title} 已存在，跳过`);
-                        continue;
-                    }
+        try {
+          const chapterKeys = await db.getAllKeysFromIndex('chapters', 'novelId', novel.id);
 
-                    const chapterList = parseNovelContent(content, title);
-                    const novel = {
-                        id: title,
-                        title: title,
-                        author: '',
-                        cover: '',
-                        totalChapters: chapterList.length,
-                        createdAt: Date.now()
-                    };
+          const tx = db.transaction(['novels', 'chapters', 'progress'], 'readwrite');
+          tx.objectStore('novels').delete(novel.id);
+          tx.objectStore('progress').delete(novel.id);
 
-                    await addNovel(novel);
-                    await addChapters(chapterList);
+          const chapterStore = tx.objectStore('chapters');
+          for (let i = 0; i < chapterKeys.length; i++) chapterStore.delete(chapterKeys[i]);
 
-                    showToast(`成功导入 ${title}，共 ${chapterList.length} 章`);
-                } catch (error) {
-                    showToast(`导入 ${file.name} 失败: ${error.message}`);
-                }
-            }
+          await tx.done;
 
-            event.target.value = '';
-            await renderNovelList();
+          if (currentNovel.value && currentNovel.value.id === novel.id) goHome();
+          await loadNovels();
+          showToast('已删除《' + novel.title + '》');
+        } catch (err) {
+          console.error(err);
+          showToast('删除失败，请重试');
+        }
+      }
+
+      function onTouchStart(e) {
+        const t = e.changedTouches[0];
+        touchStartX = t.clientX;
+        touchStartY = t.clientY;
+        touchStartTime = Date.now();
+      }
+
+      function onTouchEnd(e) {
+        if (!currentNovel.value || !chapters.value.length) return;
+
+        const t = e.changedTouches[0];
+        const dx = t.clientX - touchStartX;
+        const dy = t.clientY - touchStartY;
+        const dt = Date.now() - touchStartTime;
+
+        const isHorizontal = Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.6 && dt < 700;
+        if (!isHorizontal) return;
+
+        const selection = window.getSelection && window.getSelection();
+        if (selection && String(selection).length > 0) return;
+
+        if (dx > 0) goToChapter(currentIndex.value - 1);
+        else goToChapter(currentIndex.value + 1);
+      }
+
+      function onKeydown(e) {
+        if (e.key === 'Escape') {
+          if (catalogOpen.value) { closeCatalog(); return; }
+          if (sidebarOpen.value) { sidebarOpen.value = false; return; }
+          if (showFontPanel.value) { showFontPanel.value = false; return; }
         }
 
-        function readFileContent(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = (e) => resolve(e.target.result);
-                reader.onerror = () => reject(reader.error);
-                reader.readAsText(file, 'UTF-8');
-            });
+        const tag = (e.target && e.target.tagName) || '';
+        if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+        if (!currentNovel.value) return;
+
+        if (e.key === 'ArrowLeft') goToChapter(currentIndex.value - 1);
+        else if (e.key === 'ArrowRight') goToChapter(currentIndex.value + 1);
+      }
+
+      onMounted(async function () {
+        applyTheme();
+        if (mediaQuery.addEventListener) mediaQuery.addEventListener('change', onSystemThemeChange);
+        else if (mediaQuery.addListener) mediaQuery.addListener(onSystemThemeChange);
+
+        window.addEventListener('keydown', onKeydown);
+
+        try {
+          db = await openDatabase();
+          await loadNovels();
+        } catch (err) {
+          console.error('初始化失败：', err);
+          showToast('初始化失败，请刷新页面或更换浏览器');
         }
+      });
 
-        async function renderNovelList() {
-            const novels = await getAllNovels();
-            const list = document.getElementById('novelList');
+      onBeforeUnmount(function () {
+        if (mediaQuery.removeEventListener) mediaQuery.removeEventListener('change', onSystemThemeChange);
+        else if (mediaQuery.removeListener) mediaQuery.removeListener(onSystemThemeChange);
+        window.removeEventListener('keydown', onKeydown);
+        clearTimeout(toastTimer);
+        clearTimeout(scrollTimer);
+      });
 
-            list.innerHTML = '';
+      return {
+        novels, currentNovel, chapters, currentIndex,
+        sidebarOpen, catalogOpen, showFontPanel, searchQuery,
+        toast, importState, isDark, fontSize,
+        readerEl, hiddenInput,
 
-            if (novels.length === 0) {
-                list.innerHTML = '<div class="empty-state" style="height: auto; padding: 20px;">暂无小说，请导入</div>';
-                return;
-            }
+        currentChapter, paragraphs, filteredChapters, themeTitle,
 
-            novels.forEach(novel => {
-                const item = document.createElement('div');
-                item.className = 'novel-item';
-                item.dataset.id = novel.id;
-                item.onclick = () => {
-                    openNovel(novel);
-                    closeSidebar();
-                };
+        FONT_MIN, FONT_MAX, FONT_STEP,
 
-                item.innerHTML = `
-                    <div class="novel-title">${novel.title}</div>
-                    <div class="novel-info">
-                        <span>${novel.totalChapters} 章</span>
-                        <span>${formatDate(novel.createdAt)}</span>
-                    </div>
-                `;
+        formatDate, coverStyle, cleanChapterTitle,
+        isActiveNovel, selectNovel, goHome, goToChapter, selectChapter,
+        openCatalog, closeCatalog, triggerImport, onFileInput, deleteNovel,
+        toggleTheme, changeFontSize, setFontSize,
+        onScroll, onTouchStart, onTouchEnd
+      };
+    }
+  });
 
-                list.appendChild(item);
-            });
-        }
-
-        function formatDate(timestamp) {
-            const date = new Date(timestamp);
-            return `${date.getMonth() + 1}/${date.getDate()}`;
-        }
-
-        async function openNovel(novel) {
-            currentNovel = novel;
-            chapters = await getChaptersByNovelId(novel.id);
-
-            const progress = await getProgress(novel.id);
-            let startChapterIndex = 0;
-
-            if (progress && progress.chapterId) {
-                const idx = chapters.findIndex(c => c.id === progress.chapterId);
-                if (idx !== -1) startChapterIndex = idx;
-            }
-
-            document.querySelectorAll('.novel-item').forEach(el => el.classList.remove('active'));
-            document.querySelector(`.novel-item[data-id="${CSS.escape(novel.id)}"]`)?.classList.add('active');
-
-            document.getElementById('backBtn').style.display = 'inline-block';
-            document.getElementById('catalogBtn').style.display = 'inline-block';
-            document.getElementById('pagination').style.display = 'flex';
-            document.getElementById('currentNovelTitle').textContent = novel.title;
-
-            await renderChapter(startChapterIndex);
-        }
-
-        function goHome() {
-            document.getElementById('readerArea').innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-state-icon">📚</div>
-                    <div class="empty-state-text">选择一本小说开始阅读</div>
-                </div>
-            `;
-            document.getElementById('backBtn').style.display = 'none';
-            document.getElementById('catalogBtn').style.display = 'none';
-            document.getElementById('pagination').style.display = 'none';
-            document.getElementById('currentNovelTitle').textContent = '';
-            document.querySelectorAll('.novel-item').forEach(el => el.classList.remove('active'));
-            currentNovel = null;
-            currentChapter = null;
-            chapters = [];
-        }
-
-        async function renderChapter(index) {
-            if (index < 0 || index >= chapters.length) return;
-
-            currentChapter = chapters[index];
-
-            const readerArea = document.getElementById('readerArea');
-            readerArea.innerHTML = `
-                <div class="chapter-title">${currentChapter.title}</div>
-                <div class="chapter-content">${formatContent(currentChapter.content)}</div>
-            `;
-
-            readerArea.scrollTop = 0;
-
-            updatePagination(index);
-            await saveProgress({
-                novelId: currentNovel.id,
-                chapterId: currentChapter.id,
-                chapterIndex: index,
-                scrollPosition: 0,
-                updatedAt: Date.now()
-            });
-
-            readerArea.onscroll = debounce(async () => {
-                await saveProgress({
-                    novelId: currentNovel.id,
-                    chapterId: currentChapter.id,
-                    chapterIndex: index,
-                    scrollPosition: readerArea.scrollTop,
-                    updatedAt: Date.now()
-                });
-            }, 1000);
-        }
-
-        function formatContent(content) {
-            const paragraphs = content.split(/\n{2,}/).filter(p => p.trim());
-            return paragraphs.map(p => `<p>${p.trim()}</p>`).join('');
-        }
-
-        function updatePagination(index) {
-            const prevBtn = document.getElementById('prevBtn');
-            const nextBtn = document.getElementById('nextBtn');
-            const indicator = document.getElementById('chapterIndicator');
-
-            prevBtn.disabled = index === 0;
-            nextBtn.disabled = index === chapters.length - 1;
-            indicator.textContent = `${index + 1} / ${chapters.length}`;
-
-            prevBtn.onclick = () => renderChapter(index - 1);
-            nextBtn.onclick = () => renderChapter(index + 1);
-        }
-
-        function renderCatalog() {
-            const chapterList = document.getElementById('chapterList');
-            chapterList.innerHTML = '';
-
-            chapters.forEach((chapter, index) => {
-                const item = document.createElement('div');
-                item.className = `chapter-item ${currentChapter?.id === chapter.id ? 'current' : ''}`;
-                item.textContent = chapter.title;
-                item.onclick = () => {
-                    renderChapter(index);
-                    closeCatalog();
-                };
-                chapterList.appendChild(item);
-            });
-        }
-
-        function openCatalog() {
-            renderCatalog();
-            document.getElementById('catalogOverlay').classList.add('show');
-        }
-
-        function closeCatalog() {
-            document.getElementById('catalogOverlay').classList.remove('show');
-        }
-
-        function openSidebar() {
-            document.getElementById('sidebar').classList.add('open');
-            document.getElementById('sidebarOverlay').classList.add('show');
-        }
-
-        function closeSidebar() {
-            document.getElementById('sidebar').classList.remove('open');
-            document.getElementById('sidebarOverlay').classList.remove('show');
-        }
-
-        function toggleDarkMode() {
-            isDarkMode = !isDarkMode;
-            document.body.classList.toggle('dark-mode', isDarkMode);
-            document.getElementById('modeBtn').textContent = isDarkMode ? '☀️' : '🌙';
-            localStorage.setItem('darkMode', isDarkMode);
-        }
-
-        /* ============ 字号调节 ============ */
-        function getDefaultFontSize() {
-            const w = window.innerWidth;
-            if (w <= 480) return 16;
-            if (w <= 768) return 17;
-            return 18;
-        }
-
-        function applyFontSize(size) {
-            readerFontSize = Math.min(FONT_MAX, Math.max(FONT_MIN, size));
-            document.documentElement.style.setProperty('--reader-font-size', readerFontSize + 'px');
-            localStorage.setItem('readerFontSize', String(readerFontSize));
-            updateFontButtons();
-        }
-
-        function updateFontButtons() {
-            document.getElementById('fontDecrease').disabled = readerFontSize <= FONT_MIN;
-            document.getElementById('fontIncrease').disabled = readerFontSize >= FONT_MAX;
-        }
-
-        function changeFontSize(delta) {
-            const next = Math.min(FONT_MAX, Math.max(FONT_MIN, readerFontSize + delta));
-            if (next === readerFontSize) {
-                showToast(delta > 0 ? '已是最大字号' : '已是最小字号');
-                return;
-            }
-            applyFontSize(next);
-            showToast(`字号：${readerFontSize}px`);
-        }
-
-        function showToast(message) {
-            const toast = document.getElementById('toast');
-            toast.textContent = message;
-            toast.classList.add('show');
-            clearTimeout(toastTimer);
-            toastTimer = setTimeout(() => toast.classList.remove('show'), 2000);
-        }
-
-        function debounce(func, wait) {
-            let timeout;
-            return function(...args) {
-                clearTimeout(timeout);
-                timeout = setTimeout(() => func.apply(this, args), wait);
-            };
-        }
-
-        function handleTouchStart(e) {
-            touchStartX = e.changedTouches[0].clientX;
-            touchStartY = e.changedTouches[0].clientY;
-        }
-
-        function handleTouchEnd(e) {
-            const touchEndX = e.changedTouches[0].clientX;
-            const touchEndY = e.changedTouches[0].clientY;
-
-            const diffX = touchEndX - touchStartX;
-            const diffY = touchEndY - touchStartY;
-
-            if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50) {
-                if (!currentChapter) return;
-                const currentIndex = chapters.findIndex(c => c.id === currentChapter.id);
-                if (currentIndex === -1) return;
-
-                if (diffX > 0) {
-                    if (currentIndex > 0) renderChapter(currentIndex - 1);
-                } else {
-                    if (currentIndex < chapters.length - 1) renderChapter(currentIndex + 1);
-                }
-            }
-        }
-
-        async function init() {
-            try {
-                await openDB();
-
-                // 夜间模式
-                isDarkMode = localStorage.getItem('darkMode') === 'true';
-                if (isDarkMode) {
-                    document.body.classList.add('dark-mode');
-                    document.getElementById('modeBtn').textContent = '☀️';
-                }
-
-                // 字号
-                const savedFontSize = parseInt(localStorage.getItem('readerFontSize'), 10);
-                applyFontSize(Number.isFinite(savedFontSize) ? savedFontSize : getDefaultFontSize());
-
-                await renderNovelList();
-
-                document.getElementById('fileInput').addEventListener('change', handleFileUpload);
-                document.getElementById('menuBtn').addEventListener('click', openSidebar);
-                document.getElementById('sidebarOverlay').addEventListener('click', closeSidebar);
-                document.getElementById('backBtn').addEventListener('click', goHome);
-                document.getElementById('catalogBtn').addEventListener('click', openCatalog);
-                document.getElementById('closeCatalogBtn').addEventListener('click', closeCatalog);
-                document.getElementById('modeBtn').addEventListener('click', toggleDarkMode);
-                document.getElementById('catalogOverlay').addEventListener('click', (e) => {
-                    if (e.target === document.getElementById('catalogOverlay')) {
-                        closeCatalog();
-                    }
-                });
-
-                // 字号按钮
-                document.getElementById('fontDecrease').addEventListener('click', () => changeFontSize(-FONT_STEP));
-                document.getElementById('fontIncrease').addEventListener('click', () => changeFontSize(FONT_STEP));
-
-                document.getElementById('readerArea').addEventListener('touchstart', handleTouchStart, { passive: true });
-                document.getElementById('readerArea').addEventListener('touchend', handleTouchEnd, { passive: true });
-
-            } catch (error) {
-                console.error('初始化失败:', error);
-                showToast('初始化失败，请刷新页面重试');
-            }
-        }
-
-        init();
-    </script>
+  app.mount('#app');
+})();
+</script>
 </body>
 </html>
