@@ -199,8 +199,6 @@
         .filter-count { flex: none; font-size: 11px; color: var(--c-text-3); font-variant-numeric: tabular-nums; }
         .filter-empty { font-size: 12px; color: var(--c-text-3); padding: 8px 10px; line-height: 1.6; }
 
-        #btnToggleTypesM { display: none; }
-        @media (max-width: 768px) { #btnToggleTypesM:not(.hidden) { display: inline-flex; } }
         #btnAddMode.is-cancel { background: var(--ios-red); box-shadow: 0 4px 14px rgba(255, 59, 48, .32); }
         @media (max-width: 768px) {
             .fb-btn { width: 36px; padding: 0; }
@@ -265,7 +263,7 @@
                 :placeholder="searchPlaceholder">
 
             <button v-if="!lockedTypeId" @click="panelOpen = !panelOpen" title="类型筛选" aria-label="类型筛选"
-                class="md:hidden flex-none w-9 h-9 rounded-xl active:scale-95 transition items-center justify-center"
+                class="md:hidden flex-none w-9 h-9 rounded-xl active:scale-95 transition flex items-center justify-center"
                 :style="panelOpen ? 'background:var(--ios-blue);color:#fff' : 'color:var(--c-text);background:var(--c-fill)'">
                 <svg class="w-[18px] h-[18px] flex-none" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -283,7 +281,7 @@
                 <span class="fb-text">反馈</span>
             </a>
 
-            <button @click="toggleAddMode" :title="addMode ? '取消添加' : '添加标点'"
+            <button id="btnAddMode" @click="toggleAddMode" :title="addMode ? '取消添加' : '添加标点'"
                 class="flex-none inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-semibold text-white bg-[color:var(--ios-blue)] active:scale-95 transition shadow-[0_4px_14px_rgba(0,122,255,.32)]"
                 :class="{ 'is-cancel': addMode }">
                 <span class="inline-flex flex-none" v-html="addMode ? ICON_CANCEL : ICON_ADD_MARKER"></span>
