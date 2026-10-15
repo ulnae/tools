@@ -97,6 +97,22 @@
         "type": "2be06627-fddf-4ce6-8b7b-36610738ed57",
         "created_at": "2026-10-13T00:53:35.676Z"
       }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          112.01590320579628,
+          39.25068906372315
+        ]
+      },
+      "properties": {
+        "title": "测试标点",
+        "description": "66",
+        "type": "2be06627-fddf-4ce6-8b7b-36610738ed57",
+        "created_at": "2026-10-15T06:51:54.731Z"
+      }
     }
   ]
 }
