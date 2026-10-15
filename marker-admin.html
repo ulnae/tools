@@ -10,6 +10,7 @@
     <link rel="icon" type="image/svg+xml"
         href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23007AFF'/%3E%3Cpath d='M16 6c-3.9 0-7 3.1-7 7 0 5.3 7 13 7 13s7-7.7 7-13c0-3.9-3.1-7-7-7z' fill='%23fff'/%3E%3Ccircle cx='16' cy='13' r='2.6' fill='%23007AFF'/%3E%3C/svg%3E">
     <script src="./utils/tailwindcss.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.5.13/dist/vue.global.prod.js"></script>
     <style>
         /* ============================================================
            主题变量：浅色（日间）
@@ -21,21 +22,18 @@
             --ios-orange: #FF9500;
             --ios-gray: #8E8E93;
 
-            /* 背景 / 卡片 */
             --bg: #F2F2F7;
             --card: #FFFFFF;
             --glass-bg: rgba(255, 255, 255, .86);
             --glass-shadow: 0 8px 32px rgba(0, 0, 0, .08), 0 0 0 .5px rgba(0, 0, 0, .04);
             --overlay: rgba(0, 0, 0, .40);
 
-            /* 文字层级 */
             --text-1: #1c1c1e;
             --text-2: #48484A;
             --text-3: #8E8E93;
             --text-4: #AEAEB2;
             --text-5: #C7C7CC;
 
-            /* 填充 / 边框 */
             --fill: rgba(120, 120, 128, .10);
             --fill-strong: rgba(120, 120, 128, .16);
             --fill-weak: rgba(0, 0, 0, .02);
@@ -47,11 +45,9 @@
 
             --thead-bg: #F7F7F9;
 
-            /* 滚动条 */
             --scroll-thumb: rgba(0, 0, 0, .16);
             --scroll-thumb-hover: rgba(0, 0, 0, .30);
 
-            /* 功能色（浅底） */
             --blue-soft: rgba(0, 122, 255, .10);
             --blue-soft-hover: rgba(0, 122, 255, .20);
             --red-soft: rgba(255, 59, 48, .10);
@@ -61,9 +57,6 @@
             color-scheme: light;
         }
 
-        /* ============================================================
-           主题变量：深色（夜间）——跟随系统
-           ============================================================ */
         @media (prefers-color-scheme: dark) {
             :root {
                 --ios-blue: #0A84FF;
@@ -117,7 +110,6 @@
             background: var(--bg);
         }
 
-        /* ---------- 整页 Shell：禁止纵向滚动 ---------- */
         body.app-shell {
             display: flex;
             flex-direction: column;
@@ -131,6 +123,13 @@
             background: var(--bg);
             color: var(--text-1);
             transition: background-color .35s ease, color .35s ease;
+        }
+
+        #app {
+            flex: 1 1 0%;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
         }
 
         .glass {
@@ -150,7 +149,6 @@
             scrollbar-width: none;
         }
 
-        /* ---------- 表格滚动区：细滚动条 ---------- */
         .scroll-area {
             overflow: auto;
             overscroll-behavior: contain;
@@ -183,7 +181,6 @@
             background: transparent;
         }
 
-        /* ---------- 输入框 ---------- */
         .ios-input {
             width: 100%;
             box-sizing: border-box;
@@ -234,7 +231,6 @@
             margin-top: 0;
         }
 
-        /* ---------- 小按钮 ---------- */
         .btn-mini {
             padding: 5px 12px;
             border-radius: 10px;
@@ -268,7 +264,6 @@
             background: var(--red-soft-hover);
         }
 
-        /* ---------- 分页控件 ---------- */
         .pager-select {
             appearance: none;
             -webkit-appearance: none;
@@ -318,7 +313,6 @@
             cursor: not-allowed;
         }
 
-        /* ---------- 色板 ---------- */
         .swatch {
             width: 26px;
             height: 26px;
@@ -356,7 +350,6 @@
             border-radius: 12px;
         }
 
-        /* ---------- 弹窗动画 ---------- */
         @keyframes pop-in {
             from {
                 transform: scale(.94) translateY(12px);
@@ -373,7 +366,6 @@
             animation: pop-in .24s cubic-bezier(.32, .72, 0, 1);
         }
 
-        /* ---------- 表格 ---------- */
         table {
             border-collapse: separate;
             border-spacing: 0;
@@ -388,7 +380,6 @@
             transition: background-color .35s ease;
         }
 
-        /* ---------- 加载旋转 ---------- */
         @keyframes spin {
             to {
                 transform: rotate(360deg);
@@ -398,232 +389,401 @@
         .spin {
             animation: spin .8s linear infinite;
         }
+
+        /* 空状态里的小加载圆点 */
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: .45;
+            }
+        }
+
+        .pulse {
+            animation: pulse 1.6s cubic-bezier(.4, 0, .6, 1) infinite;
+        }
+
+        .toast-item {
+            transition: opacity .3s ease, transform .3s ease;
+        }
     </style>
 </head>
 
 <body class="app-shell">
+    <div id="app">
 
-    <!-- ===================== 顶部栏 ===================== -->
-    <header class="glass flex-none z-30">
-        <div class="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3 flex-wrap">
-            <h1 class="text-[16px] font-bold text-[color:var(--text-1)] tracking-tight">标点数据管理</h1>
+        <!-- ===================== 顶部栏 ===================== -->
+        <header class="glass flex-none z-30">
+            <div class="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3 flex-wrap">
+                <h1 class="text-[16px] font-bold text-[color:var(--text-1)] tracking-tight">标点数据管理</h1>
 
-            <div class="hidden sm:flex items-center gap-1.5">
-                <span id="statusDot" class="w-2 h-2 rounded-full bg-[#FF9500] animate-pulse"></span>
-                <span id="statusText" class="text-[12px] text-[color:var(--text-3)] whitespace-nowrap">加载中...</span>
+                <div class="hidden sm:flex items-center gap-1.5">
+                    <span :class="statusDotClass"></span>
+                    <span class="text-[12px] text-[color:var(--text-3)] whitespace-nowrap">{{ statusText }}</span>
+                </div>
+
+                <button @click="refreshAll(false)" :disabled="loading"
+                    class="ml-auto flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-semibold text-white bg-[var(--ios-blue)] active:scale-95 transition shadow-[0_4px_14px_rgba(0,122,255,.32)] disabled:opacity-50">
+                    <svg :class="['w-3.5 h-3.5', loading ? 'spin' : '']" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+                        <path d="M21 3v6h-6" />
+                    </svg>
+                    刷新
+                </button>
+            </div>
+        </header>
+
+        <!-- ===================== 主体 ===================== -->
+        <main class="flex-1 min-h-0 w-full max-w-6xl mx-auto px-4 py-5 flex flex-col">
+
+            <!-- 标签切换 -->
+            <div class="flex-none self-start flex gap-1 p-1 rounded-full bg-[var(--seg-bg)] mb-4">
+                <button :class="tab === 'markers' ? TAB_ON : TAB_OFF" @click="tab = 'markers'">标点数据</button>
+                <button :class="tab === 'types' ? TAB_ON : TAB_OFF" @click="tab = 'types'">类型数据</button>
             </div>
 
-            <button id="btnRefresh"
-                class="ml-auto flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-semibold text-white bg-[var(--ios-blue)] active:scale-95 transition shadow-[0_4px_14px_rgba(0,122,255,.32)] disabled:opacity-50">
-                <svg id="refreshIcon" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                    stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M21 12a9 9 0 1 1-2.64-6.36" />
-                    <path d="M21 3v6h-6" />
-                </svg>
-                刷新
-            </button>
-        </div>
-    </header>
+            <!-- ---------- 标点数据 ---------- -->
+            <section v-show="tab === 'markers'" class="flex-1 min-h-0 flex flex-col">
+                <div class="glass rounded-2xl overflow-hidden flex flex-col flex-1 min-h-0">
 
-    <!-- ===================== 主体 ===================== -->
-    <main class="flex-1 min-h-0 w-full max-w-6xl mx-auto px-4 py-5 flex flex-col">
+                    <!-- 工具条 -->
+                    <div
+                        class="flex-none px-3 py-3 flex items-center gap-2 flex-wrap border-b border-[color:var(--border)]">
+                        <input v-model="keyword" class="ios-input !w-auto flex-1 min-w-[160px]" type="text"
+                            placeholder="搜索标题或描述">
+                        <select v-model="filterTypeId" class="ios-input !w-auto min-w-[140px]">
+                            <option value="">全部类型</option>
+                            <option v-for="t in allTypes" :key="t.id" :value="t.id">{{ t.name }}</option>
+                        </select>
+                        <span class="text-[12px] text-[color:var(--text-3)] whitespace-nowrap">
+                            共 <b class="text-[color:var(--text-1)] tabular-nums">{{ filteredMarkers.length }}</b> 条
+                        </span>
 
-        <!-- 标签切换 -->
-        <div class="flex-none self-start flex gap-1 p-1 rounded-full bg-[var(--seg-bg)] mb-4">
-            <button data-tab="markers">标点数据</button>
-            <button data-tab="types">类型数据</button>
-        </div>
+                        <!-- 按需加载剩余类型 -->
+                        <button v-if="pendingCount > 0 && !loadingAll" @click="loadAllTypes"
+                            class="btn-pager ml-auto">
+                            加载剩余 {{ pendingCount }} 个类型
+                        </button>
+                        <span v-else-if="loadingAll"
+                            class="ml-auto text-[12px] text-[color:var(--text-3)] whitespace-nowrap">
+                            <span class="inline-block w-1.5 h-1.5 rounded-full bg-[var(--ios-orange)] pulse mr-1.5 align-middle"></span>
+                            正在加载...
+                        </span>
+                    </div>
 
-        <!-- ---------- 标点数据 ---------- -->
-        <section id="panel-markers" class="flex-1 min-h-0 flex flex-col">
-            <div class="glass rounded-2xl overflow-hidden flex flex-col flex-1 min-h-0">
+                    <!-- 表格滚动区 -->
+                    <div class="flex-1 min-h-0 scroll-area">
+                        <table class="w-full text-[13px] min-w-[940px]">
+                            <thead>
+                                <tr class="text-[color:var(--text-3)] text-[12px]">
+                                    <th class="text-left font-semibold px-3 py-2.5 w-[52px]">#</th>
+                                    <th class="text-left font-semibold px-3 py-2.5 w-[190px]">标题</th>
+                                    <th class="text-left font-semibold px-3 py-2.5 w-[130px]">类型</th>
+                                    <th class="text-left font-semibold px-3 py-2.5">描述</th>
+                                    <th class="text-left font-semibold px-3 py-2.5 w-[200px]">坐标（经, 纬）</th>
+                                    <th class="text-left font-semibold px-3 py-2.5 w-[160px]">创建时间</th>
+                                    <th class="text-right font-semibold px-3 py-2.5 w-[130px]">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- 有数据 -->
+                                <template v-if="markerTableState === 'data'">
+                                    <tr v-for="(row, i) in markerPageData.rows" :key="row.typeId + '-' + i"
+                                        class="border-b border-[color:var(--border-weak)] hover:bg-[var(--fill-weak)] align-top">
+                                        <td class="px-3 py-2.5 text-[color:var(--text-5)] tabular-nums">
+                                            {{ markerPageData.start + i + 1 }}
+                                        </td>
+                                        <td class="px-3 py-2.5 font-medium text-[color:var(--text-1)] break-words">
+                                            {{ (row.feature.properties && row.feature.properties.title) || '未命名' }}
+                                        </td>
+                                        <td class="px-3 py-2.5">
+                                            <span
+                                                class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold whitespace-nowrap"
+                                                :style="{ color: row.color || FALLBACK_COLOR, background: hexToRgba(row.color || FALLBACK_COLOR, .14) }">
+                                                <span class="w-1.5 h-1.5 rounded-full flex-none"
+                                                    :style="{ background: row.color || FALLBACK_COLOR }"></span>
+                                                {{ row.typeName }}
+                                            </span>
+                                        </td>
+                                        <td class="px-3 py-2.5 text-[color:var(--text-2)] break-words whitespace-pre-wrap max-w-[320px]">
+                                            {{ (row.feature.properties && row.feature.properties.description) || '—' }}
+                                        </td>
+                                        <td class="px-3 py-2.5 text-[color:var(--text-3)] tabular-nums whitespace-nowrap font-mono text-[12px]">
+                                            {{ fmtCoord(row.feature.geometry && row.feature.geometry.coordinates) }}
+                                        </td>
+                                        <td class="px-3 py-2.5 text-[color:var(--text-3)] tabular-nums whitespace-nowrap text-[12px]">
+                                            {{ formatDateTime(row.feature.properties && row.feature.properties.created_at) || '—' }}
+                                        </td>
+                                        <td class="px-3 py-2.5 whitespace-nowrap text-right">
+                                            <button class="btn-mini btn-edit" @click="openMarkerModal(row)">编辑</button>
+                                            <button class="btn-mini btn-del ml-1.5" @click="deleteMarker(row)">删除</button>
+                                        </td>
+                                    </tr>
+                                </template>
 
-                <!-- 工具条 -->
-                <div
-                    class="flex-none px-3 py-3 flex items-center gap-2 flex-wrap border-b border-[color:var(--border)]">
-                    <input id="searchMarker" class="ios-input !w-auto flex-1 min-w-[160px]" type="text"
-                        placeholder="搜索标题或描述">
-                    <select id="filterType" class="ios-input !w-auto min-w-[140px]"></select>
-                    <span class="text-[12px] text-[color:var(--text-3)] whitespace-nowrap">
-                        共 <b id="markerCount" class="text-[color:var(--text-1)] tabular-nums">0</b> 条
-                    </span>
+                                <!-- 状态提示 -->
+                                <tr v-else>
+                                    <td colspan="7" class="py-16 text-center text-[color:var(--text-4)] text-[13px]">
+
+                                        <!-- 加载中 -->
+                                        <template v-if="markerTableState === 'loading'">
+                                            <span
+                                                class="inline-block w-2 h-2 rounded-full bg-[var(--ios-orange)] pulse mr-2 align-middle"></span>
+                                            正在加载标点数据...
+                                        </template>
+
+                                        <!-- 未加载任何类型 -->
+                                        <template v-else-if="markerTableState === 'idle'">
+                                            <div class="space-y-3">
+                                                <p>尚未加载标点数据</p>
+                                                <p class="text-[12px] text-[color:var(--text-5)]">
+                                                    选择上方「类型」筛选器，或直接加载全部
+                                                </p>
+                                                <button @click="loadAllTypes" :disabled="loadingAll || allTypes.length === 0"
+                                                    class="btn-pager mt-2">
+                                                    {{ loadingAll ? '加载中...' : `加载全部标点（${allTypes.length} 个类型）` }}
+                                                </button>
+                                            </div>
+                                        </template>
+
+                                        <!-- 已加载但为空 -->
+                                        <template v-else>暂无标点数据</template>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 分页条 -->
+                    <div
+                        class="flex-none px-3 py-2.5 flex items-center gap-2 flex-wrap border-t border-[color:var(--border)] bg-[var(--fill-weak2)]">
+                        <span class="text-[12px] text-[color:var(--text-3)] whitespace-nowrap">
+                            第 <b class="text-[color:var(--text-1)] tabular-nums">{{ markerPageData.page }}</b> /
+                            <b class="text-[color:var(--text-1)] tabular-nums">{{ markerPageData.totalPages }}</b> 页
+                        </span>
+                        <select v-model.number="markerPageSize" class="pager-select">
+                            <option :value="10">10 条/页</option>
+                            <option :value="20">20 条/页</option>
+                            <option :value="50">50 条/页</option>
+                            <option :value="100">100 条/页</option>
+                        </select>
+                        <div class="ml-auto flex items-center gap-1.5">
+                            <button class="btn-pager" :disabled="markerPageData.page <= 1"
+                                @click="markerPage--">上一页</button>
+                            <button class="btn-pager" :disabled="markerPageData.page >= markerPageData.totalPages"
+                                @click="markerPage++">下一页</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ---------- 类型数据 ---------- -->
+            <section v-show="tab === 'types'" class="flex-1 min-h-0 flex flex-col">
+                <div class="glass rounded-2xl overflow-hidden flex flex-col flex-1 min-h-0">
+
+                    <!-- 工具条 -->
+                    <div
+                        class="flex-none px-3 py-3 flex items-center gap-2 flex-wrap border-b border-[color:var(--border)]">
+                        <span class="text-[13px] font-semibold text-[color:var(--text-1)]">类型列表</span>
+                        <span class="text-[12px] text-[color:var(--text-3)]">
+                            共 <b class="text-[color:var(--text-1)] tabular-nums">{{ allTypes.length }}</b> 个
+                        </span>
+                        <span class="ml-auto text-[11.5px] text-[color:var(--text-4)] hidden sm:block">
+                            删除类型会同时删除对应的 geojson 数据文件
+                        </span>
+                    </div>
+
+                    <!-- 表格滚动区 -->
+                    <div class="flex-1 min-h-0 scroll-area">
+                        <table class="w-full text-[13px] min-w-[780px]">
+                            <thead>
+                                <tr class="text-[color:var(--text-3)] text-[12px]">
+                                    <th class="text-left font-semibold px-3 py-2.5 w-[90px]">颜色</th>
+                                    <th class="text-left font-semibold px-3 py-2.5 w-[180px]">名称</th>
+                                    <th class="text-left font-semibold px-3 py-2.5">ID</th>
+                                    <th class="text-left font-semibold px-3 py-2.5 w-[90px]">标点数</th>
+                                    <th class="text-left font-semibold px-3 py-2.5 w-[170px]">创建时间</th>
+                                    <th class="text-right font-semibold px-3 py-2.5 w-[130px]">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-if="!typePageData.rows.length">
+                                    <td colspan="6"
+                                        class="py-16 text-center text-[color:var(--text-4)] text-[13px]">
+                                        暂无类型数据
+                                    </td>
+                                </tr>
+                                <tr v-for="t in typePageData.rows" :key="t.id"
+                                    class="border-b border-[color:var(--border-weak)] hover:bg-[var(--fill-weak)] cursor-pointer"
+                                    @click="onTypeRowClick(t.id)">
+                                    <td class="px-3 py-2.5">
+                                        <span class="inline-flex items-center gap-2">
+                                            <span class="w-4 h-4 rounded-full flex-none ring-1 ring-[color:var(--border)]"
+                                                :style="{ background: t.color || FALLBACK_COLOR }"></span>
+                                            <span class="font-mono text-[11.5px] text-[color:var(--text-3)]">
+                                                {{ t.color || FALLBACK_COLOR }}
+                                            </span>
+                                        </span>
+                                    </td>
+                                    <td class="px-3 py-2.5 font-medium text-[color:var(--text-1)] break-words">
+                                        {{ t.name || '未命名' }}
+                                    </td>
+                                    <td class="px-3 py-2.5 font-mono text-[11.5px] text-[color:var(--text-3)] break-all">
+                                        {{ t.id }}
+                                    </td>
+                                    <td class="px-3 py-2.5 text-[color:var(--text-1)] tabular-nums">
+                                        <template v-if="loadedTypes[t.id]">{{ featuresOf(t.id).length }}</template>
+                                        <template v-else-if="loadingTypes[t.id]">
+                                            <span
+                                                class="inline-block w-1.5 h-1.5 rounded-full bg-[var(--ios-orange)] pulse"></span>
+                                        </template>
+                                        <template v-else>
+                                            <span class="text-[color:var(--text-5)]">—</span>
+                                        </template>
+                                    </td>
+                                    <td class="px-3 py-2.5 text-[color:var(--text-3)] tabular-nums whitespace-nowrap text-[12px]">
+                                        {{ formatDateTime(t.created_at) || '—' }}
+                                    </td>
+                                    <td class="px-3 py-2.5 whitespace-nowrap text-right" @click.stop>
+                                        <button class="btn-mini btn-edit" @click="openTypeModal(t.id)">编辑</button>
+                                        <button class="btn-mini btn-del ml-1.5" @click="deleteType(t.id)">删除</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 分页条 -->
+                    <div
+                        class="flex-none px-3 py-2.5 flex items-center gap-2 flex-wrap border-t border-[color:var(--border)] bg-[var(--fill-weak2)]">
+                        <span class="text-[12px] text-[color:var(--text-3)] whitespace-nowrap">
+                            第 <b class="text-[color:var(--text-1)] tabular-nums">{{ typePageData.page }}</b> /
+                            <b class="text-[color:var(--text-1)] tabular-nums">{{ typePageData.totalPages }}</b> 页
+                        </span>
+                        <select v-model.number="typePageSize" class="pager-select">
+                            <option :value="10">10 条/页</option>
+                            <option :value="20">20 条/页</option>
+                            <option :value="50">50 条/页</option>
+                            <option :value="100">100 条/页</option>
+                        </select>
+                        <div class="ml-auto flex items-center gap-1.5">
+                            <button class="btn-pager" :disabled="typePageData.page <= 1"
+                                @click="typePage--">上一页</button>
+                            <button class="btn-pager" :disabled="typePageData.page >= typePageData.totalPages"
+                                @click="typePage++">下一页</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- ===================== 标点编辑弹窗 ===================== -->
+        <div v-if="markerModalVisible"
+            class="fixed inset-0 z-[9998] flex items-center justify-center p-4 bg-[var(--overlay)] backdrop-blur-[2px]"
+            @click="onMarkerBackdrop">
+            <div
+                class="anim-pop w-full max-w-[440px] max-h-[90vh] overflow-y-auto no-sb bg-[var(--card)] rounded-[24px] shadow-[0_24px_64px_rgba(0,0,0,.28)]">
+                <div class="flex items-center justify-between px-5 pt-5 pb-2">
+                    <h2 class="text-[17px] font-bold text-[color:var(--text-1)] tracking-tight">编辑标点</h2>
+                    <button @click="closeMarkerModal"
+                        class="w-7 h-7 rounded-full bg-[var(--fill)] text-[color:var(--text-3)] text-[15px] leading-none flex items-center justify-center active:scale-90 transition">✕</button>
                 </div>
 
-                <!-- 表格滚动区 -->
-                <div class="flex-1 min-h-0 scroll-area">
-                    <table class="w-full text-[13px] min-w-[940px]">
-                        <thead>
-                            <tr class="text-[color:var(--text-3)] text-[12px]">
-                                <th class="text-left font-semibold px-3 py-2.5 w-[52px]">#</th>
-                                <th class="text-left font-semibold px-3 py-2.5 w-[190px]">标题</th>
-                                <th class="text-left font-semibold px-3 py-2.5 w-[130px]">类型</th>
-                                <th class="text-left font-semibold px-3 py-2.5">描述</th>
-                                <th class="text-left font-semibold px-3 py-2.5 w-[200px]">坐标（经, 纬）</th>
-                                <th class="text-left font-semibold px-3 py-2.5 w-[160px]">创建时间</th>
-                                <th class="text-right font-semibold px-3 py-2.5 w-[130px]">操作</th>
-                            </tr>
-                        </thead>
-                        <tbody id="markerTbody"></tbody>
-                    </table>
-                </div>
+                <div class="px-5 pb-5">
+                    <label class="f-label">标题 <span class="text-[color:var(--ios-red)]">*</span></label>
+                    <input ref="markerTitleEl" v-model="markerForm.title" class="ios-input" type="text" maxlength="50"
+                        placeholder="标点名称">
 
-                <!-- 分页条 -->
-                <div
-                    class="flex-none px-3 py-2.5 flex items-center gap-2 flex-wrap border-t border-[color:var(--border)] bg-[var(--fill-weak2)]">
-                    <span class="text-[12px] text-[color:var(--text-3)] whitespace-nowrap">
-                        第 <b id="markerPageNow" class="text-[color:var(--text-1)] tabular-nums">1</b> /
-                        <b id="markerPageTotal" class="text-[color:var(--text-1)] tabular-nums">1</b> 页
-                    </span>
-                    <select id="markerPageSize" class="pager-select">
-                        <option value="10">10 条/页</option>
-                        <option value="20" selected>20 条/页</option>
-                        <option value="50">50 条/页</option>
-                        <option value="100">100 条/页</option>
+                    <label class="f-label">类型 <span class="text-[color:var(--ios-red)]">*</span></label>
+                    <select v-model="markerForm.typeId" class="ios-input">
+                        <option v-for="t in allTypes" :key="t.id" :value="t.id">{{ t.name }}</option>
                     </select>
-                    <div class="ml-auto flex items-center gap-1.5">
-                        <button id="markerPrev" class="btn-pager">上一页</button>
-                        <button id="markerNext" class="btn-pager">下一页</button>
+
+                    <label class="f-label">描述</label>
+                    <textarea v-model="markerForm.desc" class="ios-input" rows="3" maxlength="500"
+                        placeholder="补充说明..."></textarea>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="f-label">经度 <span class="text-[color:var(--ios-red)]">*</span></label>
+                            <input v-model="markerForm.lng" class="ios-input" type="number" step="0.000001"
+                                inputmode="decimal">
+                        </div>
+                        <div>
+                            <label class="f-label">纬度 <span class="text-[color:var(--ios-red)]">*</span></label>
+                            <input v-model="markerForm.lat" class="ios-input" type="number" step="0.000001"
+                                inputmode="decimal">
+                        </div>
                     </div>
-                </div>
-            </div>
-        </section>
 
-        <!-- ---------- 类型数据 ---------- -->
-        <section id="panel-types" class="hidden flex-1 min-h-0 flex-col">
-            <div class="glass rounded-2xl overflow-hidden flex flex-col flex-1 min-h-0">
-
-                <!-- 工具条 -->
-                <div
-                    class="flex-none px-3 py-3 flex items-center gap-2 flex-wrap border-b border-[color:var(--border)]">
-                    <span class="text-[13px] font-semibold text-[color:var(--text-1)]">类型列表</span>
-                    <span class="text-[12px] text-[color:var(--text-3)]">
-                        共 <b id="typeCount" class="text-[color:var(--text-1)] tabular-nums">0</b> 个
-                    </span>
-                    <span class="ml-auto text-[11.5px] text-[color:var(--text-4)] hidden sm:block">
-                        删除类型会同时删除对应的 geojson 数据文件
-                    </span>
-                </div>
-
-                <!-- 表格滚动区 -->
-                <div class="flex-1 min-h-0 scroll-area">
-                    <table class="w-full text-[13px] min-w-[780px]">
-                        <thead>
-                            <tr class="text-[color:var(--text-3)] text-[12px]">
-                                <th class="text-left font-semibold px-3 py-2.5 w-[90px]">颜色</th>
-                                <th class="text-left font-semibold px-3 py-2.5 w-[180px]">名称</th>
-                                <th class="text-left font-semibold px-3 py-2.5">ID</th>
-                                <th class="text-left font-semibold px-3 py-2.5 w-[90px]">标点数</th>
-                                <th class="text-left font-semibold px-3 py-2.5 w-[170px]">创建时间</th>
-                                <th class="text-right font-semibold px-3 py-2.5 w-[130px]">操作</th>
-                            </tr>
-                        </thead>
-                        <tbody id="typeTbody"></tbody>
-                    </table>
-                </div>
-
-                <!-- 分页条 -->
-                <div
-                    class="flex-none px-3 py-2.5 flex items-center gap-2 flex-wrap border-t border-[color:var(--border)] bg-[var(--fill-weak2)]">
-                    <span class="text-[12px] text-[color:var(--text-3)] whitespace-nowrap">
-                        第 <b id="typePageNow" class="text-[color:var(--text-1)] tabular-nums">1</b> /
-                        <b id="typePageTotal" class="text-[color:var(--text-1)] tabular-nums">1</b> 页
-                    </span>
-                    <select id="typePageSize" class="pager-select">
-                        <option value="10" selected>10 条/页</option>
-                        <option value="20">20 条/页</option>
-                        <option value="50">50 条/页</option>
-                        <option value="100">100 条/页</option>
-                    </select>
-                    <div class="ml-auto flex items-center gap-1.5">
-                        <button id="typePrev" class="btn-pager">上一页</button>
-                        <button id="typeNext" class="btn-pager">下一页</button>
+                    <div class="flex gap-2.5 mt-6">
+                        <button @click="closeMarkerModal"
+                            class="flex-1 py-3 rounded-2xl text-[15px] font-semibold text-[color:var(--ios-blue)] bg-[var(--fill-strong)] active:scale-[.98] transition">
+                            取消
+                        </button>
+                        <button @click="saveMarker" :disabled="savingMarker"
+                            class="flex-1 py-3 rounded-2xl text-[15px] font-semibold text-white bg-[var(--ios-blue)] active:scale-[.98] transition shadow-[0_6px_20px_rgba(0,122,255,.32)] disabled:opacity-50">
+                            {{ savingMarker ? '保存中...' : '保存' }}
+                        </button>
                     </div>
-                </div>
-            </div>
-        </section>
-    </main>
-
-    <!-- ===================== 标点编辑弹窗 ===================== -->
-    <div id="markerModal"
-        class="hidden fixed inset-0 z-[9998] items-center justify-center p-4 bg-[var(--overlay)] backdrop-blur-[2px]">
-        <div
-            class="anim-pop w-full max-w-[440px] max-h-[90vh] overflow-y-auto no-sb bg-[var(--card)] rounded-[24px] shadow-[0_24px_64px_rgba(0,0,0,.28)]">
-            <div class="flex items-center justify-between px-5 pt-5 pb-2">
-                <h2 class="text-[17px] font-bold text-[color:var(--text-1)] tracking-tight">编辑标点</h2>
-                <button id="btnCloseMarkerModal"
-                    class="w-7 h-7 rounded-full bg-[var(--fill)] text-[color:var(--text-3)] text-[15px] leading-none flex items-center justify-center active:scale-90 transition">✕</button>
-            </div>
-
-            <div class="px-5 pb-5">
-                <label class="f-label">标题 <span class="text-[color:var(--ios-red)]">*</span></label>
-                <input id="m-title" class="ios-input" type="text" maxlength="50" placeholder="标点名称">
-
-                <label class="f-label">类型 <span class="text-[color:var(--ios-red)]">*</span></label>
-                <select id="m-type" class="ios-input"></select>
-
-                <label class="f-label">描述</label>
-                <textarea id="m-desc" class="ios-input" rows="3" maxlength="500" placeholder="补充说明..."></textarea>
-
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="f-label">经度 <span class="text-[color:var(--ios-red)]">*</span></label>
-                        <input id="m-lng" class="ios-input" type="number" step="0.000001" inputmode="decimal">
-                    </div>
-                    <div>
-                        <label class="f-label">纬度 <span class="text-[color:var(--ios-red)]">*</span></label>
-                        <input id="m-lat" class="ios-input" type="number" step="0.000001" inputmode="decimal">
-                    </div>
-                </div>
-
-                <div class="flex gap-2.5 mt-6">
-                    <button id="btnCancelMarker"
-                        class="flex-1 py-3 rounded-2xl text-[15px] font-semibold text-[color:var(--ios-blue)] bg-[var(--fill-strong)] active:scale-[.98] transition">
-                        取消
-                    </button>
-                    <button id="btnSaveMarker"
-                        class="flex-1 py-3 rounded-2xl text-[15px] font-semibold text-white bg-[var(--ios-blue)] active:scale-[.98] transition shadow-[0_6px_20px_rgba(0,122,255,.32)] disabled:opacity-50">
-                        保存
-                    </button>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- ===================== 类型编辑弹窗 ===================== -->
-    <div id="typeModal"
-        class="hidden fixed inset-0 z-[9998] items-center justify-center p-4 bg-[var(--overlay)] backdrop-blur-[2px]">
-        <div
-            class="anim-pop w-full max-w-[400px] max-h-[90vh] overflow-y-auto no-sb bg-[var(--card)] rounded-[24px] shadow-[0_24px_64px_rgba(0,0,0,.28)]">
-            <div class="flex items-center justify-between px-5 pt-5 pb-2">
-                <h2 class="text-[17px] font-bold text-[color:var(--text-1)] tracking-tight">编辑类型</h2>
-                <button id="btnCloseTypeModal"
-                    class="w-7 h-7 rounded-full bg-[var(--fill)] text-[color:var(--text-3)] text-[15px] leading-none flex items-center justify-center active:scale-90 transition">✕</button>
-            </div>
-
-            <div class="px-5 pb-5">
-                <label class="f-label">类型名称 <span class="text-[color:var(--ios-red)]">*</span></label>
-                <input id="t-name" class="ios-input" type="text" maxlength="20" placeholder="例如：餐厅 / 景区 / 钓点">
-
-                <label class="f-label">类型颜色 <span class="text-[color:var(--ios-red)]">*</span></label>
-                <div class="flex gap-2 items-center">
-                    <input type="color" id="t-color" value="#007AFF">
-                    <input id="t-color-text" class="ios-input flex-1" type="text" maxlength="7" value="#007AFF"
-                        placeholder="#007AFF">
+        <!-- ===================== 类型编辑弹窗 ===================== -->
+        <div v-if="typeModalVisible"
+            class="fixed inset-0 z-[9998] flex items-center justify-center p-4 bg-[var(--overlay)] backdrop-blur-[2px]"
+            @click="onTypeBackdrop">
+            <div
+                class="anim-pop w-full max-w-[400px] max-h-[90vh] overflow-y-auto no-sb bg-[var(--card)] rounded-[24px] shadow-[0_24px_64px_rgba(0,0,0,.28)]">
+                <div class="flex items-center justify-between px-5 pt-5 pb-2">
+                    <h2 class="text-[17px] font-bold text-[color:var(--text-1)] tracking-tight">编辑类型</h2>
+                    <button @click="closeTypeModal"
+                        class="w-7 h-7 rounded-full bg-[var(--fill)] text-[color:var(--text-3)] text-[15px] leading-none flex items-center justify-center active:scale-90 transition">✕</button>
                 </div>
-                <div id="swatches" class="flex flex-wrap gap-2.5 mt-3.5"></div>
 
-                <div class="flex gap-2.5 mt-6">
-                    <button id="btnCancelType"
-                        class="flex-1 py-3 rounded-2xl text-[15px] font-semibold text-[color:var(--ios-blue)] bg-[var(--fill-strong)] active:scale-[.98] transition">
-                        取消
-                    </button>
-                    <button id="btnSaveType"
-                        class="flex-1 py-3 rounded-2xl text-[15px] font-semibold text-white bg-[var(--ios-blue)] active:scale-[.98] transition shadow-[0_6px_20px_rgba(0,122,255,.32)] disabled:opacity-50">
-                        保存
-                    </button>
+                <div class="px-5 pb-5">
+                    <label class="f-label">类型名称 <span class="text-[color:var(--ios-red)]">*</span></label>
+                    <input ref="typeNameEl" v-model="typeForm.name" class="ios-input" type="text" maxlength="20"
+                        placeholder="例如：餐厅 / 景区 / 钓点" @keydown.enter="saveType">
+
+                    <label class="f-label">类型颜色 <span class="text-[color:var(--ios-red)]">*</span></label>
+                    <div class="flex gap-2 items-center">
+                        <input type="color" :value="typeForm.color" @input="onColorPicker">
+                        <input :value="typeForm.colorText" @input="onColorText" class="ios-input flex-1" type="text"
+                            maxlength="7" placeholder="#007AFF">
+                    </div>
+                    <div class="flex flex-wrap gap-2.5 mt-3.5">
+                        <span v-for="c in PRESET_COLORS" :key="c" class="swatch" :style="{ background: c }" :title="c"
+                            @click="setColorInput(c)"></span>
+                    </div>
+
+                    <div class="flex gap-2.5 mt-6">
+                        <button @click="closeTypeModal"
+                            class="flex-1 py-3 rounded-2xl text-[15px] font-semibold text-[color:var(--ios-blue)] bg-[var(--fill-strong)] active:scale-[.98] transition">
+                            取消
+                        </button>
+                        <button @click="saveType" :disabled="savingType"
+                            class="flex-1 py-3 rounded-2xl text-[15px] font-semibold text-white bg-[var(--ios-blue)] active:scale-[.98] transition shadow-[0_6px_20px_rgba(0,122,255,.32)] disabled:opacity-50">
+                            {{ savingType ? '保存中...' : '保存' }}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
+
+        <!-- ===================== Toast 容器 ===================== -->
+        <div v-for="t in toasts" :key="t.id" class="toast-item fixed left-1/2 bottom-8 z-[9999] px-5 py-3
+                   rounded-2xl text-white text-[13px] font-medium shadow-2xl -translate-x-1/2
+                   max-w-[82vw] text-center pointer-events-none"
+            :class="t.show ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'"
+            :style="{ background: TOAST_BG[t.type] || TOAST_BG.info }">{{ t.msg }}</div>
+
     </div>
 
     <script>
@@ -654,14 +814,6 @@
         /* ============================================================
            通用工具
            ============================================================ */
-        const $ = id => document.getElementById(id);
-
-        const escapeHtml = str => {
-            const div = document.createElement('div');
-            div.textContent = str == null ? '' : String(str);
-            return div.innerHTML;
-        };
-
         const sleep = ms => new Promise(r => setTimeout(r, ms));
 
         const markerFilePath = typeId => `${CONFIG.DATA_DIR}/${typeId}.geojson`;
@@ -710,7 +862,6 @@
             return `${lng.toFixed(6)}, ${lat.toFixed(6)}`;
         }
 
-        /** 判断两个 feature 是否为同一条（用于在最新数据中定位） */
         function sameFeature(a, b) {
             const pa = a.properties || {}, pb = b.properties || {};
             const ca = (a.geometry && a.geometry.coordinates) || [];
@@ -720,39 +871,31 @@
                 && ca[0] === cb[0] && ca[1] === cb[1];
         }
 
-        /* ---------- Toast ---------- */
+        function paginate(list, page, size) {
+            const total = list.length;
+            const totalPages = Math.max(1, Math.ceil(total / size));
+            const p = Math.min(Math.max(1, Math.floor(page) || 1), totalPages);
+            const start = (p - 1) * size;
+            return {
+                rows: list.slice(start, start + size),
+                page: p,
+                totalPages,
+                total,
+                start
+            };
+        }
+
         const TOAST_BG = {
             success: 'linear-gradient(135deg,#34C759,#28A745)',
             error: 'linear-gradient(135deg,#FF3B30,#D92D20)',
             info: 'linear-gradient(135deg,#007AFF,#0062CC)'
         };
 
-        function toast(msg, type = 'info') {
-            const el = document.createElement('div');
-            el.className = 'fixed left-1/2 bottom-8 z-[9999] px-5 py-3 rounded-2xl text-white text-[13px] ' +
-                'font-medium shadow-2xl transition-all duration-300 -translate-x-1/2 opacity-0 translate-y-3 ' +
-                'max-w-[82vw] text-center pointer-events-none';
-            el.style.background = TOAST_BG[type] || TOAST_BG.info;
-            el.textContent = msg;
-            document.body.appendChild(el);
-            requestAnimationFrame(() => el.classList.remove('opacity-0', 'translate-y-3'));
-            setTimeout(() => {
-                el.classList.add('opacity-0', 'translate-y-3');
-                setTimeout(() => el.remove(), 320);
-            }, 2200);
-        }
-
-        /* ---------- 状态指示 ---------- */
         const STATUS_DOT = {
             ok: 'w-2 h-2 rounded-full bg-[#34C759]',
             err: 'w-2 h-2 rounded-full bg-[#FF3B30]',
             loading: 'w-2 h-2 rounded-full bg-[#FF9500] animate-pulse'
         };
-
-        function setStatus(state, text) {
-            $('statusDot').className = STATUS_DOT[state] || STATUS_DOT.loading;
-            $('statusText').textContent = text;
-        }
 
         /* ============================================================
            加解密
@@ -822,7 +965,6 @@
             return ghApi(path, { method: 'PUT', body: JSON.stringify(body) });
         }
 
-        /** 删除文件（不存在时静默返回 false） */
         async function ghDeleteFile(path, message) {
             let sha = null;
             try {
@@ -839,7 +981,6 @@
             return true;
         }
 
-        /** 安全写：每次提交前重新拉取最新内容与 sha，冲突自动重试 */
         async function updateJsonFile(path, mutate, message, maxAttempts = 3) {
             let lastErr = null;
             for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -861,683 +1002,661 @@
         }
 
         /* ============================================================
-           全局状态
+           Vue 应用
            ============================================================ */
-        const state = {
-            types: { types: [] },
-            typesSha: null,
-            typeData: {},        // typeId -> { geojson, sha }
-            keyword: '',
-            filterTypeId: '',
-            tab: 'markers',
+        const { createApp, ref, reactive, computed, watch, nextTick, onMounted, onBeforeUnmount } = Vue;
 
-            /* 分页状态 */
-            markerPage: 1,
-            markerPageSize: 20,
-            typePage: 1,
-            typePageSize: 10
-        };
+        createApp({
+            setup() {
+                /* ---------- 常量 ---------- */
+                const TAB_BASE = 'px-4 py-1.5 rounded-full text-[13px] font-semibold transition';
+                const TAB_ON = TAB_BASE + ' bg-[var(--card)] text-[color:var(--text-1)] shadow-[0_1px_4px_rgba(0,0,0,.1)]';
+                const TAB_OFF = TAB_BASE + ' text-[color:var(--text-3)] hover:text-[color:var(--text-1)]';
 
-        const Types = {
-            all() { return state.types.types; },
-            getById(id) { return state.types.types.find(t => t.id === id) || null; },
-            allIds() { return state.types.types.map(t => t.id); },
-            featuresOf(id) {
-                const d = state.typeData[id];
-                return (d && d.geojson && Array.isArray(d.geojson.features)) ? d.geojson.features : [];
-            },
-            async load() {
-                const { content, sha } = await ghGetFile(CONFIG.TYPES_FILE);
-                state.types = normalizeTypes(content);
-                state.typesSha = sha;
-            }
-        };
+                /* ---------- 数据 ---------- */
+                const typesData = ref({ types: [] });         // types.json
+                const typeData = reactive({});                  // typeId -> { geojson, sha }
+                const loadedTypes = reactive({});               // typeId -> true（geojson 已加载）
+                const loadingTypes = reactive({});              // typeId -> true（geojson 加载中）
+                const typeLoadPromises = {};                    // typeId -> Promise（并发去重）
 
-        /* ============================================================
-           数据加载
-           ============================================================ */
-        async function loadTypeData(typeId) {
-            const { content, sha } = await ghGetFile(markerFilePath(typeId));
-            const geojson = normalizeFC(content);
-            geojson.features.forEach(f => {
-                if (!f.properties) f.properties = {};
-                if (!f.geometry) f.geometry = { type: 'Point', coordinates: [] };
-                f.properties.type = typeId;
-            });
-            state.typeData[typeId] = { geojson, sha };
-            return geojson;
-        }
+                const loading = ref(false);
+                const loadingAll = ref(false);
 
-        async function loadAllTypeData(ids) {
-            const results = await Promise.allSettled(ids.map(id => loadTypeData(id)));
-            return results.map((r, i) => r.status === 'rejected' ? ids[i] : null).filter(Boolean);
-        }
+                /* ---------- 状态指示 ---------- */
+                const statusState = ref('loading');
+                const statusText = ref('加载中...');
+                const statusDotClass = computed(() => STATUS_DOT[statusState.value] || STATUS_DOT.loading);
 
-        async function refreshAll(silent = true) {
-            setStatus('loading', '加载中...');
-            const icon = $('refreshIcon');
-            icon.classList.add('spin');
-            $('btnRefresh').disabled = true;
+                /* ---------- 筛选 / 分页 ---------- */
+                const tab = ref('markers');
+                const keyword = ref('');
+                const filterTypeId = ref('');
 
-            try {
-                await Types.load();
-                state.typeData = {};
-                const ids = Types.allIds();
-                const failed = await loadAllTypeData(ids);
-                renderAll();
+                const markerPage = ref(1);
+                const markerPageSize = ref(20);
+                const typePage = ref(1);
+                const typePageSize = ref(10);
 
-                if (failed.length) {
-                    setStatus('err', `${failed.length} 个类型数据加载失败`);
-                    toast(`${failed.length} 个类型的数据文件加载失败`, 'error');
-                } else {
-                    setStatus('ok', `已加载 ${ids.length} 个类型`);
-                    if (!silent) toast('数据已刷新', 'success');
-                }
-            } catch (e) {
-                console.error(e);
-                setStatus('err', '加载失败');
-                toast(e.message || '加载失败', 'error');
-            } finally {
-                icon.classList.remove('spin');
-                $('btnRefresh').disabled = false;
-            }
-        }
+                /* ---------- 计算属性 ---------- */
+                const allTypes = computed(() => typesData.value.types);
 
-        /* ============================================================
-           分页工具
-           ============================================================ */
-        function paginate(list, page, size) {
-            const total = list.length;
-            const totalPages = Math.max(1, Math.ceil(total / size));
-            const p = Math.min(Math.max(1, Math.floor(page) || 1), totalPages);
-            const start = (p - 1) * size;
-            return {
-                rows: list.slice(start, start + size),
-                page: p,
-                totalPages,
-                total,
-                start
-            };
-        }
-
-        /** 更新分页条 UI；prefix 为 'marker' 或 'type' */
-        function updatePager(prefix, pg) {
-            $(prefix + 'PageNow').textContent = pg.page;
-            $(prefix + 'PageTotal').textContent = pg.totalPages;
-            $(prefix + 'Prev').disabled = pg.page <= 1;
-            $(prefix + 'Next').disabled = pg.page >= pg.totalPages;
-
-            const sel = $(prefix + 'PageSize');
-            const want = String(state[prefix + 'PageSize']);
-            if (sel.value !== want) sel.value = want;
-        }
-
-        /* ============================================================
-           渲染
-           ============================================================ */
-        const TAB_BASE = 'px-4 py-1.5 rounded-full text-[13px] font-semibold transition';
-        const TAB_ON = TAB_BASE +
-            ' bg-[var(--card)] text-[color:var(--text-1)] shadow-[0_1px_4px_rgba(0,0,0,.1)]';
-        const TAB_OFF = TAB_BASE +
-            ' text-[color:var(--text-3)] hover:text-[color:var(--text-1)]';
-
-        function setTab(tab) {
-            state.tab = tab;
-            document.querySelectorAll('[data-tab]').forEach(b => {
-                b.className = b.dataset.tab === tab ? TAB_ON : TAB_OFF;
-            });
-
-            const showMarkers = tab === 'markers';
-            const mp = $('panel-markers'), tp = $('panel-types');
-
-            mp.classList.toggle('hidden', !showMarkers);
-            mp.classList.toggle('flex', showMarkers);
-            tp.classList.toggle('hidden', showMarkers);
-            tp.classList.toggle('flex', !showMarkers);
-        }
-
-        function renderAll() {
-            renderTypeFilterOptions();
-            renderMarkerTable();
-            renderTypeTable();
-        }
-
-        function renderTypeFilterOptions() {
-            const sel = $('filterType');
-            const cur = state.filterTypeId;
-            sel.innerHTML = `<option value="">全部类型</option>` +
-                Types.all().map(t => `<option value="${t.id}">${escapeHtml(t.name)}</option>`).join('');
-            if (cur && Types.getById(cur)) sel.value = cur;
-            else { state.filterTypeId = ''; sel.value = ''; }
-        }
-
-        /* ---------- 标点表格 ---------- */
-        let markerRows = [];   // 当前页显示的行
-
-        function getFilteredMarkers() {
-            const kw = state.keyword.trim().toLowerCase();
-            const out = [];
-            Types.all().forEach(t => {
-                if (state.filterTypeId && t.id !== state.filterTypeId) return;
-                Types.featuresOf(t.id).forEach(f => {
-                    const p = f.properties || {};
-                    if (kw) {
-                        const hay = `${p.title || ''} ${p.description || ''}`.toLowerCase();
-                        if (!hay.includes(kw)) return;
-                    }
-                    out.push({ typeId: t.id, typeName: t.name, color: t.color, feature: f });
+                const pendingCount = computed(() => {
+                    const ids = allTypes.value.map(t => t.id);
+                    return ids.filter(id => !loadedTypes[id]).length;
                 });
-            });
-            out.sort((a, b) => String(b.feature.properties?.created_at || '')
-                .localeCompare(String(a.feature.properties?.created_at || '')));
-            return out;
-        }
 
-        function renderMarkerTable() {
-            const all = getFilteredMarkers();
-            $('markerCount').textContent = all.length;
+                function featuresOf(id) {
+                    const d = typeData[id];
+                    return (d && d.geojson && Array.isArray(d.geojson.features)) ? d.geojson.features : [];
+                }
 
-            const pg = paginate(all, state.markerPage, state.markerPageSize);
-            state.markerPage = pg.page;
-            markerRows = pg.rows;
+                /** 只汇总已加载类型的标点 */
+                const filteredMarkers = computed(() => {
+                    const kw = keyword.value.trim().toLowerCase();
+                    const out = [];
+                    allTypes.value.forEach(t => {
+                        if (filterTypeId.value && t.id !== filterTypeId.value) return;
+                        if (!loadedTypes[t.id]) return;   // 未加载的类型不参与
+                        featuresOf(t.id).forEach(f => {
+                            const p = f.properties || {};
+                            if (kw) {
+                                const hay = `${p.title || ''} ${p.description || ''}`.toLowerCase();
+                                if (!hay.includes(kw)) return;
+                            }
+                            out.push({ typeId: t.id, typeName: t.name, color: t.color, feature: f });
+                        });
+                    });
+                    out.sort((a, b) => String((b.feature.properties && b.feature.properties.created_at) || '')
+                        .localeCompare(String((a.feature.properties && a.feature.properties.created_at) || '')));
+                    return out;
+                });
 
-            const tbody = $('markerTbody');
+                const markerPageData = computed(() =>
+                    paginate(filteredMarkers.value, markerPage.value, markerPageSize.value)
+                );
 
-            if (!markerRows.length) {
-                tbody.innerHTML = `<tr><td colspan="7" class="py-16 text-center text-[color:var(--text-4)] text-[13px]">
-                    暂无标点数据</td></tr>`;
-            } else {
-                tbody.innerHTML = markerRows.map((row, i) => {
+                const typePageData = computed(() =>
+                    paginate(allTypes.value, typePage.value, typePageSize.value)
+                );
+
+                /** 标点表格空状态判定 */
+                const markerTableState = computed(() => {
+                    if (filterTypeId.value) {
+                        if (loadingTypes[filterTypeId.value]) return 'loading';
+                        if (!loadedTypes[filterTypeId.value]) return 'idle';
+                    } else {
+                        const anyLoaded = allTypes.value.some(t => loadedTypes[t.id]);
+                        const anyLoading = allTypes.value.some(t => loadingTypes[t.id]);
+                        if (anyLoading && !anyLoaded) return 'loading';
+                        if (!anyLoaded) return 'idle';
+                    }
+                    if (filteredMarkers.value.length === 0) return 'empty';
+                    return 'data';
+                });
+
+                /* ---------- 弹窗状态 ---------- */
+                const markerModalVisible = ref(false);
+                const typeModalVisible = ref(false);
+                const savingMarker = ref(false);
+                const savingType = ref(false);
+
+                const markerForm = reactive({
+                    title: '',
+                    typeId: '',
+                    desc: '',
+                    lng: '',
+                    lat: ''
+                });
+
+                const typeForm = reactive({
+                    name: '',
+                    color: '#007AFF',
+                    colorText: '#007AFF'
+                });
+
+                const editingOldTypeId = ref(null);
+                const editingFeature = ref(null);
+                const editingTypeId = ref(null);
+
+                const markerTitleEl = ref(null);
+                const typeNameEl = ref(null);
+
+                /* ---------- Toast ---------- */
+                const toasts = ref([]);
+                let toastSeq = 0;
+
+                function toast(msg, t = 'info') {
+                    const id = ++toastSeq;
+                    const item = reactive({ id, msg, type: t, show: false });
+                    toasts.value.push(item);
+                    requestAnimationFrame(() => { item.show = true; });
+                    setTimeout(() => {
+                        item.show = false;
+                        setTimeout(() => {
+                            const i = toasts.value.indexOf(item);
+                            if (i > -1) toasts.value.splice(i, 1);
+                        }, 320);
+                    }, 2200);
+                }
+
+                function setStatus(state, text) {
+                    statusState.value = state;
+                    statusText.value = text;
+                }
+
+                /* ============================================================
+                   分页夹紧 & 筛选回第一页
+                   ============================================================ */
+                watch([() => filteredMarkers.value.length, markerPageSize], () => {
+                    const total = Math.max(1, Math.ceil(filteredMarkers.value.length / markerPageSize.value));
+                    if (markerPage.value > total) markerPage.value = total;
+                    if (markerPage.value < 1) markerPage.value = 1;
+                });
+
+                watch([() => allTypes.value.length, typePageSize], () => {
+                    const total = Math.max(1, Math.ceil(allTypes.value.length / typePageSize.value));
+                    if (typePage.value > total) typePage.value = total;
+                    if (typePage.value < 1) typePage.value = 1;
+                });
+
+                watch([keyword, filterTypeId], () => { markerPage.value = 1; });
+
+                /* 类型筛选失效时清空 */
+                watch(allTypes, () => {
+                    if (filterTypeId.value && !allTypes.value.find(t => t.id === filterTypeId.value)) {
+                        filterTypeId.value = '';
+                    }
+                });
+
+                /* 筛选某个类型时按需加载其 geojson */
+                watch(filterTypeId, (newVal) => {
+                    if (newVal) ensureTypeLoaded(newVal);
+                });
+
+                /* ============================================================
+                   geojson 按需加载
+                   ============================================================ */
+                function processGeojson(geojson, typeId) {
+                    const fc = normalizeFC(geojson);
+                    fc.features.forEach(f => {
+                        if (!f.properties) f.properties = {};
+                        if (!f.geometry) f.geometry = { type: 'Point', coordinates: [] };
+                        f.properties.type = typeId;
+                    });
+                    return fc;
+                }
+
+                function ingestGeojson(typeId, geojson, sha) {
+                    const fc = processGeojson(geojson, typeId);
+                    typeData[typeId] = { geojson: fc, sha };
+                    loadedTypes[typeId] = true;
+                    return fc;
+                }
+
+                /** 按需加载单个类型（并发去重） */
+                function loadTypeData(typeId) {
+                    if (!typeId) return Promise.resolve();
+                    if (loadedTypes[typeId]) return Promise.resolve(typeData[typeId]?.geojson);
+                    if (typeLoadPromises[typeId]) return typeLoadPromises[typeId];
+
+                    loadingTypes[typeId] = true;
+                    const p = (async () => {
+                        try {
+                            const { content, sha } = await ghGetFile(markerFilePath(typeId));
+                            ingestGeojson(typeId, content, sha);
+                        } finally {
+                            delete loadingTypes[typeId];
+                            delete typeLoadPromises[typeId];
+                        }
+                    })();
+
+                    typeLoadPromises[typeId] = p;
+                    return p;
+                }
+
+                function ensureTypeLoaded(typeId) {
+                    if (!typeId) return;
+                    if (loadedTypes[typeId] || loadingTypes[typeId]) return;
+                    loadTypeData(typeId).catch(e => {
+                        console.error(e);
+                        toast(`类型「${typeId}」标点数据加载失败`, 'error');
+                    });
+                }
+
+                /** 加载全部剩余类型 */
+                async function loadAllTypes() {
+                    const ids = allTypes.value.map(t => t.id).filter(id => !loadedTypes[id]);
+                    if (!ids.length) return;
+
+                    loadingAll.value = true;
+                    setStatus('loading', '加载标点数据...');
+
+                    const results = await Promise.allSettled(ids.map(id => loadTypeData(id)));
+                    const failed = results
+                        .map((r, i) => r.status === 'rejected' ? ids[i] : null)
+                        .filter(Boolean);
+
+                    loadingAll.value = false;
+
+                    if (failed.length) {
+                        setStatus('err', `${failed.length} 个类型加载失败`);
+                        toast(`${failed.length} 个类型的标点数据加载失败`, 'error');
+                    } else {
+                        setStatus('ok', `已加载全部标点数据`);
+                        toast('全部标点数据已加载', 'success');
+                    }
+                }
+
+                /* ============================================================
+                   全量刷新（只加载 types.json）
+                   ============================================================ */
+                async function refreshAll(silent = true) {
+                    loading.value = true;
+                    setStatus('loading', '加载中...');
+
+                    try {
+                        const { content } = await ghGetFile(CONFIG.TYPES_FILE);
+                        typesData.value = normalizeTypes(content);
+
+                        /* 重置按需加载的状态 */
+                        Object.keys(typeData).forEach(k => delete typeData[k]);
+                        Object.keys(loadedTypes).forEach(k => delete loadedTypes[k]);
+                        Object.keys(loadingTypes).forEach(k => delete loadingTypes[k]);
+                        Object.keys(typeLoadPromises).forEach(k => delete typeLoadPromises[k]);
+
+                        /* 如果当前有选中类型，自动加载它 */
+                        if (filterTypeId.value && allTypes.value.find(t => t.id === filterTypeId.value)) {
+                            ensureTypeLoaded(filterTypeId.value);
+                        }
+
+                        setStatus('ok', `已加载 ${allTypes.value.length} 个类型`);
+                        if (!silent) toast('数据已刷新', 'success');
+                    } catch (e) {
+                        console.error(e);
+                        setStatus('err', '加载失败');
+                        toast(e.message || '加载失败', 'error');
+                    } finally {
+                        loading.value = false;
+                    }
+                }
+
+                /* ============================================================
+                   类型表格行点击：筛选到该类型
+                   ============================================================ */
+                function onTypeRowClick(typeId) {
+                    filterTypeId.value = typeId;
+                    tab.value = 'markers';
+                }
+
+                /* ============================================================
+                   标点：编辑 / 保存 / 删除
+                   ============================================================ */
+                function openMarkerModal(row) {
+                    editingOldTypeId.value = row.typeId;
+                    editingFeature.value = row.feature;
+
                     const p = row.feature.properties || {};
                     const c = (row.feature.geometry && row.feature.geometry.coordinates) || [];
-                    const color = row.color || FALLBACK_COLOR;
-                    return `
-                <tr class="border-b border-[color:var(--border-weak)] hover:bg-[var(--fill-weak)] align-top">
-                    <td class="px-3 py-2.5 text-[color:var(--text-5)] tabular-nums">${pg.start + i + 1}</td>
-                    <td class="px-3 py-2.5 font-medium text-[color:var(--text-1)] break-words">${escapeHtml(p.title || '未命名')}</td>
-                    <td class="px-3 py-2.5">
-                        <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold whitespace-nowrap"
-                              style="color:${color};background:${hexToRgba(color, .14)}">
-                            <span class="w-1.5 h-1.5 rounded-full flex-none" style="background:${color}"></span>
-                            ${escapeHtml(row.typeName)}
-                        </span>
-                    </td>
-                    <td class="px-3 py-2.5 text-[color:var(--text-2)] break-words whitespace-pre-wrap max-w-[320px]">${escapeHtml(p.description || '—')}</td>
-                    <td class="px-3 py-2.5 text-[color:var(--text-3)] tabular-nums whitespace-nowrap font-mono text-[12px]">${fmtCoord(c)}</td>
-                    <td class="px-3 py-2.5 text-[color:var(--text-3)] tabular-nums whitespace-nowrap text-[12px]">${formatDateTime(p.created_at) || '—'}</td>
-                    <td class="px-3 py-2.5 whitespace-nowrap text-right">
-                        <button class="btn-mini btn-edit" data-act="edit" data-i="${i}">编辑</button>
-                        <button class="btn-mini btn-del ml-1.5" data-act="del" data-i="${i}">删除</button>
-                    </td>
-                </tr>`;
-                }).join('');
-            }
 
-            updatePager('marker', pg);
-        }
+                    markerForm.title = p.title || '';
+                    markerForm.typeId = row.typeId;
+                    markerForm.desc = p.description || '';
+                    markerForm.lng = isFinite(Number(c[0])) ? Number(c[0]) : '';
+                    markerForm.lat = isFinite(Number(c[1])) ? Number(c[1]) : '';
 
-        /* ---------- 类型表格 ---------- */
-        let typeRows = [];
-
-        function renderTypeTable() {
-            const list = Types.all();
-            $('typeCount').textContent = list.length;
-
-            const pg = paginate(list, state.typePage, state.typePageSize);
-            state.typePage = pg.page;
-            typeRows = pg.rows;
-
-            const tbody = $('typeTbody');
-
-            if (!typeRows.length) {
-                tbody.innerHTML = `<tr><td colspan="6" class="py-16 text-center text-[color:var(--text-4)] text-[13px]">
-                    暂无类型数据</td></tr>`;
-            } else {
-                tbody.innerHTML = typeRows.map(t => {
-                    const color = t.color || FALLBACK_COLOR;
-                    const count = Types.featuresOf(t.id).length;
-                    return `
-                <tr class="border-b border-[color:var(--border-weak)] hover:bg-[var(--fill-weak)]">
-                    <td class="px-3 py-2.5">
-                        <span class="inline-flex items-center gap-2">
-                            <span class="w-4 h-4 rounded-full flex-none ring-1 ring-[color:var(--border)]" style="background:${color}"></span>
-                            <span class="font-mono text-[11.5px] text-[color:var(--text-3)]">${escapeHtml(color)}</span>
-                        </span>
-                    </td>
-                    <td class="px-3 py-2.5 font-medium text-[color:var(--text-1)] break-words">${escapeHtml(t.name || '未命名')}</td>
-                    <td class="px-3 py-2.5 font-mono text-[11.5px] text-[color:var(--text-3)] break-all">${escapeHtml(t.id)}</td>
-                    <td class="px-3 py-2.5 text-[color:var(--text-1)] tabular-nums">${count}</td>
-                    <td class="px-3 py-2.5 text-[color:var(--text-3)] tabular-nums whitespace-nowrap text-[12px]">${formatDateTime(t.created_at) || '—'}</td>
-                    <td class="px-3 py-2.5 whitespace-nowrap text-right">
-                        <button class="btn-mini btn-edit" data-act="edit" data-id="${t.id}">编辑</button>
-                        <button class="btn-mini btn-del ml-1.5" data-act="del" data-id="${t.id}">删除</button>
-                    </td>
-                </tr>`;
-                }).join('');
-            }
-
-            updatePager('type', pg);
-        }
-
-        /* ============================================================
-           弹窗控制
-           ============================================================ */
-        function showModal(id) {
-            const m = $(id);
-            m.classList.remove('hidden');
-            m.classList.add('flex');
-        }
-
-        function hideModal(id) {
-            const m = $(id);
-            m.classList.add('hidden');
-            m.classList.remove('flex');
-        }
-
-        /* ============================================================
-           标点：编辑 / 保存 / 删除
-           ============================================================ */
-        let editing = null;   // { typeId, original }
-
-        function openMarkerModal(row) {
-            editing = { typeId: row.typeId, original: row.feature };
-
-            const p = row.feature.properties || {};
-            const c = (row.feature.geometry && row.feature.geometry.coordinates) || [];
-
-            $('m-title').value = p.title || '';
-            $('m-desc').value = p.description || '';
-            $('m-lng').value = isFinite(Number(c[0])) ? Number(c[0]) : '';
-            $('m-lat').value = isFinite(Number(c[1])) ? Number(c[1]) : '';
-            $('m-type').innerHTML = Types.all().map(t =>
-                `<option value="${t.id}" ${t.id === row.typeId ? 'selected' : ''}>${escapeHtml(t.name)}</option>`
-            ).join('');
-
-            showModal('markerModal');
-            setTimeout(() => $('m-title').focus(), 80);
-        }
-
-        async function saveMarker() {
-            if (!editing) return;
-
-            const title = $('m-title').value.trim();
-            const typeId = $('m-type').value;
-            const desc = $('m-desc').value.trim();
-            const lng = parseFloat($('m-lng').value);
-            const lat = parseFloat($('m-lat').value);
-
-            if (!title) return toast('请填写标题', 'error');
-            if (!typeId) return toast('请选择类型', 'error');
-            if (!isFinite(lng) || !isFinite(lat)) return toast('经纬度无效', 'error');
-            if (lng < -180 || lng > 180) return toast('经度应在 -180 ~ 180 之间', 'error');
-            if (lat < -90 || lat > 90) return toast('纬度应在 -90 ~ 90 之间', 'error');
-
-            const btn = $('btnSaveMarker');
-            btn.disabled = true;
-            btn.textContent = '保存中...';
-
-            const { typeId: oldTypeId, original } = editing;
-
-            const newFeature = {
-                type: 'Feature',
-                geometry: { type: 'Point', coordinates: [lng, lat] },
-                properties: {
-                    ...(original.properties || {}),
-                    title,
-                    description: desc,
-                    type: typeId,
-                    updated_at: new Date().toISOString()
-                }
-            };
-
-            const stamp = new Date().toLocaleString('zh-CN');
-
-            try {
-                if (typeId === oldTypeId) {
-                    /* 同类型内更新 */
-                    await updateJsonFile(markerFilePath(typeId), (content) => {
-                        const fc = normalizeFC(content);
-                        const idx = fc.features.findIndex(f => sameFeature(f, original));
-                        if (idx === -1) throw new Error('该标点已不存在，可能已被其他人删除');
-                        fc.features[idx] = newFeature;
-                        return fc;
-                    }, `更新标点「${title}」 - ${stamp}`);
-                } else {
-                    /* 先追加到新类型 */
-                    await updateJsonFile(markerFilePath(typeId), (content) => {
-                        const fc = normalizeFC(content);
-                        fc.features.push(newFeature);
-                        return fc;
-                    }, `移动标点「${title}」至新类型 - ${stamp}`);
-
-                    /* 再从原类型移除 */
-                    await updateJsonFile(markerFilePath(oldTypeId), (content) => {
-                        const fc = normalizeFC(content);
-                        const idx = fc.features.findIndex(f => sameFeature(f, original));
-                        if (idx === -1) return null;
-                        fc.features.splice(idx, 1);
-                        return fc;
-                    }, `从原类型移除标点「${title}」 - ${stamp}`);
+                    markerModalVisible.value = true;
+                    nextTick(() => markerTitleEl.value && markerTitleEl.value.focus());
                 }
 
-                hideModal('markerModal');
-                editing = null;
-                await refreshAll();
-                toast('保存成功', 'success');
-            } catch (e) {
-                console.error(e);
-                toast(e.message || '保存失败', 'error');
-            } finally {
-                btn.disabled = false;
-                btn.textContent = '保存';
-            }
-        }
-
-        async function deleteMarker(row) {
-            const p = row.feature.properties || {};
-            const title = p.title || '未命名';
-            if (!confirm(`确定要删除标点「${title}」吗？\n\n此操作不可撤销。`)) return;
-
-            try {
-                await updateJsonFile(markerFilePath(row.typeId), (content) => {
-                    const fc = normalizeFC(content);
-                    const idx = fc.features.findIndex(f => sameFeature(f, row.feature));
-                    if (idx === -1) throw new Error('该标点已不存在，可能已被其他人删除');
-                    fc.features.splice(idx, 1);
-                    return fc;
-                }, `删除标点「${title}」 - ${new Date().toLocaleString('zh-CN')}`);
-
-                await refreshAll();
-                toast('标点已删除', 'success');
-            } catch (e) {
-                console.error(e);
-                toast(e.message || '删除失败', 'error');
-            }
-        }
-
-        /* ============================================================
-           类型：编辑 / 保存 / 删除
-           ============================================================ */
-        let editingTypeId = null;
-
-        function renderSwatches() {
-            const wrap = $('swatches');
-            wrap.innerHTML = PRESET_COLORS.map(c =>
-                `<span class="swatch" data-color="${c}" style="background:${c}" title="${c}"></span>`
-            ).join('');
-            wrap.querySelectorAll('.swatch').forEach(el => {
-                el.addEventListener('click', () => setColorInput(el.dataset.color));
-            });
-        }
-
-        function setColorInput(color) {
-            const hex = normalizeHex(color) || '#007AFF';
-            $('t-color').value = hex;
-            $('t-color-text').value = hex;
-        }
-
-        function openTypeModal(typeId) {
-            const t = Types.getById(typeId);
-            if (!t) return toast('类型不存在', 'error');
-
-            editingTypeId = typeId;
-            $('t-name').value = t.name || '';
-            setColorInput(t.color || '#007AFF');
-            renderSwatches();
-            showModal('typeModal');
-            setTimeout(() => $('t-name').focus(), 80);
-        }
-
-        async function saveType() {
-            if (!editingTypeId) return;
-
-            const name = $('t-name').value.trim();
-            const color = normalizeHex($('t-color-text').value.trim()) || normalizeHex($('t-color').value);
-            const typeId = editingTypeId;
-
-            if (!name) return toast('请输入类型名称', 'error');
-            if (!color) return toast('颜色格式不正确，应为 #RRGGBB', 'error');
-            if (RESERVED_COLORS.includes(color)) return toast('该颜色为系统保留色，请更换', 'error');
-
-            const btn = $('btnSaveType');
-            btn.disabled = true;
-            btn.textContent = '保存中...';
-
-            try {
-                await updateJsonFile(CONFIG.TYPES_FILE, (content) => {
-                    const data = normalizeTypes(content);
-                    const t = data.types.find(x => x.id === typeId);
-                    if (!t) throw new Error('该类型已不存在，可能已被其他人删除');
-
-                    if (data.types.some(x => x.id !== typeId &&
-                        (x.name || '').toLowerCase() === name.toLowerCase())) {
-                        throw new Error('类型名称已存在');
-                    }
-                    if (data.types.some(x => x.id !== typeId &&
-                        (x.color || '').toLowerCase() === color)) {
-                        throw new Error('该颜色已被其他类型使用，请更换');
-                    }
-
-                    t.name = name;
-                    t.color = color;
-                    t.updated_at = new Date().toISOString();
-                    return data;
-                }, `更新类型「${name}」 - ${new Date().toLocaleString('zh-CN')}`);
-
-                hideModal('typeModal');
-                editingTypeId = null;
-                await refreshAll();
-                toast('类型已更新', 'success');
-            } catch (e) {
-                console.error(e);
-                toast(e.message || '保存失败', 'error');
-            } finally {
-                btn.disabled = false;
-                btn.textContent = '保存';
-            }
-        }
-
-        async function deleteType(typeId) {
-            const t = Types.getById(typeId);
-            if (!t) return toast('类型不存在', 'error');
-
-            const count = Types.featuresOf(typeId).length;
-            const msg = count > 0
-                ? `类型「${t.name}」下还有 ${count} 个标点。\n\n删除该类型会同时删除对应的 geojson 数据文件（其中所有标点将一并丢失）。\n\n确定继续吗？`
-                : `确定要删除类型「${t.name}」及其数据文件 ${typeId}.geojson 吗？`;
-
-            if (!confirm(msg)) return;
-
-            const stamp = new Date().toLocaleString('zh-CN');
-
-            try {
-                /* ① 从 types.json 移除 */
-                await updateJsonFile(CONFIG.TYPES_FILE, (content) => {
-                    const data = normalizeTypes(content);
-                    const idx = data.types.findIndex(x => x.id === typeId);
-                    if (idx === -1) return null;   // 已不存在，跳过写入
-                    data.types.splice(idx, 1);
-                    return data;
-                }, `删除类型「${t.name}」 - ${stamp}`);
-
-                /* ② 删除对应的 geojson 文件 */
-                let fileDeleted = false;
-                try {
-                    fileDeleted = await ghDeleteFile(
-                        markerFilePath(typeId),
-                        `删除类型数据文件 ${typeId}.geojson - ${stamp}`
-                    );
-                } catch (err) {
-                    console.error('删除数据文件失败:', err);
-                    toast('类型已移除，但数据文件删除失败：' + err.message, 'error');
+                function closeMarkerModal() {
+                    markerModalVisible.value = false;
+                    editingOldTypeId.value = null;
+                    editingFeature.value = null;
                 }
 
-                if (state.filterTypeId === typeId) state.filterTypeId = '';
-                delete state.typeData[typeId];
-
-                await refreshAll();
-                toast(fileDeleted ? '类型与数据文件已删除' : '类型已删除', 'success');
-            } catch (e) {
-                console.error(e);
-                toast(e.message || '删除失败', 'error');
-            }
-        }
-
-        /* ============================================================
-           分页事件绑定
-           ============================================================ */
-        function bindPager(prefix, render) {
-            $(prefix + 'Prev').addEventListener('click', () => {
-                state[prefix + 'Page'] = Math.max(1, state[prefix + 'Page'] - 1);
-                render();
-            });
-
-            $(prefix + 'Next').addEventListener('click', () => {
-                /* 越界值会在 render → paginate 内被夹紧 */
-                state[prefix + 'Page'] = state[prefix + 'Page'] + 1;
-                render();
-            });
-
-            $(prefix + 'PageSize').addEventListener('change', (e) => {
-                state[prefix + 'PageSize'] = Number(e.target.value) || 20;
-                state[prefix + 'Page'] = 1;
-                render();
-            });
-        }
-
-        /* ============================================================
-           事件绑定
-           ============================================================ */
-        function bindEvents() {
-            /* 标签切换 */
-            document.querySelectorAll('[data-tab]').forEach(btn => {
-                btn.addEventListener('click', () => setTab(btn.dataset.tab));
-            });
-
-            /* 刷新 */
-            $('btnRefresh').addEventListener('click', () => refreshAll(false));
-
-            /* 搜索（防抖） */
-            let searchTimer = null;
-            $('searchMarker').addEventListener('input', (e) => {
-                clearTimeout(searchTimer);
-                const val = e.target.value;
-                searchTimer = setTimeout(() => {
-                    state.keyword = val;
-                    state.markerPage = 1;      // 搜索后回到第一页
-                    renderMarkerTable();
-                }, 180);
-            });
-
-            /* 类型筛选 */
-            $('filterType').addEventListener('change', (e) => {
-                state.filterTypeId = e.target.value;
-                state.markerPage = 1;          // 筛选后回到第一页
-                renderMarkerTable();
-            });
-
-            /* 标点表格操作 */
-            $('markerTbody').addEventListener('click', (e) => {
-                const btn = e.target.closest('button[data-act]');
-                if (!btn) return;
-                const row = markerRows[Number(btn.dataset.i)];
-                if (!row) return;
-                if (btn.dataset.act === 'edit') openMarkerModal(row);
-                else if (btn.dataset.act === 'del') deleteMarker(row);
-            });
-
-            /* 类型表格操作 */
-            $('typeTbody').addEventListener('click', (e) => {
-                const btn = e.target.closest('button[data-act]');
-                if (!btn) return;
-                const id = btn.dataset.id;
-                if (btn.dataset.act === 'edit') openTypeModal(id);
-                else if (btn.dataset.act === 'del') deleteType(id);
-            });
-
-            /* 分页 */
-            bindPager('marker', renderMarkerTable);
-            bindPager('type', renderTypeTable);
-
-            /* 标点弹窗 */
-            $('btnCloseMarkerModal').addEventListener('click', () => {
-                hideModal('markerModal');
-                editing = null;
-            });
-            $('btnCancelMarker').addEventListener('click', () => {
-                hideModal('markerModal');
-                editing = null;
-            });
-            $('btnSaveMarker').addEventListener('click', saveMarker);
-            $('markerModal').addEventListener('click', (e) => {
-                if (e.target === $('markerModal')) {
-                    hideModal('markerModal');
-                    editing = null;
+                function onMarkerBackdrop(e) {
+                    if (e.target === e.currentTarget) closeMarkerModal();
                 }
-            });
 
-            /* 类型弹窗 */
-            $('btnCloseTypeModal').addEventListener('click', () => {
-                hideModal('typeModal');
-                editingTypeId = null;
-            });
-            $('btnCancelType').addEventListener('click', () => {
-                hideModal('typeModal');
-                editingTypeId = null;
-            });
-            $('btnSaveType').addEventListener('click', saveType);
-            $('typeModal').addEventListener('click', (e) => {
-                if (e.target === $('typeModal')) {
-                    hideModal('typeModal');
-                    editingTypeId = null;
-                }
-            });
+                async function saveMarker() {
+                    if (!editingFeature.value) return;
 
-            /* 颜色输入联动 */
-            $('t-color').addEventListener('input', (e) => {
-                $('t-color-text').value = e.target.value.toLowerCase();
-            });
-            $('t-color-text').addEventListener('input', (e) => {
-                const hex = normalizeHex(e.target.value);
-                if (hex) $('t-color').value = hex;
-            });
+                    const title = markerForm.title.trim();
+                    const typeId = markerForm.typeId;
+                    const desc = markerForm.desc.trim();
+                    const lng = parseFloat(markerForm.lng);
+                    const lat = parseFloat(markerForm.lat);
 
-            /* 键盘 */
-            $('t-name').addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') saveType();
-            });
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape') {
-                    if (!$('markerModal').classList.contains('hidden')) {
-                        hideModal('markerModal');
-                        editing = null;
-                    }
-                    if (!$('typeModal').classList.contains('hidden')) {
-                        hideModal('typeModal');
-                        editingTypeId = null;
+                    if (!title) return toast('请填写标题', 'error');
+                    if (!typeId) return toast('请选择类型', 'error');
+                    if (!isFinite(lng) || !isFinite(lat)) return toast('经纬度无效', 'error');
+                    if (lng < -180 || lng > 180) return toast('经度应在 -180 ~ 180 之间', 'error');
+                    if (lat < -90 || lat > 90) return toast('纬度应在 -90 ~ 90 之间', 'error');
+
+                    savingMarker.value = true;
+
+                    const oldTypeId = editingOldTypeId.value;
+                    const original = editingFeature.value;
+
+                    const newFeature = {
+                        type: 'Feature',
+                        geometry: { type: 'Point', coordinates: [lng, lat] },
+                        properties: {
+                            ...(original.properties || {}),
+                            title,
+                            description: desc,
+                            type: typeId,
+                            updated_at: new Date().toISOString()
+                        }
+                    };
+
+                    const stamp = new Date().toLocaleString('zh-CN');
+
+                    try {
+                        if (typeId === oldTypeId) {
+                            /* 同类型内更新 */
+                            const res = await updateJsonFile(markerFilePath(typeId), (content) => {
+                                const fc = normalizeFC(content);
+                                const idx = fc.features.findIndex(f => sameFeature(f, original));
+                                if (idx === -1) throw new Error('该标点已不存在，可能已被其他人删除');
+                                fc.features[idx] = newFeature;
+                                return fc;
+                            }, `更新标点「${title}」 - ${stamp}`);
+
+                            /* 增量更新缓存：直接用返回内容，不再重新拉取 */
+                            if (!res.skipped) ingestGeojson(typeId, res.content, res.sha);
+                        } else {
+                            /* 先追加到新类型 */
+                            const res1 = await updateJsonFile(markerFilePath(typeId), (content) => {
+                                const fc = normalizeFC(content);
+                                fc.features.push(newFeature);
+                                return fc;
+                            }, `移动标点「${title}」至新类型 - ${stamp}`);
+                            if (!res1.skipped) ingestGeojson(typeId, res1.content, res1.sha);
+
+                            /* 再从原类型移除 */
+                            const res2 = await updateJsonFile(markerFilePath(oldTypeId), (content) => {
+                                const fc = normalizeFC(content);
+                                const idx = fc.features.findIndex(f => sameFeature(f, original));
+                                if (idx === -1) return null;
+                                fc.features.splice(idx, 1);
+                                return fc;
+                            }, `从原类型移除标点「${title}」 - ${stamp}`);
+                            if (!res2.skipped) ingestGeojson(oldTypeId, res2.content, res2.sha);
+                        }
+
+                        closeMarkerModal();
+                        toast('保存成功', 'success');
+                    } catch (e) {
+                        console.error(e);
+                        toast(e.message || '保存失败', 'error');
+                    } finally {
+                        savingMarker.value = false;
                     }
                 }
-            });
-        }
 
-        /* ============================================================
-           启动
-           ============================================================ */
-        (async function init() {
-            setTab('markers');
+                async function deleteMarker(row) {
+                    const p = row.feature.properties || {};
+                    const title = p.title || '未命名';
+                    if (!confirm(`确定要删除标点「${title}」吗？\n\n此操作不可撤销。`)) return;
 
-            try {
-                CONFIG.GITHUB_TOKEN = await decrypt(CONFIG.TOKEN_CIPHER, CONFIG.TOKEN_PASS);
-            } catch (e) {
-                console.error(e);
-                setStatus('err', 'Token 解密失败');
-                toast('Token 解密失败，无法读写数据', 'error');
-                return;
+                    try {
+                        const res = await updateJsonFile(markerFilePath(row.typeId), (content) => {
+                            const fc = normalizeFC(content);
+                            const idx = fc.features.findIndex(f => sameFeature(f, row.feature));
+                            if (idx === -1) throw new Error('该标点已不存在，可能已被其他人删除');
+                            fc.features.splice(idx, 1);
+                            return fc;
+                        }, `删除标点「${title}」 - ${new Date().toLocaleString('zh-CN')}`);
+
+                        if (!res.skipped) ingestGeojson(row.typeId, res.content, res.sha);
+                        toast('标点已删除', 'success');
+                    } catch (e) {
+                        console.error(e);
+                        toast(e.message || '删除失败', 'error');
+                    }
+                }
+
+                /* ============================================================
+                   类型：编辑 / 保存 / 删除
+                   ============================================================ */
+                function setColorInput(color) {
+                    const hex = normalizeHex(color) || '#007AFF';
+                    typeForm.color = hex;
+                    typeForm.colorText = hex;
+                }
+
+                function onColorPicker(e) {
+                    const hex = normalizeHex(e.target.value) || '#007AFF';
+                    typeForm.color = hex;
+                    typeForm.colorText = hex;
+                }
+
+                function onColorText(e) {
+                    typeForm.colorText = e.target.value;
+                    const hex = normalizeHex(e.target.value);
+                    if (hex) typeForm.color = hex;
+                }
+
+                function openTypeModal(typeId) {
+                    const t = allTypes.value.find(x => x.id === typeId);
+                    if (!t) return toast('类型不存在', 'error');
+
+                    editingTypeId.value = typeId;
+                    typeForm.name = t.name || '';
+                    setColorInput(t.color || '#007AFF');
+
+                    typeModalVisible.value = true;
+                    nextTick(() => typeNameEl.value && typeNameEl.value.focus());
+                }
+
+                function closeTypeModal() {
+                    typeModalVisible.value = false;
+                    editingTypeId.value = null;
+                }
+
+                function onTypeBackdrop(e) {
+                    if (e.target === e.currentTarget) closeTypeModal();
+                }
+
+                async function saveType() {
+                    if (!editingTypeId.value) return;
+
+                    const name = typeForm.name.trim();
+                    const color = normalizeHex(typeForm.colorText.trim()) || normalizeHex(typeForm.color);
+                    const typeId = editingTypeId.value;
+
+                    if (!name) return toast('请输入类型名称', 'error');
+                    if (!color) return toast('颜色格式不正确，应为 #RRGGBB', 'error');
+                    if (RESERVED_COLORS.includes(color)) return toast('该颜色为系统保留色，请更换', 'error');
+
+                    savingType.value = true;
+
+                    try {
+                        const res = await updateJsonFile(CONFIG.TYPES_FILE, (content) => {
+                            const data = normalizeTypes(content);
+                            const t = data.types.find(x => x.id === typeId);
+                            if (!t) throw new Error('该类型已不存在，可能已被其他人删除');
+
+                            if (data.types.some(x => x.id !== typeId &&
+                                (x.name || '').toLowerCase() === name.toLowerCase())) {
+                                throw new Error('类型名称已存在');
+                            }
+                            if (data.types.some(x => x.id !== typeId &&
+                                (x.color || '').toLowerCase() === color)) {
+                                throw new Error('该颜色已被其他类型使用，请更换');
+                            }
+
+                            t.name = name;
+                            t.color = color;
+                            t.updated_at = new Date().toISOString();
+                            return data;
+                        }, `更新类型「${name}」 - ${new Date().toLocaleString('zh-CN')}`);
+
+                        /* 只更新 types.json，无需重新加载 geojson */
+                        if (!res.skipped) typesData.value = normalizeTypes(res.content);
+
+                        closeTypeModal();
+                        toast('类型已更新', 'success');
+                    } catch (e) {
+                        console.error(e);
+                        toast(e.message || '保存失败', 'error');
+                    } finally {
+                        savingType.value = false;
+                    }
+                }
+
+                async function deleteType(typeId) {
+                    const t = allTypes.value.find(x => x.id === typeId);
+                    if (!t) return toast('类型不存在', 'error');
+
+                    const count = featuresOf(typeId).length;
+                    const loaded = !!loadedTypes[typeId];
+                    const msg = loaded && count > 0
+                        ? `类型「${t.name}」下还有 ${count} 个标点。\n\n删除该类型会同时删除对应的 geojson 数据文件（其中所有标点将一并丢失）。\n\n确定继续吗？`
+                        : `确定要删除类型「${t.name}」及其数据文件 ${typeId}.geojson 吗？`;
+
+                    if (!confirm(msg)) return;
+
+                    const stamp = new Date().toLocaleString('zh-CN');
+
+                    try {
+                        /* ① 从 types.json 移除 */
+                        await updateJsonFile(CONFIG.TYPES_FILE, (content) => {
+                            const data = normalizeTypes(content);
+                            const idx = data.types.findIndex(x => x.id === typeId);
+                            if (idx === -1) return null;
+                            data.types.splice(idx, 1);
+                            return data;
+                        }, `删除类型「${t.name}」 - ${stamp}`);
+
+                        /* ② 删除对应的 geojson 文件 */
+                        let fileDeleted = false;
+                        try {
+                            fileDeleted = await ghDeleteFile(
+                                markerFilePath(typeId),
+                                `删除类型数据文件 ${typeId}.geojson - ${stamp}`
+                            );
+                        } catch (err) {
+                            console.error('删除数据文件失败:', err);
+                            toast('类型已移除，但数据文件删除失败：' + err.message, 'error');
+                        }
+
+                        /* ③ 本地缓存清理 */
+                        if (filterTypeId.value === typeId) filterTypeId.value = '';
+                        delete typeData[typeId];
+                        delete loadedTypes[typeId];
+                        delete loadingTypes[typeId];
+                        delete typeLoadPromises[typeId];
+
+                        /* ④ 只更新本地 types 列表（不重新拉 geojson） */
+                        typesData.value.types = typesData.value.types.filter(x => x.id !== typeId);
+
+                        toast(fileDeleted ? '类型与数据文件已删除' : '类型已删除', 'success');
+                    } catch (e) {
+                        console.error(e);
+                        toast(e.message || '删除失败', 'error');
+                    }
+                }
+
+                /* ============================================================
+                   Esc 关闭弹窗
+                   ============================================================ */
+                function onKeydown(e) {
+                    if (e.key !== 'Escape') return;
+                    if (markerModalVisible.value) closeMarkerModal();
+                    if (typeModalVisible.value) closeTypeModal();
+                }
+
+                /* ============================================================
+                   生命周期
+                   ============================================================ */
+                onMounted(async () => {
+                    document.addEventListener('keydown', onKeydown);
+
+                    try {
+                        CONFIG.GITHUB_TOKEN = await decrypt(CONFIG.TOKEN_CIPHER, CONFIG.TOKEN_PASS);
+                    } catch (e) {
+                        console.error(e);
+                        setStatus('err', 'Token 解密失败');
+                        toast('Token 解密失败，无法读写数据', 'error');
+                        return;
+                    }
+
+                    await refreshAll();
+                });
+
+                onBeforeUnmount(() => {
+                    document.removeEventListener('keydown', onKeydown);
+                });
+
+                /* ============================================================
+                   暴露给模板
+                   ============================================================ */
+                return {
+                    TAB_ON, TAB_OFF,
+                    TOAST_BG,
+                    PRESET_COLORS,
+                    FALLBACK_COLOR,
+
+                    loading,
+                    loadingAll,
+                    statusDotClass,
+                    statusText,
+
+                    allTypes,
+                    loadedTypes,
+                    loadingTypes,
+
+                    tab,
+                    keyword,
+                    filterTypeId,
+                    markerPage,
+                    markerPageSize,
+                    typePage,
+                    typePageSize,
+
+                    filteredMarkers,
+                    markerPageData,
+                    typePageData,
+                    markerTableState,
+                    pendingCount,
+
+                    markerModalVisible,
+                    typeModalVisible,
+                    savingMarker,
+                    savingType,
+                    markerForm,
+                    typeForm,
+                    markerTitleEl,
+                    typeNameEl,
+
+                    toasts,
+
+                    refreshAll,
+                    loadAllTypes,
+                    onTypeRowClick,
+                    featuresOf,
+                    fmtCoord,
+                    formatDateTime,
+                    hexToRgba,
+                    openMarkerModal,
+                    closeMarkerModal,
+                    onMarkerBackdrop,
+                    saveMarker,
+                    deleteMarker,
+                    openTypeModal,
+                    closeTypeModal,
+                    onTypeBackdrop,
+                    saveType,
+                    deleteType,
+                    setColorInput,
+                    onColorPicker,
+                    onColorText
+                };
             }
-
-            bindEvents();
-            await refreshAll();
-        })();
+        }).mount('#app');
     </script>
 </body>
 
