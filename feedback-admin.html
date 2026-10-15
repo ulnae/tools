@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>意见反馈处理</title>
 
-    <!-- 跟随系统主题的浏览器状态栏颜色 -->
     <meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)">
     <meta name="theme-color" content="#0d1016" media="(prefers-color-scheme: dark)">
 
@@ -15,39 +14,34 @@
     <script src="./utils/tailwindcss.js"></script>
     <script src="./utils/dayjs.min.js"></script>
     <script src="./utils/vue.global.prod.js"></script>
+    <script src="./utils/github.js"></script>
 
     <script>
-        /* ============================================================
-           Tailwind：把语义色名映射到 CSS 变量
-           ============================================================ */
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        /* 文本层级 */
-                        ink:     'var(--c-ink)',
-                        sub:     'var(--c-sub)',
-                        muted:   'var(--c-muted)',
-                        faint:   'var(--c-faint)',
-                        faint2:  'var(--c-faint2)',
-                        /* 结构与填充 */
-                        line:    'var(--c-line)',
-                        field:   'var(--c-fill)',
-                        fill2:   'var(--c-fill2)',
-                        rowhover:'var(--c-hover)',
-                        barbg:   'var(--c-bar)',
-                        thead:   'var(--c-thead)',
-                        modal:   'var(--c-modal)',
-                        /* 强调色 */
-                        accent:  'var(--c-accent)',
-                        danger:  'var(--c-danger)',
+                        ink: 'var(--c-ink)',
+                        sub: 'var(--c-sub)',
+                        muted: 'var(--c-muted)',
+                        faint: 'var(--c-faint)',
+                        faint2: 'var(--c-faint2)',
+                        line: 'var(--c-line)',
+                        field: 'var(--c-fill)',
+                        fill2: 'var(--c-fill2)',
+                        rowhover: 'var(--c-hover)',
+                        barbg: 'var(--c-bar)',
+                        thead: 'var(--c-thead)',
+                        modal: 'var(--c-modal)',
+                        accent: 'var(--c-accent)',
+                        danger: 'var(--c-danger)',
                         success: 'var(--c-success)',
-                        warn:    'var(--c-warn)',
-                        src:     'var(--c-src)',
+                        warn: 'var(--c-warn)',
+                        src: 'var(--c-src)',
                     },
                     fontFamily: {
                         sans: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Text"', '"Helvetica Neue"',
-                               '"PingFang SC"', '"Hiragino Sans GB"', '"Microsoft YaHei"', 'sans-serif'],
+                            '"PingFang SC"', '"Hiragino Sans GB"', '"Microsoft YaHei"', 'sans-serif'],
                     },
                 },
             },
@@ -55,96 +49,86 @@
     </script>
 
     <style>
-        /* ============================================================
-           日间主题（默认）
-           ============================================================ */
         :root {
             color-scheme: light;
 
-            --c-bg:           #F2F2F7;
-            --c-glass:        rgba(255, 255, 255, .86);
-            --c-glass-ring:   rgba(0, 0, 0, .04);
+            --c-bg: #F2F2F7;
+            --c-glass: rgba(255, 255, 255, .86);
+            --c-glass-ring: rgba(0, 0, 0, .04);
             --c-glass-shadow: 0 8px 32px rgba(0, 0, 0, .08);
 
-            /* 文本层级 */
-            --c-ink:      #1c1c1e;
-            --c-sub:      #48484A;
-            --c-muted:    #8E8E93;
-            --c-faint:    #AEAEB2;
-            --c-faint2:   #C7C7CC;
+            --c-ink: #1c1c1e;
+            --c-sub: #48484A;
+            --c-muted: #8E8E93;
+            --c-faint: #AEAEB2;
+            --c-faint2: #C7C7CC;
 
-            /* 结构与填充 */
-            --c-line:     rgba(0, 0, 0, .06);
-            --c-fill:     rgba(120, 120, 128, .10);
-            --c-fill2:    rgba(0, 0, 0, .035);
-            --c-hover:    rgba(0, 0, 0, .025);
-            --c-bar:      rgba(0, 0, 0, .015);
-            --c-thead:    #F7F7F9;
-            --c-modal:    #ffffff;
-            --c-scroll:   rgba(0, 0, 0, .16);
+            --c-line: rgba(0, 0, 0, .06);
+            --c-fill: rgba(120, 120, 128, .10);
+            --c-fill2: rgba(0, 0, 0, .035);
+            --c-hover: rgba(0, 0, 0, .025);
+            --c-bar: rgba(0, 0, 0, .015);
+            --c-thead: #F7F7F9;
+            --c-modal: #ffffff;
+            --c-scroll: rgba(0, 0, 0, .16);
             --c-scroll-h: rgba(0, 0, 0, .30);
 
-            /* 强调色 */
-            --c-accent:        #007AFF;
-            --c-accent-soft:   rgba(0, 122, 255, .10);
+            --c-accent: #007AFF;
+            --c-accent-soft: rgba(0, 122, 255, .10);
             --c-accent-soft-h: rgba(0, 122, 255, .20);
             --c-accent-shadow: rgba(0, 122, 255, .32);
 
-            --c-danger:        #FF3B30;
-            --c-danger-soft:   rgba(255, 59, 48, .10);
+            --c-danger: #FF3B30;
+            --c-danger-soft: rgba(255, 59, 48, .10);
             --c-danger-soft-h: rgba(255, 59, 48, .20);
 
-            --c-success:  #34C759;
-            --c-warn:     #FF9500;
-            --c-src:      #5856D6;
+            --c-success: #34C759;
+            --c-warn: #FF9500;
+            --c-src: #5856D6;
             --c-src-soft: rgba(88, 86, 214, .10);
         }
 
-        /* ============================================================
-           夜间主题（跟随系统）
-           ============================================================ */
         @media (prefers-color-scheme: dark) {
             :root {
                 color-scheme: dark;
 
-                --c-bg:           #0d1016;
-                --c-glass:        rgba(28, 30, 36, .84);
-                --c-glass-ring:   rgba(255, 255, 255, .06);
+                --c-bg: #0d1016;
+                --c-glass: rgba(28, 30, 36, .84);
+                --c-glass-ring: rgba(255, 255, 255, .06);
                 --c-glass-shadow: 0 8px 32px rgba(0, 0, 0, .45);
 
-                --c-ink:      #f2f2f7;
-                --c-sub:      #c7c7cc;
-                --c-muted:    #8E8E93;
-                --c-faint:    #7c7c82;
-                --c-faint2:   #5a5a60;
+                --c-ink: #f2f2f7;
+                --c-sub: #c7c7cc;
+                --c-muted: #8E8E93;
+                --c-faint: #7c7c82;
+                --c-faint2: #5a5a60;
 
-                --c-line:     rgba(255, 255, 255, .08);
-                --c-fill:     rgba(120, 120, 128, .24);
-                --c-fill2:    rgba(255, 255, 255, .05);
-                --c-hover:    rgba(255, 255, 255, .04);
-                --c-bar:      rgba(255, 255, 255, .02);
-                --c-thead:    #1a1d23;
-                --c-modal:    #1c1f26;
-                --c-scroll:   rgba(255, 255, 255, .18);
+                --c-line: rgba(255, 255, 255, .08);
+                --c-fill: rgba(120, 120, 128, .24);
+                --c-fill2: rgba(255, 255, 255, .05);
+                --c-hover: rgba(255, 255, 255, .04);
+                --c-bar: rgba(255, 255, 255, .02);
+                --c-thead: #1a1d23;
+                --c-modal: #1c1f26;
+                --c-scroll: rgba(255, 255, 255, .18);
                 --c-scroll-h: rgba(255, 255, 255, .32);
 
-                --c-accent:        #0A84FF;
-                --c-accent-soft:   rgba(10, 132, 255, .18);
+                --c-accent: #0A84FF;
+                --c-accent-soft: rgba(10, 132, 255, .18);
                 --c-accent-soft-h: rgba(10, 132, 255, .28);
                 --c-accent-shadow: rgba(10, 132, 255, .32);
 
-                --c-danger:        #FF453A;
-                --c-danger-soft:   rgba(255, 69, 58, .18);
+                --c-danger: #FF453A;
+                --c-danger-soft: rgba(255, 69, 58, .18);
                 --c-danger-soft-h: rgba(255, 69, 58, .28);
 
-                --c-success:  #32D74B;
-                --c-warn:     #FF9F0A;
-                --c-src:      #7d7aff;
+                --c-success: #32D74B;
+                --c-warn: #FF9F0A;
+                --c-src: #7d7aff;
                 --c-src-soft: rgba(125, 122, 255, .16);
             }
         }
 
-        /* ---------- 基础布局 ---------- */
         html,
         body {
             height: 100%;
@@ -169,7 +153,6 @@
             transition: background-color .25s ease, color .25s ease;
         }
 
-        /* ---------- Vue 根节点：撑满 body 并保持纵向弹性布局 ---------- */
         #app {
             flex: 1 1 0%;
             min-height: 0;
@@ -177,7 +160,6 @@
             flex-direction: column;
         }
 
-        /* ---------- 毛玻璃面板 ---------- */
         .glass {
             background: var(--c-glass);
             backdrop-filter: saturate(180%) blur(20px);
@@ -186,7 +168,6 @@
             transition: background-color .25s ease, box-shadow .25s ease;
         }
 
-        /* ---------- 无滚动条 ---------- */
         .no-sb::-webkit-scrollbar {
             display: none;
         }
@@ -196,7 +177,6 @@
             scrollbar-width: none;
         }
 
-        /* ---------- 表格滚动区 ---------- */
         .scroll-area {
             overflow: auto;
             overscroll-behavior: contain;
@@ -229,7 +209,6 @@
             background: transparent;
         }
 
-        /* ---------- 输入框 ---------- */
         .ios-input {
             width: 100%;
             box-sizing: border-box;
@@ -262,7 +241,6 @@
             cursor: pointer;
         }
 
-        /* ---------- 小按钮 ---------- */
         .btn-mini {
             padding: 5px 12px;
             border-radius: 10px;
@@ -296,7 +274,6 @@
             background: var(--c-danger-soft-h);
         }
 
-        /* ---------- 分页控件 ---------- */
         .pager-select {
             appearance: none;
             -webkit-appearance: none;
@@ -346,7 +323,6 @@
             cursor: not-allowed;
         }
 
-        /* ---------- 复选框 ---------- */
         input[type="checkbox"].cb {
             width: 17px;
             height: 17px;
@@ -355,7 +331,6 @@
             vertical-align: middle;
         }
 
-        /* ---------- 弹窗动画 ---------- */
         @keyframes pop-in {
             from {
                 transform: scale(.94) translateY(12px);
@@ -372,7 +347,6 @@
             animation: pop-in .24s cubic-bezier(.32, .72, 0, 1);
         }
 
-        /* ---------- 表格 ---------- */
         table {
             border-collapse: separate;
             border-spacing: 0;
@@ -387,7 +361,6 @@
             transition: background-color .25s ease;
         }
 
-        /* ---------- 来源标签 ---------- */
         .src-tag {
             display: inline-block;
             max-width: 100%;
@@ -405,7 +378,6 @@
             transition: color .25s ease, background-color .25s ease;
         }
 
-        /* ---------- 主按钮 / 危险软按钮 ---------- */
         .btn-primary {
             background: var(--c-accent);
             color: #fff;
@@ -435,7 +407,6 @@
             background: var(--c-danger-soft-h);
         }
 
-        /* ---------- 加载旋转 ---------- */
         @keyframes spin {
             to {
                 transform: rotate(360deg);
@@ -446,7 +417,6 @@
             animation: spin .8s linear infinite;
         }
 
-        /* ---------- Toast 过渡 ---------- */
         .toast-item {
             transition: opacity .3s ease, transform .3s ease;
         }
@@ -456,7 +426,6 @@
 <body class="app-shell">
     <div id="app">
 
-        <!-- ===================== 顶部栏 ===================== -->
         <header class="glass flex-none z-30">
             <div class="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3 flex-wrap">
                 <h1 class="text-[16px] font-bold text-ink tracking-tight">意见反馈处理</h1>
@@ -478,11 +447,9 @@
             </div>
         </header>
 
-        <!-- ===================== 主体 ===================== -->
         <main class="flex-1 min-h-0 w-full max-w-6xl mx-auto px-4 py-5 flex flex-col">
             <div class="glass rounded-2xl overflow-hidden flex flex-col flex-1 min-h-0">
 
-                <!-- 工具条 -->
                 <div class="flex-none px-3 py-3 flex items-center gap-2 flex-wrap border-b border-line">
                     <input v-model="keyword" class="ios-input !w-auto flex-1 min-w-[160px]" type="text"
                         placeholder="搜索内容、联系方式或来源">
@@ -507,7 +474,6 @@
                     </div>
                 </div>
 
-                <!-- 表格滚动区 -->
                 <div class="flex-1 min-h-0 scroll-area">
                     <table class="w-full text-[13px] min-w-[1040px]">
                         <thead>
@@ -558,7 +524,6 @@
                     </table>
                 </div>
 
-                <!-- 分页条 -->
                 <div class="flex-none px-3 py-2.5 flex items-center gap-2 flex-wrap border-t border-line bg-barbg">
                     <span class="text-[12px] text-muted whitespace-nowrap">
                         第 <b class="text-ink tabular-nums">{{ page }}</b> /
@@ -578,8 +543,8 @@
             </div>
         </main>
 
-        <!-- ===================== 详情弹窗 ===================== -->
-        <div v-if="modalVisible" class="fixed inset-0 z-[9998] flex items-center justify-center p-4 bg-black/40 backdrop-blur-[2px]"
+        <div v-if="modalVisible"
+            class="fixed inset-0 z-[9998] flex items-center justify-center p-4 bg-black/40 backdrop-blur-[2px]"
             @click="onModalBackdrop($event)">
             <div class="anim-pop w-full max-w-[480px] max-h-[88vh] overflow-y-auto no-sb bg-modal rounded-[24px] shadow-[0_24px_64px_rgba(0,0,0,.28)]">
                 <div class="flex items-center justify-between px-5 pt-5 pb-2">
@@ -631,7 +596,6 @@
             </div>
         </div>
 
-        <!-- ===================== Toast 容器 ===================== -->
         <div v-for="t in toasts" :key="t.id" class="toast-item fixed left-1/2 bottom-8 z-[9999] px-5 py-3
                    rounded-2xl text-white text-[13px] font-medium shadow-2xl -translate-x-1/2
                    max-w-[82vw] text-center pointer-events-none"
@@ -642,38 +606,19 @@
 
     <script>
         /* ============================================================
-           配置（与反馈提交页保持一致）
+           常量
            ============================================================ */
-        const CONFIG = {
-            GITHUB_OWNER: 'ulnae',
-            GITHUB_REPO: 'tools',
-            GITHUB_BRANCH: 'master',
-
-            DATA_DIR: 'data',
-            FEEDBACK_FILE: 'data/feedback.json',
-
-            GITHUB_TOKEN: '',
-
-            TOKEN_CIPHER: 'pN0DLAO2zEwTMKZlJZw+6zd4GAXI0t3mCX/iAqiGWY6ddaYNpX4u6LdZ7eeflYz7RaSCt6hCUYSPbhbejCY7lVChS9u3YaVWhiU38RWdMQf0iRo4UwUZ5kmnzZXBiZlDVIgWBVNPoxeFveABj02UVh8IFBBix/Bz+AOD9DIdlN8Jbh3s3olHlPs=',
-            TOKEN_PASS: 'ulnae'
-        };
-
-        /* 反馈类型 → 主题色 */
         const TYPE_COLOR = {
             '建议': '#007AFF',
             '问题': '#FF3B30',
             '其他': '#8E8E93'
         };
         const FALLBACK_COLOR = '#8E8E93';
-
-        /* 来源为空时的展示文案 */
         const EMPTY_SOURCE_TEXT = '未标记';
 
         /* ============================================================
            通用工具
            ============================================================ */
-        const sleep = ms => new Promise(r => setTimeout(r, ms));
-
         const escapeHtml = str => {
             const div = document.createElement('div');
             div.textContent = str == null ? '' : String(str);
@@ -686,14 +631,12 @@
             ? dayjs(iso).format('YYYY/MM/DD HH:mm')
             : '';
 
-        /** 单行摘要 */
         function summary(s, n = 70) {
             const t = String(s == null ? '' : s).replace(/\s+/g, ' ').trim();
             if (!t) return '（无内容）';
             return t.length > n ? t.slice(0, n) + '…' : t;
         }
 
-        /** 归一化来源：兼容字段缺失/为 null 的情况 */
         function normalizeSource(v) {
             return String(v == null ? '' : v).trim();
         }
@@ -711,14 +654,12 @@
             return `rgba(${r},${g},${b},${a})`;
         }
 
-        /* ---------- Toast 配色 ---------- */
         const TOAST_BG = {
             success: 'linear-gradient(135deg,#34C759,#28A745)',
             error: 'linear-gradient(135deg,#FF3B30,#D92D20)',
             info: 'linear-gradient(135deg,#007AFF,#0062CC)'
         };
 
-        /* ---------- 状态指示 class ---------- */
         const STATUS_DOT = {
             ok: 'w-2 h-2 rounded-full bg-success',
             err: 'w-2 h-2 rounded-full bg-danger',
@@ -726,114 +667,21 @@
         };
 
         /* ============================================================
-           Token 解密（AES-GCM + PBKDF2）
-           ============================================================ */
-        async function decrypt(cipherText, password) {
-            const binary = atob(cipherText.trim());
-            const data = new Uint8Array(binary.length);
-            for (let i = 0; i < binary.length; i++) data[i] = binary.charCodeAt(i);
-            const salt = data.subarray(0, 16);
-            const iv = data.subarray(16, 28);
-            const encrypted = data.subarray(28);
-            const enc = new TextEncoder();
-            const baseKey = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']);
-            const key = await crypto.subtle.deriveKey(
-                { name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' },
-                baseKey, { name: 'AES-GCM', length: 256 }, false, ['decrypt']
-            );
-            const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, encrypted);
-            return new TextDecoder().decode(decrypted);
-        }
-
-        /* ============================================================
-           GitHub API
-           ============================================================ */
-        async function ghApi(path, options = {}) {
-            const url = `https://api.github.com/repos/${CONFIG.GITHUB_OWNER}/${CONFIG.GITHUB_REPO}/contents/${path}`;
-            const res = await fetch(url, {
-                ...options,
-                headers: {
-                    'Accept': 'application/vnd.github+json',
-                    'Authorization': `Bearer ${CONFIG.GITHUB_TOKEN}`,
-                    'Content-Type': 'application/json',
-                    ...(options.headers || {})
-                }
-            });
-            if (!res.ok) {
-                const err = await res.json().catch(() => ({}));
-                throw new Error(err.message || `GitHub API 错误 (${res.status})`);
-            }
-            const text = await res.text();
-            return text ? JSON.parse(text) : {};
-        }
-
-        async function ghGetFile(path) {
-            try {
-                const data = await ghApi(path);
-                const raw = atob((data.content || '').replace(/\s/g, ''));
-                if (!raw) return { content: null, sha: data.sha };
-                const text = decodeURIComponent(escape(raw));
-                try {
-                    return { content: JSON.parse(text), sha: data.sha };
-                } catch (e) {
-                    console.warn(`文件 ${path} 不是合法 JSON，按空数据处理`);
-                    return { content: null, sha: data.sha };
-                }
-            } catch (e) {
-                if (/not found|404/i.test(e.message)) return { content: null, sha: null };
-                throw e;
-            }
-        }
-
-        async function ghPutFile(path, obj, message, sha) {
-            const jsonStr = JSON.stringify(obj, null, 2);
-            const content = btoa(unescape(encodeURIComponent(jsonStr)));
-            const body = { message, content, branch: CONFIG.GITHUB_BRANCH };
-            if (sha) body.sha = sha;
-            return ghApi(path, { method: 'PUT', body: JSON.stringify(body) });
-        }
-
-        /** 安全写：每次提交前重新拉取最新内容与 sha，冲突自动重试 */
-        async function updateJsonFile(path, mutate, message, maxAttempts = 4) {
-            let lastErr = null;
-            for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-                const { content, sha } = await ghGetFile(path);
-                const next = await mutate(content, sha);
-                if (next === null || next === undefined) {
-                    return { content, sha, skipped: true };
-                }
-                try {
-                    const res = await ghPutFile(path, next, message, sha);
-                    return { content: next, sha: res.content.sha, skipped: false };
-                } catch (err) {
-                    lastErr = err;
-                    console.warn(`写入 ${path} 第 ${attempt} 次失败：${err.message}`);
-                    if (attempt < maxAttempts) await sleep(350 * attempt);
-                }
-            }
-            throw lastErr || new Error('保存失败');
-        }
-
-        /* ============================================================
            Vue 应用
            ============================================================ */
-        const { createApp, ref, reactive, computed, watch, nextTick, onMounted, onBeforeUnmount } = Vue;
+        const { createApp, ref, reactive, computed, watch, onMounted, onBeforeUnmount } = Vue;
 
         createApp({
             setup() {
-                /* ---------- 常量 ---------- */
                 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 
-                /* ---------- 数据 ---------- */
                 const feedback = ref([]);
                 const loading = ref(false);
 
-                /* ---------- 状态指示 ---------- */
                 const statusState = ref('loading');
                 const statusText = ref('加载中...');
                 const statusDotClass = computed(() => STATUS_DOT[statusState.value] || STATUS_DOT.loading);
 
-                /* ---------- 筛选 / 分页 ---------- */
                 const keyword = ref('');
                 const filterType = ref('');
                 const filterSource = ref('');
@@ -841,14 +689,11 @@
                 const pageSize = ref(20);
                 const selected = reactive(new Set());
 
-                /* 让 selected 尺寸变化可被追踪 */
                 const selectedSize = ref(0);
 
-                /* ---------- Toast ---------- */
                 const toasts = ref([]);
                 let toastSeq = 0;
 
-                /* ---------- 详情弹窗 ---------- */
                 const modalVisible = ref(false);
                 const detailId = ref(null);
                 const detail = computed(() =>
@@ -861,9 +706,6 @@
                     hexToRgba(detailColor.value, .12)
                 );
 
-                /* ============================================================
-                   计算属性：过滤 + 分页
-                   ============================================================ */
                 const filtered = computed(() => {
                     const kw = keyword.value.trim().toLowerCase();
                     return feedback.value
@@ -892,13 +734,11 @@
                     Math.max(1, Math.ceil(filtered.value.length / pageSize.value))
                 );
 
-                /* 分页夹紧：数据或筛选变化后自动修正 page */
                 watch([filtered, pageSize], () => {
                     if (page.value > totalPages.value) page.value = totalPages.value;
                     if (page.value < 1) page.value = 1;
                 });
 
-                /* 筛选 / 关键词 / 每页条数变化时回到第 1 页 */
                 watch([keyword, filterType, filterSource, pageSize], () => {
                     page.value = 1;
                 });
@@ -924,7 +764,6 @@
                     feedback.value.some(x => !normalizeSource(x.source))
                 );
 
-                /* 若当前筛选的类型/来源在数据中已不存在，则自动清空 */
                 watch(typeOptions, () => {
                     if (filterType.value && !typeOptions.value.includes(filterType.value)) {
                         filterType.value = '';
@@ -939,9 +778,6 @@
                     }
                 });
 
-                /* ============================================================
-                   全选 / 单选
-                   ============================================================ */
                 const allChecked = computed(() =>
                     currentRows.value.length > 0 &&
                     currentRows.value.every(r => selected.has(r.id))
@@ -970,9 +806,6 @@
                     selectedSize.value = selected.size;
                 }
 
-                /* ============================================================
-                   状态 / Toast
-                   ============================================================ */
                 function setStatus(state, text) {
                     statusState.value = state;
                     statusText.value = text;
@@ -994,15 +827,12 @@
                     }, 2200);
                 }
 
-                /* ============================================================
-                   数据加载
-                   ============================================================ */
                 async function loadData(silent = true) {
                     loading.value = true;
                     setStatus('loading', '加载中...');
 
                     try {
-                        const { content } = await ghGetFile(CONFIG.FEEDBACK_FILE);
+                        const { content } = await GitHub.getFile(GitHub.CONFIG.FEEDBACK_FILE);
                         feedback.value = normalizeFeedback(content).feedback.filter(x => x && x.id);
                         selected.clear();
                         syncSelectedSize();
@@ -1017,21 +847,17 @@
                     }
                 }
 
-                /* ============================================================
-                   删除
-                   ============================================================ */
                 function findById(id) {
                     return feedback.value.find(x => x.id === id) || null;
                 }
 
-                /** 按 id 列表删除，返回是否真的删除了内容 */
                 async function deleteByIds(ids) {
                     const idSet = new Set(ids);
-                    const res = await updateJsonFile(CONFIG.FEEDBACK_FILE, (content) => {
+                    const res = await GitHub.updateFile(GitHub.CONFIG.FEEDBACK_FILE, (content) => {
                         const data = normalizeFeedback(content);
                         const before = data.feedback.length;
                         data.feedback = data.feedback.filter(x => !(x && idSet.has(x.id)));
-                        if (data.feedback.length === before) return null;   // 已不存在，跳过写入
+                        if (data.feedback.length === before) return null;
                         return data;
                     }, `删除意见反馈 ${ids.length} 条 - ${now()}`);
 
@@ -1072,9 +898,6 @@
                     }
                 }
 
-                /* ============================================================
-                   详情弹窗
-                   ============================================================ */
                 function openDetail(id) {
                     if (!findById(id)) return toast('该反馈已不存在', 'error');
                     detailId.value = id;
@@ -1106,9 +929,6 @@
                     }
                 }
 
-                /* ============================================================
-                   类型徽章 HTML（保持原样式）
-                   ============================================================ */
                 function typeBadge(type) {
                     const color = TYPE_COLOR[type] || FALLBACK_COLOR;
                     return `<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold whitespace-nowrap"
@@ -1118,21 +938,15 @@
                             </span>`;
                 }
 
-                /* ============================================================
-                   快捷键：Esc 关闭弹窗
-                   ============================================================ */
                 function onKeydown(e) {
                     if (e.key === 'Escape' && modalVisible.value) closeDetail();
                 }
 
-                /* ============================================================
-                   生命周期
-                   ============================================================ */
                 onMounted(async () => {
                     document.addEventListener('keydown', onKeydown);
 
                     try {
-                        CONFIG.GITHUB_TOKEN = await decrypt(CONFIG.TOKEN_CIPHER, CONFIG.TOKEN_PASS);
+                        await GitHub.init();
                     } catch (e) {
                         console.error(e);
                         setStatus('err', 'Token 解密失败');
@@ -1147,24 +961,17 @@
                     document.removeEventListener('keydown', onKeydown);
                 });
 
-                /* ============================================================
-                   暴露给模板
-                   ============================================================ */
                 return {
-                    /* 常量 */
                     TOAST_BG,
                     PAGE_SIZE_OPTIONS,
                     EMPTY_SOURCE_TEXT,
 
-                    /* 数据 */
                     feedback,
                     loading,
 
-                    /* 状态 */
                     statusDotClass,
                     statusText,
 
-                    /* 筛选分页 */
                     keyword,
                     filterType,
                     filterSource,
@@ -1173,7 +980,6 @@
                     selected,
                     selectedSize,
 
-                    /* 计算属性 */
                     filtered,
                     totalPages,
                     currentRows,
@@ -1184,16 +990,13 @@
                     allChecked,
                     someChecked,
 
-                    /* 弹窗 */
                     modalVisible,
                     detail,
                     detailColor,
                     detailColorBg,
 
-                    /* Toast */
                     toasts,
 
-                    /* 方法 */
                     loadData,
                     toggleCheckAll,
                     toggleRow,

@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="./utils/toastify.min.css" />
     <script src="./utils/tailwindcss.js"></script>
     <script src="./utils/vue.global.prod.js"></script>
+    <script src="./utils/github.js"></script>
 
     <style>
         :root {
@@ -165,7 +166,6 @@
 
         .toastify { border-radius: 16px !important; padding: 12px 20px !important; font-size: 13.5px !important; font-weight: 500 !important; font-family: inherit !important; box-shadow: 0 10px 32px rgba(0, 0, 0, .22) !important; max-width: 82vw !important; }
 
-        /* Leaflet 弹窗内容 */
         .popup-detail, .popup-form { width: 280px; max-width: calc(100vw - 60px); box-sizing: border-box; padding: 20px; font-family: inherit; text-align: left; }
         .popup-detail .type-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 999px; margin-bottom: 10px; line-height: 1.4; }
         .popup-detail .type-badge .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex: none; }
@@ -334,21 +334,14 @@
 
     <script>
         /* ============================================================
-           配置
+           本页特有配置
+           （GitHub 相关配置在 ./utils/github.js 中，通过 GitHub.CONFIG 访问）
            ============================================================ */
         const CONFIG = {
-            GITHUB_OWNER: 'ulnae',
-            GITHUB_REPO: 'tools',
-            GITHUB_BRANCH: 'master',
-            DATA_DIR: 'data',
-            TYPES_FILE: 'data/types.json',
-            GITHUB_TOKEN: '',
             IP_ZOOM: 11,
             USE_IP_LOCATION: true,
             CHINA_BOUNDS: [[17.5, 72.0], [54.5, 136.0]],
-            FEEDBACK_URL: './feedback?f=共享标点',
-            TOKEN_CIPHER: 'pN0DLAO2zEwTMKZlJZw+6zd4GAXI0t3mCX/iAqiGWY6ddaYNpX4u6LdZ7eeflYz7RaSCt6hCUYSPbhbejCY7lVChS9u3YaVWhiU38RWdMQf0iRo4UwUZ5kmnzZXBiZlDVIgWBVNPoxeFveABj02UVh8IFBBix/Bz+AOD9DIdlN8Jbh3s3olHlPs=',
-            TOKEN_PASS: 'ulnae'
+            FEEDBACK_URL: './feedback?f=共享标点'
         };
 
         const RESERVED_COLORS = ['#9ca3af'];
@@ -368,8 +361,7 @@
         };
 
         const genId = () => crypto.randomUUID();
-        const sleep = ms => new Promise(r => setTimeout(r, ms));
-        const markerFilePath = id => `${CONFIG.DATA_DIR}/${id}.geojson`;
+        const markerFilePath = id => `${GitHub.CONFIG.DATA_DIR}/${id}.geojson`;
         const emptyFC = () => ({ type: 'FeatureCollection', features: [] });
 
         const normalizeFC = c =>
@@ -415,23 +407,6 @@
             err: 'w-2 h-2 rounded-full flex-none bg-[color:var(--ios-red)]',
             loading: 'w-2 h-2 rounded-full flex-none bg-[color:var(--ios-orange)] animate-pulse'
         };
-
-        /* ---------- AES 解密 ---------- */
-        async function decrypt(cipherText, password) {
-            const binary = atob(cipherText.trim());
-            const data = new Uint8Array(binary.length);
-            for (let i = 0; i < binary.length; i++) data[i] = binary.charCodeAt(i);
-            const salt = data.subarray(0, 16);
-            const iv = data.subarray(16, 28);
-            const encrypted = data.subarray(28);
-            const enc = new TextEncoder();
-            const baseKey = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']);
-            const key = await crypto.subtle.deriveKey(
-                { name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' },
-                baseKey, { name: 'AES-GCM', length: 256 }, false, ['decrypt']
-            );
-            return new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, encrypted));
-        }
 
         /* ---------- WGS84 → GCJ02 ---------- */
         function wgs84ToGcj02(lng, lat) {
@@ -488,62 +463,6 @@
                 try { return await fn(); } catch { /* 下一个服务 */ }
             }
             return null;
-        }
-
-        /* ---------- GitHub API ---------- */
-        async function ghApi(path, options = {}) {
-            const url = `https://api.github.com/repos/${CONFIG.GITHUB_OWNER}/${CONFIG.GITHUB_REPO}/contents/${path}`;
-            const res = await fetch(url, {
-                ...options,
-                headers: {
-                    'Accept': 'application/vnd.github+json',
-                    'Authorization': `Bearer ${CONFIG.GITHUB_TOKEN}`,
-                    'Content-Type': 'application/json',
-                    ...(options.headers || {})
-                }
-            });
-            if (!res.ok) {
-                const err = await res.json().catch(() => ({}));
-                throw new Error(err.message || `GitHub API 错误 (${res.status})`);
-            }
-            return res.json();
-        }
-
-        async function ghGetFile(path) {
-            try {
-                const data = await ghApi(path);
-                const raw = atob((data.content || '').replace(/\s/g, ''));
-                if (!raw) return { content: null, sha: data.sha };
-                try { return { content: JSON.parse(decodeURIComponent(escape(raw))), sha: data.sha }; }
-                catch { return { content: null, sha: data.sha }; }
-            } catch (e) {
-                if (/not found|404/i.test(e.message)) return { content: null, sha: null };
-                throw e;
-            }
-        }
-
-        async function ghPutFile(path, obj, message, sha) {
-            const content = btoa(unescape(encodeURIComponent(JSON.stringify(obj, null, 2))));
-            const body = { message, content, branch: CONFIG.GITHUB_BRANCH };
-            if (sha) body.sha = sha;
-            return ghApi(path, { method: 'PUT', body: JSON.stringify(body) });
-        }
-
-        async function updateJsonFile(path, mutate, message, maxAttempts = 3) {
-            let lastErr = null;
-            for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-                const { content, sha } = await ghGetFile(path);
-                const next = await mutate(content, sha);
-                if (next == null) return { content, sha, skipped: true };
-                try {
-                    const res = await ghPutFile(path, next, message, sha);
-                    return { content: next, sha: res.content.sha, skipped: false };
-                } catch (err) {
-                    lastErr = err;
-                    if (attempt < maxAttempts) await sleep(350 * attempt);
-                }
-            }
-            throw lastErr || new Error('保存失败');
         }
 
         /* ============================================================
@@ -611,7 +530,7 @@
 
                 /* ---------- 数据加载 ---------- */
                 async function loadTypes() {
-                    const { content } = await ghGetFile(CONFIG.TYPES_FILE);
+                    const { content } = await GitHub.getFile(GitHub.CONFIG.TYPES_FILE);
                     typesList.value = normalizeTypes(content).types;
                 }
 
@@ -619,7 +538,7 @@
                     if (typeLoadPromises[typeId]) return typeLoadPromises[typeId];
                     return typeLoadPromises[typeId] = (async () => {
                         try {
-                            const { content, sha } = await ghGetFile(markerFilePath(typeId));
+                            const { content, sha } = await GitHub.getFile(markerFilePath(typeId));
                             const geojson = normalizeFC(content);
                             geojson.features.forEach(f => {
                                 if (!f.properties) f.properties = {};
@@ -759,7 +678,7 @@
                 }
 
                 async function ensureTypeDataFile(typeId) {
-                    const res = await updateJsonFile(markerFilePath(typeId), c => {
+                    const res = await GitHub.updateFile(markerFilePath(typeId), c => {
                         if (c && Array.isArray(c.features)) return null;
                         return emptyFC();
                     }, `初始化类型数据文件 ${typeId}.geojson - ${new Date().toLocaleString('zh-CN')}`);
@@ -777,7 +696,7 @@
                     const newType = { id: genId(), name, color, created_at: new Date().toISOString() };
 
                     try {
-                        const res = await updateJsonFile(CONFIG.TYPES_FILE, content => {
+                        const res = await GitHub.updateFile(GitHub.CONFIG.TYPES_FILE, content => {
                             const data = normalizeTypes(content);
                             if (data.types.some(t => (t.name || '').toLowerCase() === name.toLowerCase())) throw new Error('类型名称已存在');
                             if (data.types.some(t => (t.color || '').toLowerCase() === color)) throw new Error('该颜色已被其他类型使用，请更换');
@@ -848,7 +767,7 @@
                 }
 
                 async function appendMarkerToType(typeId, feature) {
-                    const res = await updateJsonFile(markerFilePath(typeId), c => {
+                    const res = await GitHub.updateFile(markerFilePath(typeId), c => {
                         const fc = normalizeFC(c);
                         fc.features.push(feature);
                         return fc;
@@ -927,7 +846,7 @@
                     initMap();
 
                     try {
-                        CONFIG.GITHUB_TOKEN = await decrypt(CONFIG.TOKEN_CIPHER, CONFIG.TOKEN_PASS);
+                        await GitHub.init();
                     } catch {
                         setStatus('err', 'Token 解密失败');
                         showToast('Token 解密失败，无法读写数据', 'error');

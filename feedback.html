@@ -12,10 +12,8 @@
     <script src="./utils/tailwindcss.js"></script>
     <script src="./utils/dayjs.min.js"></script>
     <script src="./utils/vue.global.prod.js"></script>
+    <script src="./utils/github.js"></script>
     <style>
-        /* ============================================================
-           主题变量 —— 日间（默认）
-           ============================================================ */
         :root {
             color-scheme: light;
 
@@ -48,9 +46,6 @@
             --c-green-soft: rgba(52, 199, 89, .12);
         }
 
-        /* ============================================================
-           主题变量 —— 夜间（跟随系统）
-           ============================================================ */
         @media (prefers-color-scheme: dark) {
             :root {
                 color-scheme: dark;
@@ -105,7 +100,6 @@
             transition: background-color .25s ease, color .25s ease;
         }
 
-        /* ---------- Vue 根节点：撑满 body 并保持纵向弹性布局 ---------- */
         #app {
             flex: 1 1 0%;
             min-height: 0;
@@ -113,7 +107,6 @@
             flex-direction: column;
         }
 
-        /* ---------- 毛玻璃卡片 ---------- */
         .glass {
             background: var(--c-card);
             backdrop-filter: saturate(180%) blur(20px);
@@ -122,7 +115,6 @@
             transition: background-color .25s ease, box-shadow .25s ease;
         }
 
-        /* ---------- 滚动条 ---------- */
         .no-sb::-webkit-scrollbar {
             display: none;
         }
@@ -155,7 +147,6 @@
             background-clip: content-box;
         }
 
-        /* ---------- 输入控件 ---------- */
         .ios-input {
             width: 100%;
             box-sizing: border-box;
@@ -183,7 +174,6 @@
             line-height: 1.55;
         }
 
-        /* ---------- 标签 ---------- */
         .f-label {
             display: block;
             font-size: 12px;
@@ -196,7 +186,6 @@
             margin-top: 0;
         }
 
-        /* ---------- 分段控件 ---------- */
         .seg-wrap {
             background: var(--c-seg-bg);
             transition: background-color .25s ease;
@@ -226,7 +215,6 @@
             box-shadow: var(--c-seg-on-shadow);
         }
 
-        /* ---------- 状态圆点 ---------- */
         .dot {
             width: .5rem;
             height: .5rem;
@@ -259,7 +247,6 @@
             }
         }
 
-        /* ---------- 动画 ---------- */
         @keyframes pop-in {
             from {
                 transform: scale(.94) translateY(12px);
@@ -276,17 +263,6 @@
             animation: pop-in .3s cubic-bezier(.32, .72, 0, 1);
         }
 
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        .spin {
-            animation: spin .8s linear infinite;
-        }
-
-        /* ---------- 主按钮 ---------- */
         .btn-primary {
             background: var(--ios-blue);
             box-shadow: var(--c-btn-shadow);
@@ -294,14 +270,12 @@
             transition: transform .15s, box-shadow .25s ease, background-color .25s ease;
         }
 
-        /* ---------- 次级按钮 ---------- */
         .btn-soft {
             background: var(--c-soft-btn);
             color: var(--ios-blue);
             transition: transform .15s, background-color .25s ease, color .25s ease;
         }
 
-        /* ---------- Vue 过渡：toast ---------- */
         .toast-item {
             transition: opacity .3s ease, transform .3s ease;
         }
@@ -311,7 +285,6 @@
 <body class="app-shell">
     <div id="app">
 
-        <!-- ===================== 顶部栏 ===================== -->
         <header class="glass flex-none z-30">
             <div class="max-w-[560px] mx-auto px-4 py-3 flex items-center gap-3">
                 <h1 class="text-[16px] font-bold tracking-tight text-[var(--c-text)]">意见反馈</h1>
@@ -322,24 +295,20 @@
             </div>
         </header>
 
-        <!-- ===================== 主体 ===================== -->
         <main class="flex-1 min-h-0 overflow-y-auto scroll-area">
             <div class="max-w-[560px] mx-auto px-4 py-5 pb-12">
 
-                <!-- 表单卡 -->
                 <div v-if="!done" class="glass rounded-[22px] p-5 anim-pop">
                     <p class="text-[13px] leading-relaxed text-[var(--c-text-2)]">
                         你的每一条反馈都会被认真阅读，感谢你帮助我们变得更好。
                     </p>
 
-                    <!-- 类型 -->
                     <label class="f-label">反馈类型</label>
                     <div class="seg-wrap flex gap-1 p-1 rounded-2xl">
                         <button v-for="t in TYPES" :key="t" type="button" class="seg-btn"
                             :class="{ on: type === t }" @click="type = t">{{ t }}</button>
                     </div>
 
-                    <!-- 内容 -->
                     <label class="f-label">反馈内容 <span class="text-[var(--ios-red)]">*</span></label>
                     <textarea ref="contentEl" v-model="content" class="ios-input" rows="6" maxlength="500"
                         placeholder="请尽量描述清楚，比如：在哪个页面、做了什么操作、出现了什么情况..."></textarea>
@@ -347,18 +316,15 @@
                         <span class="tabular-nums">{{ content.length }}</span> / 500
                     </div>
 
-                    <!-- 联系方式 -->
                     <label class="f-label">联系方式 <span
                             class="font-normal text-[var(--c-text-3)]">（选填）</span></label>
                     <input v-model="contact" class="ios-input" type="text" maxlength="50"
                         placeholder="邮箱 / 微信 / 手机号，便于我们回复你">
 
-                    <!-- 来源提示（地址栏带 f 参数时才显示） -->
                     <p v-if="source" class="text-[11.5px] mt-3 text-center text-[var(--c-text-3)]">
                         来源：{{ source }}
                     </p>
 
-                    <!-- 提交 -->
                     <button :disabled="submitDisabled" @click="submitFeedback"
                         class="btn-primary mt-6 w-full py-3.5 rounded-2xl text-[16px] font-semibold active:scale-[.98] disabled:opacity-50">
                         {{ submitting ? '提交中...' : '提交反馈' }}
@@ -369,7 +335,6 @@
                     </p>
                 </div>
 
-                <!-- 提交成功提示卡 -->
                 <div v-else class="glass rounded-[22px] p-8 flex flex-col items-center text-center anim-pop">
                     <div class="w-14 h-14 rounded-full flex items-center justify-center mb-4"
                         style="background:var(--c-green-soft)">
@@ -389,7 +354,6 @@
             </div>
         </main>
 
-        <!-- ===================== Toast 容器 ===================== -->
         <div v-for="t in toasts" :key="t.id" class="toast-item fixed left-1/2 bottom-8 z-[9999] px-5 py-3
                    rounded-2xl text-white text-[13px] font-medium shadow-2xl -translate-x-1/2
                    max-w-[82vw] text-center pointer-events-none"
@@ -400,36 +364,16 @@
 
     <script>
         /* ============================================================
-           配置（与主页面保持一致）
-           ============================================================ */
-        const CONFIG = {
-            GITHUB_OWNER: 'ulnae',
-            GITHUB_REPO: 'tools',
-            GITHUB_BRANCH: 'master',
-
-            DATA_DIR: 'data',
-            FEEDBACK_FILE: 'data/feedback.json',
-
-            GITHUB_TOKEN: '',
-
-            TOKEN_CIPHER: 'pN0DLAO2zEwTMKZlJZw+6zd4GAXI0t3mCX/iAqiGWY6ddaYNpX4u6LdZ7eeflYz7RaSCt6hCUYSPbhbejCY7lVChS9u3YaVWhiU38RWdMQf0iRo4UwUZ5kmnzZXBiZlDVIgWBVNPoxeFveABj02UVh8IFBBix/Bz+AOD9DIdlN8Jbh3s3olHlPs=',
-            TOKEN_PASS: 'ulnae'
-        };
-
-        /* ============================================================
            通用工具
            ============================================================ */
-        const sleep = ms => new Promise(r => setTimeout(r, ms));
         const now = () => dayjs().format('YYYY/MM/DD HH:mm');
 
-        /* ---------- 读取地址栏 f 参数作为反馈来源 ---------- */
         const MAX_SOURCE_LEN = 100;
 
         function getSourceFromUrl() {
             try {
                 const v = new URLSearchParams(location.search).get('f');
                 if (!v) return '';
-                // 去掉首尾空白并限制长度，避免异常超长内容写进数据文件
                 return v.trim().slice(0, MAX_SOURCE_LEN);
             } catch (e) {
                 console.warn('解析来源参数失败：', e);
@@ -442,101 +386,11 @@
             return { feedback: [] };
         }
 
-        /* ---------- Toast 配色 ---------- */
         const TOAST_BG = {
             success: 'linear-gradient(135deg,#34C759,#28A745)',
             error: 'linear-gradient(135deg,#FF3B30,#D92D20)',
             info: 'linear-gradient(135deg,#007AFF,#0062CC)'
         };
-
-        /* ============================================================
-           Token 解密（AES-GCM + PBKDF2）
-           ============================================================ */
-        async function decrypt(cipherText, password) {
-            const binary = atob(cipherText.trim());
-            const data = new Uint8Array(binary.length);
-            for (let i = 0; i < binary.length; i++) data[i] = binary.charCodeAt(i);
-            const salt = data.subarray(0, 16);
-            const iv = data.subarray(16, 28);
-            const encrypted = data.subarray(28);
-            const enc = new TextEncoder();
-            const baseKey = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']);
-            const key = await crypto.subtle.deriveKey(
-                { name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' },
-                baseKey, { name: 'AES-GCM', length: 256 }, false, ['decrypt']
-            );
-            const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, encrypted);
-            return new TextDecoder().decode(decrypted);
-        }
-
-        /* ============================================================
-           GitHub API
-           ============================================================ */
-        async function ghApi(path, options = {}) {
-            const url = `https://api.github.com/repos/${CONFIG.GITHUB_OWNER}/${CONFIG.GITHUB_REPO}/contents/${path}`;
-            const res = await fetch(url, {
-                ...options,
-                headers: {
-                    'Accept': 'application/vnd.github+json',
-                    'Authorization': `Bearer ${CONFIG.GITHUB_TOKEN}`,
-                    'Content-Type': 'application/json',
-                    ...(options.headers || {})
-                }
-            });
-            if (!res.ok) {
-                const err = await res.json().catch(() => ({}));
-                throw new Error(err.message || `GitHub API 错误 (${res.status})`);
-            }
-            const text = await res.text();
-            return text ? JSON.parse(text) : {};
-        }
-
-        async function ghGetFile(path) {
-            try {
-                const data = await ghApi(path);
-                const raw = atob((data.content || '').replace(/\s/g, ''));
-                if (!raw) return { content: null, sha: data.sha };
-                const text = decodeURIComponent(escape(raw));
-                try {
-                    return { content: JSON.parse(text), sha: data.sha };
-                } catch (e) {
-                    console.warn(`文件 ${path} 不是合法 JSON，按空数据处理`);
-                    return { content: null, sha: data.sha };
-                }
-            } catch (e) {
-                if (/not found|404/i.test(e.message)) return { content: null, sha: null };
-                throw e;
-            }
-        }
-
-        async function ghPutFile(path, obj, message, sha) {
-            const jsonStr = JSON.stringify(obj, null, 2);
-            const content = btoa(unescape(encodeURIComponent(jsonStr)));
-            const body = { message, content, branch: CONFIG.GITHUB_BRANCH };
-            if (sha) body.sha = sha;
-            return ghApi(path, { method: 'PUT', body: JSON.stringify(body) });
-        }
-
-        /** 安全写：每次提交前重新拉取最新内容与 sha，冲突自动重试 */
-        async function updateJsonFile(path, mutate, message, maxAttempts = 4) {
-            let lastErr = null;
-            for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-                const { content, sha } = await ghGetFile(path);
-                const next = await mutate(content, sha);
-                if (next === null || next === undefined) {
-                    return { content, sha, skipped: true };
-                }
-                try {
-                    const res = await ghPutFile(path, next, message, sha);
-                    return { content: next, sha: res.content.sha, skipped: false };
-                } catch (err) {
-                    lastErr = err;
-                    console.warn(`写入 ${path} 第 ${attempt} 次失败：${err.message}`);
-                    if (attempt < maxAttempts) await sleep(350 * attempt);
-                }
-            }
-            throw lastErr || new Error('保存失败');
-        }
 
         /* ============================================================
            Vue 应用
@@ -545,41 +399,33 @@
 
         createApp({
             setup() {
-                /* ---------- 常量 ---------- */
                 const TYPES = ['建议', '问题', '其他'];
 
-                /* ---------- 表单状态 ---------- */
                 const type = ref('建议');
                 const content = ref('');
                 const contact = ref('');
                 const source = ref('');
                 const done = ref(false);
                 const submitting = ref(false);
-                const ready = ref(false);        // Token 是否就绪
-                const tokenFailed = ref(false);  // Token 解密是否失败
+                const ready = ref(false);
+                const tokenFailed = ref(false);
 
-                /* ---------- 顶部状态指示 ---------- */
-                const statusState = ref('loading');   // loading | ok | err
+                const statusState = ref('loading');
                 const statusText = ref('初始化中...');
 
-                /* ---------- DOM 引用 ---------- */
                 const contentEl = ref(null);
 
-                /* ---------- Toast ---------- */
                 const toasts = ref([]);
                 let toastSeq = 0;
 
-                /* ---------- 计算属性 ---------- */
                 const statusDotClass = computed(() => `dot dot-${statusState.value}`);
                 const submitDisabled = computed(() => submitting.value || tokenFailed.value);
 
-                /* ---------- 状态指示 ---------- */
                 function setStatus(state, text) {
                     statusState.value = state;
                     statusText.value = text;
                 }
 
-                /* ---------- Toast ---------- */
                 function toast(msg, t = 'info') {
                     const id = ++toastSeq;
                     const item = reactive({ id, msg, type: t, show: false });
@@ -596,7 +442,6 @@
                     }, 2200);
                 }
 
-                /* ---------- 提交反馈 ---------- */
                 async function submitFeedback() {
                     if (submitting.value) return;
 
@@ -615,12 +460,12 @@
                         type: type.value,
                         content: text,
                         contact: contactVal,
-                        source: getSourceFromUrl(),   // 反馈来源：地址栏 ?f=xxx，没有则为空字符串
+                        source: getSourceFromUrl(),
                         created_at: new Date().toISOString()
                     };
 
                     try {
-                        await updateJsonFile(CONFIG.FEEDBACK_FILE, (c) => {
+                        await GitHub.updateFile(GitHub.CONFIG.FEEDBACK_FILE, (c) => {
                             const data = normalizeFeedback(c);
                             data.feedback.push(item);
                             return data;
@@ -641,28 +486,23 @@
                     }
                 }
 
-                /* ---------- 视图切换 ---------- */
                 function showForm() {
                     done.value = false;
                     nextTick(() => contentEl.value?.focus());
                 }
 
-                /* ---------- 快捷键：Ctrl / Cmd + Enter ---------- */
                 function onKeydown(e) {
                     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') submitFeedback();
                 }
 
-                /* ---------- 生命周期 ---------- */
                 onMounted(async () => {
                     document.addEventListener('keydown', onKeydown);
 
-                    /* 来源提示 */
                     source.value = getSourceFromUrl();
                     if (source.value) console.log('反馈来源：', source.value);
 
-                    /* Token 解密 */
                     try {
-                        CONFIG.GITHUB_TOKEN = await decrypt(CONFIG.TOKEN_CIPHER, CONFIG.TOKEN_PASS);
+                        await GitHub.init();
                         ready.value = true;
                         setStatus('ok', '已连接');
                     } catch (e) {
@@ -680,7 +520,6 @@
                     document.removeEventListener('keydown', onKeydown);
                 });
 
-                /* ---------- 暴露给模板 ---------- */
                 return {
                     TYPES,
                     TOAST_BG,

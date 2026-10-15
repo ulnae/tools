@@ -11,6 +11,7 @@
         href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23007AFF'/%3E%3Cpath d='M16 6c-3.9 0-7 3.1-7 7 0 5.3 7 13 7 13s7-7.7 7-13c0-3.9-3.1-7-7-7z' fill='%23fff'/%3E%3Ccircle cx='16' cy='13' r='2.6' fill='%23007AFF'/%3E%3C/svg%3E">
     <script src="./utils/tailwindcss.js"></script>
     <script src="./utils/vue.global.prod.js"></script>
+    <script src="./utils/github.js"></script>
     <style>
         /* ============================================================
            主题变量：浅色（日间）
@@ -390,7 +391,6 @@
             animation: spin .8s linear infinite;
         }
 
-        /* 空状态里的小加载圆点 */
         @keyframes pulse {
 
             0%,
@@ -464,9 +464,7 @@
                             共 <b class="text-[color:var(--text-1)] tabular-nums">{{ filteredMarkers.length }}</b> 条
                         </span>
 
-                        <!-- 按需加载剩余类型 -->
-                        <button v-if="pendingCount > 0 && !loadingAll" @click="loadAllTypes"
-                            class="btn-pager ml-auto">
+                        <button v-if="pendingCount > 0 && !loadingAll" @click="loadAllTypes" class="btn-pager ml-auto">
                             加载剩余 {{ pendingCount }} 个类型
                         </button>
                         <span v-else-if="loadingAll"
@@ -491,7 +489,6 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <!-- 有数据 -->
                                 <template v-if="markerTableState === 'data'">
                                     <tr v-for="(row, i) in markerPageData.rows" :key="row.typeId + '-' + i"
                                         class="border-b border-[color:var(--border-weak)] hover:bg-[var(--fill-weak)] align-top">
@@ -526,18 +523,14 @@
                                     </tr>
                                 </template>
 
-                                <!-- 状态提示 -->
                                 <tr v-else>
                                     <td colspan="7" class="py-16 text-center text-[color:var(--text-4)] text-[13px]">
-
-                                        <!-- 加载中 -->
                                         <template v-if="markerTableState === 'loading'">
                                             <span
                                                 class="inline-block w-2 h-2 rounded-full bg-[var(--ios-orange)] pulse mr-2 align-middle"></span>
                                             正在加载标点数据...
                                         </template>
 
-                                        <!-- 未加载任何类型 -->
                                         <template v-else-if="markerTableState === 'idle'">
                                             <div class="space-y-3">
                                                 <p>尚未加载标点数据</p>
@@ -551,7 +544,6 @@
                                             </div>
                                         </template>
 
-                                        <!-- 已加载但为空 -->
                                         <template v-else>暂无标点数据</template>
                                     </td>
                                 </tr>
@@ -586,7 +578,6 @@
             <section v-show="tab === 'types'" class="flex-1 min-h-0 flex flex-col">
                 <div class="glass rounded-2xl overflow-hidden flex flex-col flex-1 min-h-0">
 
-                    <!-- 工具条 -->
                     <div
                         class="flex-none px-3 py-3 flex items-center gap-2 flex-wrap border-b border-[color:var(--border)]">
                         <span class="text-[13px] font-semibold text-[color:var(--text-1)]">类型列表</span>
@@ -598,7 +589,6 @@
                         </span>
                     </div>
 
-                    <!-- 表格滚动区 -->
                     <div class="flex-1 min-h-0 scroll-area">
                         <table class="w-full text-[13px] min-w-[780px]">
                             <thead>
@@ -658,7 +648,6 @@
                         </table>
                     </div>
 
-                    <!-- 分页条 -->
                     <div
                         class="flex-none px-3 py-2.5 flex items-center gap-2 flex-wrap border-t border-[color:var(--border)] bg-[var(--fill-weak2)]">
                         <span class="text-[12px] text-[color:var(--text-3)] whitespace-nowrap">
@@ -788,22 +777,8 @@
 
     <script>
         /* ============================================================
-           配置（与主页面保持一致）
+           常量
            ============================================================ */
-        const CONFIG = {
-            GITHUB_OWNER: 'ulnae',
-            GITHUB_REPO: 'tools',
-            GITHUB_BRANCH: 'master',
-
-            DATA_DIR: 'data',
-            TYPES_FILE: 'data/types.json',
-
-            GITHUB_TOKEN: '',
-
-            TOKEN_CIPHER: 'pN0DLAO2zEwTMKZlJZw+6zd4GAXI0t3mCX/iAqiGWY6ddaYNpX4u6LdZ7eeflYz7RaSCt6hCUYSPbhbejCY7lVChS9u3YaVWhiU38RWdMQf0iRo4UwUZ5kmnzZXBiZlDVIgWBVNPoxeFveABj02UVh8IFBBix/Bz+AOD9DIdlN8Jbh3s3olHlPs=',
-            TOKEN_PASS: 'ulnae'
-        };
-
         const FALLBACK_COLOR = '#9ca3af';
         const RESERVED_COLORS = ['#9ca3af'];
         const PRESET_COLORS = [
@@ -814,9 +789,7 @@
         /* ============================================================
            通用工具
            ============================================================ */
-        const sleep = ms => new Promise(r => setTimeout(r, ms));
-
-        const markerFilePath = typeId => `${CONFIG.DATA_DIR}/${typeId}.geojson`;
+        const markerFilePath = typeId => `${GitHub.CONFIG.DATA_DIR}/${typeId}.geojson`;
 
         const emptyFC = () => ({ type: 'FeatureCollection', features: [] });
 
@@ -876,13 +849,7 @@
             const totalPages = Math.max(1, Math.ceil(total / size));
             const p = Math.min(Math.max(1, Math.floor(page) || 1), totalPages);
             const start = (p - 1) * size;
-            return {
-                rows: list.slice(start, start + size),
-                page: p,
-                totalPages,
-                total,
-                start
-            };
+            return { rows: list.slice(start, start + size), page: p, totalPages, total, start };
         }
 
         const TOAST_BG = {
@@ -898,110 +865,6 @@
         };
 
         /* ============================================================
-           加解密
-           ============================================================ */
-        async function decrypt(cipherText, password) {
-            const binary = atob(cipherText.trim());
-            const data = new Uint8Array(binary.length);
-            for (let i = 0; i < binary.length; i++) data[i] = binary.charCodeAt(i);
-            const salt = data.subarray(0, 16);
-            const iv = data.subarray(16, 28);
-            const encrypted = data.subarray(28);
-            const enc = new TextEncoder();
-            const baseKey = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']);
-            const key = await crypto.subtle.deriveKey(
-                { name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' },
-                baseKey, { name: 'AES-GCM', length: 256 }, false, ['decrypt']
-            );
-            const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, encrypted);
-            return new TextDecoder().decode(decrypted);
-        }
-
-        /* ============================================================
-           GitHub API
-           ============================================================ */
-        async function ghApi(path, options = {}) {
-            const url = `https://api.github.com/repos/${CONFIG.GITHUB_OWNER}/${CONFIG.GITHUB_REPO}/contents/${path}`;
-            const res = await fetch(url, {
-                ...options,
-                headers: {
-                    'Accept': 'application/vnd.github+json',
-                    'Authorization': `Bearer ${CONFIG.GITHUB_TOKEN}`,
-                    'Content-Type': 'application/json',
-                    ...(options.headers || {})
-                }
-            });
-            if (!res.ok) {
-                const err = await res.json().catch(() => ({}));
-                throw new Error(err.message || `GitHub API 错误 (${res.status})`);
-            }
-            const text = await res.text();
-            return text ? JSON.parse(text) : {};
-        }
-
-        async function ghGetFile(path) {
-            try {
-                const data = await ghApi(path);
-                const raw = atob((data.content || '').replace(/\s/g, ''));
-                if (!raw) return { content: null, sha: data.sha };
-                const text = decodeURIComponent(escape(raw));
-                try {
-                    return { content: JSON.parse(text), sha: data.sha };
-                } catch (e) {
-                    console.warn(`文件 ${path} 不是合法 JSON，按空数据处理`);
-                    return { content: null, sha: data.sha };
-                }
-            } catch (e) {
-                if (/not found|404/i.test(e.message)) return { content: null, sha: null };
-                throw e;
-            }
-        }
-
-        async function ghPutFile(path, obj, message, sha) {
-            const jsonStr = JSON.stringify(obj, null, 2);
-            const content = btoa(unescape(encodeURIComponent(jsonStr)));
-            const body = { message, content, branch: CONFIG.GITHUB_BRANCH };
-            if (sha) body.sha = sha;
-            return ghApi(path, { method: 'PUT', body: JSON.stringify(body) });
-        }
-
-        async function ghDeleteFile(path, message) {
-            let sha = null;
-            try {
-                const data = await ghApi(path);
-                sha = data.sha;
-            } catch (e) {
-                if (/not found|404/i.test(e.message)) return false;
-                throw e;
-            }
-            await ghApi(path, {
-                method: 'DELETE',
-                body: JSON.stringify({ message, sha, branch: CONFIG.GITHUB_BRANCH })
-            });
-            return true;
-        }
-
-        async function updateJsonFile(path, mutate, message, maxAttempts = 3) {
-            let lastErr = null;
-            for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-                const { content, sha } = await ghGetFile(path);
-                const next = await mutate(content, sha);
-                if (next === null || next === undefined) {
-                    return { content, sha, skipped: true };
-                }
-                try {
-                    const res = await ghPutFile(path, next, message, sha);
-                    return { content: next, sha: res.content.sha, skipped: false };
-                } catch (err) {
-                    lastErr = err;
-                    console.warn(`写入 ${path} 第 ${attempt} 次失败：${err.message}`);
-                    if (attempt < maxAttempts) await sleep(350 * attempt);
-                }
-            }
-            throw lastErr || new Error('保存失败');
-        }
-
-        /* ============================================================
            Vue 应用
            ============================================================ */
         const { createApp, ref, reactive, computed, watch, nextTick, onMounted, onBeforeUnmount } = Vue;
@@ -1014,11 +877,11 @@
                 const TAB_OFF = TAB_BASE + ' text-[color:var(--text-3)] hover:text-[color:var(--text-1)]';
 
                 /* ---------- 数据 ---------- */
-                const typesData = ref({ types: [] });         // types.json
-                const typeData = reactive({});                  // typeId -> { geojson, sha }
-                const loadedTypes = reactive({});               // typeId -> true（geojson 已加载）
-                const loadingTypes = reactive({});              // typeId -> true（geojson 加载中）
-                const typeLoadPromises = {};                    // typeId -> Promise（并发去重）
+                const typesData = ref({ types: [] });
+                const typeData = reactive({});
+                const loadedTypes = reactive({});
+                const loadingTypes = reactive({});
+                const typeLoadPromises = {};
 
                 const loading = ref(false);
                 const loadingAll = ref(false);
@@ -1051,13 +914,12 @@
                     return (d && d.geojson && Array.isArray(d.geojson.features)) ? d.geojson.features : [];
                 }
 
-                /** 只汇总已加载类型的标点 */
                 const filteredMarkers = computed(() => {
                     const kw = keyword.value.trim().toLowerCase();
                     const out = [];
                     allTypes.value.forEach(t => {
                         if (filterTypeId.value && t.id !== filterTypeId.value) return;
-                        if (!loadedTypes[t.id]) return;   // 未加载的类型不参与
+                        if (!loadedTypes[t.id]) return;
                         featuresOf(t.id).forEach(f => {
                             const p = f.properties || {};
                             if (kw) {
@@ -1080,7 +942,6 @@
                     paginate(allTypes.value, typePage.value, typePageSize.value)
                 );
 
-                /** 标点表格空状态判定 */
                 const markerTableState = computed(() => {
                     if (filterTypeId.value) {
                         if (loadingTypes[filterTypeId.value]) return 'loading';
@@ -1101,19 +962,8 @@
                 const savingMarker = ref(false);
                 const savingType = ref(false);
 
-                const markerForm = reactive({
-                    title: '',
-                    typeId: '',
-                    desc: '',
-                    lng: '',
-                    lat: ''
-                });
-
-                const typeForm = reactive({
-                    name: '',
-                    color: '#007AFF',
-                    colorText: '#007AFF'
-                });
+                const markerForm = reactive({ title: '', typeId: '', desc: '', lng: '', lat: '' });
+                const typeForm = reactive({ name: '', color: '#007AFF', colorText: '#007AFF' });
 
                 const editingOldTypeId = ref(null);
                 const editingFeature = ref(null);
@@ -1162,14 +1012,12 @@
 
                 watch([keyword, filterTypeId], () => { markerPage.value = 1; });
 
-                /* 类型筛选失效时清空 */
                 watch(allTypes, () => {
                     if (filterTypeId.value && !allTypes.value.find(t => t.id === filterTypeId.value)) {
                         filterTypeId.value = '';
                     }
                 });
 
-                /* 筛选某个类型时按需加载其 geojson */
                 watch(filterTypeId, (newVal) => {
                     if (newVal) ensureTypeLoaded(newVal);
                 });
@@ -1194,7 +1042,6 @@
                     return fc;
                 }
 
-                /** 按需加载单个类型（并发去重） */
                 function loadTypeData(typeId) {
                     if (!typeId) return Promise.resolve();
                     if (loadedTypes[typeId]) return Promise.resolve(typeData[typeId]?.geojson);
@@ -1203,7 +1050,7 @@
                     loadingTypes[typeId] = true;
                     const p = (async () => {
                         try {
-                            const { content, sha } = await ghGetFile(markerFilePath(typeId));
+                            const { content, sha } = await GitHub.getFile(markerFilePath(typeId));
                             ingestGeojson(typeId, content, sha);
                         } finally {
                             delete loadingTypes[typeId];
@@ -1224,7 +1071,6 @@
                     });
                 }
 
-                /** 加载全部剩余类型 */
                 async function loadAllTypes() {
                     const ids = allTypes.value.map(t => t.id).filter(id => !loadedTypes[id]);
                     if (!ids.length) return;
@@ -1256,16 +1102,14 @@
                     setStatus('loading', '加载中...');
 
                     try {
-                        const { content } = await ghGetFile(CONFIG.TYPES_FILE);
+                        const { content } = await GitHub.getFile(GitHub.CONFIG.TYPES_FILE);
                         typesData.value = normalizeTypes(content);
 
-                        /* 重置按需加载的状态 */
                         Object.keys(typeData).forEach(k => delete typeData[k]);
                         Object.keys(loadedTypes).forEach(k => delete loadedTypes[k]);
                         Object.keys(loadingTypes).forEach(k => delete loadingTypes[k]);
                         Object.keys(typeLoadPromises).forEach(k => delete typeLoadPromises[k]);
 
-                        /* 如果当前有选中类型，自动加载它 */
                         if (filterTypeId.value && allTypes.value.find(t => t.id === filterTypeId.value)) {
                             ensureTypeLoaded(filterTypeId.value);
                         }
@@ -1282,7 +1126,7 @@
                 }
 
                 /* ============================================================
-                   类型表格行点击：筛选到该类型
+                   类型表格行点击
                    ============================================================ */
                 function onTypeRowClick(typeId) {
                     filterTypeId.value = typeId;
@@ -1355,8 +1199,7 @@
 
                     try {
                         if (typeId === oldTypeId) {
-                            /* 同类型内更新 */
-                            const res = await updateJsonFile(markerFilePath(typeId), (content) => {
+                            const res = await GitHub.updateFile(markerFilePath(typeId), (content) => {
                                 const fc = normalizeFC(content);
                                 const idx = fc.features.findIndex(f => sameFeature(f, original));
                                 if (idx === -1) throw new Error('该标点已不存在，可能已被其他人删除');
@@ -1364,19 +1207,16 @@
                                 return fc;
                             }, `更新标点「${title}」 - ${stamp}`);
 
-                            /* 增量更新缓存：直接用返回内容，不再重新拉取 */
                             if (!res.skipped) ingestGeojson(typeId, res.content, res.sha);
                         } else {
-                            /* 先追加到新类型 */
-                            const res1 = await updateJsonFile(markerFilePath(typeId), (content) => {
+                            const res1 = await GitHub.updateFile(markerFilePath(typeId), (content) => {
                                 const fc = normalizeFC(content);
                                 fc.features.push(newFeature);
                                 return fc;
                             }, `移动标点「${title}」至新类型 - ${stamp}`);
                             if (!res1.skipped) ingestGeojson(typeId, res1.content, res1.sha);
 
-                            /* 再从原类型移除 */
-                            const res2 = await updateJsonFile(markerFilePath(oldTypeId), (content) => {
+                            const res2 = await GitHub.updateFile(markerFilePath(oldTypeId), (content) => {
                                 const fc = normalizeFC(content);
                                 const idx = fc.features.findIndex(f => sameFeature(f, original));
                                 if (idx === -1) return null;
@@ -1402,7 +1242,7 @@
                     if (!confirm(`确定要删除标点「${title}」吗？\n\n此操作不可撤销。`)) return;
 
                     try {
-                        const res = await updateJsonFile(markerFilePath(row.typeId), (content) => {
+                        const res = await GitHub.updateFile(markerFilePath(row.typeId), (content) => {
                             const fc = normalizeFC(content);
                             const idx = fc.features.findIndex(f => sameFeature(f, row.feature));
                             if (idx === -1) throw new Error('该标点已不存在，可能已被其他人删除');
@@ -1474,7 +1314,7 @@
                     savingType.value = true;
 
                     try {
-                        const res = await updateJsonFile(CONFIG.TYPES_FILE, (content) => {
+                        const res = await GitHub.updateFile(GitHub.CONFIG.TYPES_FILE, (content) => {
                             const data = normalizeTypes(content);
                             const t = data.types.find(x => x.id === typeId);
                             if (!t) throw new Error('该类型已不存在，可能已被其他人删除');
@@ -1494,7 +1334,6 @@
                             return data;
                         }, `更新类型「${name}」 - ${new Date().toLocaleString('zh-CN')}`);
 
-                        /* 只更新 types.json，无需重新加载 geojson */
                         if (!res.skipped) typesData.value = normalizeTypes(res.content);
 
                         closeTypeModal();
@@ -1522,8 +1361,7 @@
                     const stamp = new Date().toLocaleString('zh-CN');
 
                     try {
-                        /* ① 从 types.json 移除 */
-                        await updateJsonFile(CONFIG.TYPES_FILE, (content) => {
+                        await GitHub.updateFile(GitHub.CONFIG.TYPES_FILE, (content) => {
                             const data = normalizeTypes(content);
                             const idx = data.types.findIndex(x => x.id === typeId);
                             if (idx === -1) return null;
@@ -1531,10 +1369,9 @@
                             return data;
                         }, `删除类型「${t.name}」 - ${stamp}`);
 
-                        /* ② 删除对应的 geojson 文件 */
                         let fileDeleted = false;
                         try {
-                            fileDeleted = await ghDeleteFile(
+                            fileDeleted = await GitHub.deleteFile(
                                 markerFilePath(typeId),
                                 `删除类型数据文件 ${typeId}.geojson - ${stamp}`
                             );
@@ -1543,14 +1380,12 @@
                             toast('类型已移除，但数据文件删除失败：' + err.message, 'error');
                         }
 
-                        /* ③ 本地缓存清理 */
                         if (filterTypeId.value === typeId) filterTypeId.value = '';
                         delete typeData[typeId];
                         delete loadedTypes[typeId];
                         delete loadingTypes[typeId];
                         delete typeLoadPromises[typeId];
 
-                        /* ④ 只更新本地 types 列表（不重新拉 geojson） */
                         typesData.value.types = typesData.value.types.filter(x => x.id !== typeId);
 
                         toast(fileDeleted ? '类型与数据文件已删除' : '类型已删除', 'success');
@@ -1576,7 +1411,7 @@
                     document.addEventListener('keydown', onKeydown);
 
                     try {
-                        CONFIG.GITHUB_TOKEN = await decrypt(CONFIG.TOKEN_CIPHER, CONFIG.TOKEN_PASS);
+                        await GitHub.init();
                     } catch (e) {
                         console.error(e);
                         setStatus('err', 'Token 解密失败');
@@ -1591,9 +1426,6 @@
                     document.removeEventListener('keydown', onKeydown);
                 });
 
-                /* ============================================================
-                   暴露给模板
-                   ============================================================ */
                 return {
                     TAB_ON, TAB_OFF,
                     TOAST_BG,
