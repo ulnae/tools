@@ -5,23 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>隔空闪传</title>
 
-<!-- 主题色随系统切换（移动端浏览器状态栏） -->
 <meta name="theme-color" content="#eef1f7" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0d1016" media="(prefers-color-scheme: dark)">
-
 <meta name="description" content="基于 WebRTC 的点对点文件传输，电脑与手机直连互传，文件不经过任何服务器中转。">
 
-<!-- favicon（内联 SVG，无需外部文件） -->
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%234f8cff'/%3E%3Cpath d='M32 14l12 12h-7v14h-10V26h-7z' fill='%23fff'/%3E%3Crect x='18' y='44' width='28' height='6' rx='3' fill='%23fff' opacity='.8'/%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%234f8cff'/%3E%3Cpath d='M32 14l12 12h-7v14h-10V26h-7z' fill='%23fff'/%3E%3Crect x='18' y='44' width='28' height='6' rx='3' fill='%23fff' opacity='.8'/%3E%3C/svg%3E">
 
-<!-- Tailwind CSS -->
 <script src="./utils/tailwindcss.js"></script>
 <script>
   tailwind.config = {
     theme: {
       extend: {
-        // 所有颜色都指向 CSS 变量，由 :root / @media (prefers-color-scheme: dark) 提供
         colors: {
           ink:       'var(--c-ink)',
           strong:    'var(--c-strong)',
@@ -32,7 +27,6 @@
           ok:        'var(--c-ok)',
           warn:      'var(--c-warn)',
           err:       'var(--c-err)',
-
           panel:     'var(--c-panel)',
           panel2:    'var(--c-panel2)',
           inset:     'var(--c-inset)',
@@ -40,10 +34,8 @@
           drop:      'var(--c-drop)',
           track:     'var(--c-track)',
           toast:     'var(--c-toast)',
-
           chip:      'var(--c-chip)',
           'chip-fg': 'var(--c-chip-fg)',
-
           'ok-soft':   'var(--c-ok-soft)',
           'ok-fg':     'var(--c-ok-fg)',
           'send-soft': 'var(--c-send-soft)',
@@ -63,38 +55,30 @@
 </script>
 
 <style>
-  /* ========== 日间主题（默认） ========== */
   :root{
     color-scheme: light;
-
     --c-bg:        #eef1f7;
     --c-glow:      #dbe6ff;
-
     --c-ink:       #1a2030;
     --c-strong:    #2b3549;
     --c-muted:     #6a7488;
     --c-faint:     #8b94a7;
-
     --c-line:      #dce1eb;
     --c-panel:     #ffffff;
     --c-panel2:    #f5f7fb;
     --c-shadow:    0 12px 32px rgba(20, 32, 60, .10);
-
     --c-inset:     #f1f4f9;
     --c-card:      #f7f9fd;
     --c-drop:      #c6cedd;
     --c-track:     #e4e8f1;
     --c-scroll:    #c9d0de;
-
     --c-chip:      #e7ebf3;
     --c-chip-fg:   #39435a;
     --c-toast:     #ffffff;
-
     --c-accent:    #2f6bff;
     --c-ok:        #16a34a;
     --c-warn:      #b8860b;
     --c-err:       #e5484d;
-
     --c-ok-soft:   rgba(22, 163, 74, .12);
     --c-ok-fg:     #12833f;
     --c-send-soft: rgba(47, 107, 255, .12);
@@ -105,39 +89,31 @@
     --c-err-fg:    #c02a2f;
   }
 
-  /* ========== 夜间主题（跟随系统） ========== */
   @media (prefers-color-scheme: dark){
     :root{
       color-scheme: dark;
-
       --c-bg:        #0d1016;
       --c-glow:      #1e2942;
-
       --c-ink:       #e7ebf3;
       --c-strong:    #cfd6e6;
       --c-muted:     #8992a5;
       --c-faint:     #5b6478;
-
       --c-line:      #262d3a;
       --c-panel:     #1b2029;
       --c-panel2:    #161a22;
       --c-shadow:    0 12px 32px rgba(0, 0, 0, .28);
-
       --c-inset:     #11151d;
       --c-card:      #12161e;
       --c-drop:      #333d50;
       --c-track:     #232a37;
       --c-scroll:    #2b3445;
-
       --c-chip:      #2b3445;
       --c-chip-fg:   #c8d2e6;
       --c-toast:     #222a38;
-
       --c-accent:    #4f8cff;
       --c-ok:        #2ecc71;
       --c-warn:      #f5a623;
       --c-err:       #ff5c5c;
-
       --c-ok-soft:   rgba(46, 204, 113, .14);
       --c-ok-fg:     #5fe0a0;
       --c-send-soft: rgba(79, 140, 255, .16);
@@ -161,7 +137,6 @@
     transition: background-color .25s ease;
   }
 
-  /* 面板（渐变卡片） */
   .panel{
     background: linear-gradient(180deg, var(--c-panel) 0%, var(--c-panel2) 100%);
     border: 1px solid var(--c-line);
@@ -169,27 +144,22 @@
     transition: background-color .25s ease, border-color .25s ease;
   }
 
-  /* 连接状态小圆点 */
   .live-dot{
     background: var(--c-ok);
     box-shadow: 0 0 0 4px var(--c-ok-soft);
   }
 
-  /* 二维码 SVG 自适应 */
   #qr svg{ display: block; width: 100%; height: auto; }
 
-  /* 拖拽高亮 */
   #dropzone{ transition: border-color .2s ease, background-color .2s ease; }
   #dropzone.over{
     border-color: var(--c-accent);
     background: var(--c-send-soft);
   }
 
-  /* details 去掉默认三角 */
   summary{ list-style: none; }
   summary::-webkit-details-marker{ display: none; }
 
-  /* Toast */
   .toast{
     opacity: 0;
     transform: translate(-50%, 20px);
@@ -201,13 +171,20 @@
     transform: translate(-50%, 0);
   }
 
-  /* 细滚动条 */
+  /* 面板切换的轻淡入 */
+  @keyframes panelIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .panel-in { animation: panelIn .22s ease both; }
+
   ::-webkit-scrollbar{ width: 8px; height: 8px; }
   ::-webkit-scrollbar-thumb{ background: var(--c-scroll); border-radius: 4px; }
 </style>
 </head>
 
 <body class="min-h-screen px-4 pt-[26px] pb-[60px] font-sans text-[15px] leading-[1.55] text-ink antialiased">
+<div id="app">
 
 <div class="mx-auto w-full max-w-[660px]">
 
@@ -217,24 +194,25 @@
   </header>
 
   <!-- ===== 连接面板 ===== -->
-  <section id="panelConnect" class="panel mb-4 rounded-2xl p-5">
+  <section v-show="!transferVisible" class="panel panel-in mb-4 rounded-2xl p-5">
 
     <!-- 主机（电脑端） -->
-    <div id="hostBox">
-      <h2 class="mb-3.5 text-center text-[15px] font-semibold text-strong">用手机扫码连接</h2>
+    <div v-if="role === 'host'">
+      <h2 class="mb-3.5 text-center text-[15px] font-semibold text-strong">
+        {{ hasDisconnected ? '对方已断开，用手机重新扫码连接' : '用手机扫码连接' }}
+      </h2>
 
-      <div id="qr"
+      <div ref="qrRef"
            class="mx-auto mb-4 flex min-h-[120px] w-[210px] max-w-[66vw] items-center justify-center rounded-[14px] bg-white p-2.5">
         <div class="py-10 text-[13px] text-[#888]">二维码生成中…</div>
       </div>
 
       <div class="flex flex-wrap items-center justify-center gap-2 rounded-[10px] border border-line bg-inset px-3 py-2.5">
         <span class="text-[12px] text-muted">本机 ID</span>
-        <code id="myId"
-              class="break-all font-mono text-[13px] text-accent">—</code>
-        <button id="copyId"
+        <code class="break-all font-mono text-[13px] text-accent">{{ myId || '—' }}</code>
+        <button @click="copyId"
                 class="rounded-md bg-chip px-2.5 py-1 text-[12px] font-semibold text-chip-fg transition hover:brightness-110 active:scale-95">
-          复制
+          {{ copyLabel }}
         </button>
       </div>
 
@@ -245,13 +223,13 @@
     </div>
 
     <!-- 访客（手机端） -->
-    <div id="guestBox" hidden>
-      <h2 class="mb-3.5 text-center text-[15px] font-semibold text-strong">正在连接电脑…</h2>
-      <p id="guestMsg" class="mt-3.5 text-center text-[12.5px] leading-[1.7] text-muted">
-        正在建立 P2P 连接，请稍候…
-      </p>
+    <div v-else>
+      <h2 class="mb-3.5 text-center text-[15px] font-semibold text-strong">
+        {{ hasDisconnected ? '连接已断开' : '正在连接电脑…' }}
+      </h2>
+      <p class="mt-3.5 text-center text-[12.5px] leading-[1.7] text-muted">{{ guestMsg }}</p>
       <div class="mt-3.5 text-center">
-        <button id="retry" hidden
+        <button v-show="retryVisible" @click="reload"
                 class="rounded-[9px] bg-accent px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 active:scale-95">
           重新连接
         </button>
@@ -262,10 +240,10 @@
     <details class="mt-4 border-t border-line pt-3">
       <summary class="cursor-pointer text-center text-[13px] text-muted">手动输入对方 ID 连接</summary>
       <div class="mt-3 flex gap-2">
-        <input id="targetId" type="text" placeholder="例如 xfer-a1b2c3d4"
+        <input v-model="targetId" type="text" placeholder="例如 xfer-a1b2c3d4"
                autocomplete="off" spellcheck="false"
                class="min-w-0 flex-1 rounded-[9px] border border-line bg-inset px-3 py-2.5 text-sm text-ink outline-none transition placeholder:text-faint focus:border-accent">
-        <button id="btnConnect"
+        <button @click="manualConnect"
                 class="rounded-[9px] bg-accent px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 active:scale-95">
           连接
         </button>
@@ -273,23 +251,87 @@
     </details>
   </section>
 
-  <!-- ===== 传输面板 ===== -->
-  <section id="panelTransfer" hidden class="panel mb-4 rounded-2xl p-5">
+  <!-- ===== 传输面板（仅连接中显示） ===== -->
+  <section v-show="transferVisible" class="panel panel-in mb-4 rounded-2xl p-5">
 
     <div class="mb-3.5 flex items-center gap-2 text-[13px] text-muted">
       <span class="live-dot h-2 w-2 flex-none rounded-full"></span>
-      <span id="peerLabel">已连接</span>
+      <span>{{ peerLabel }}</span>
     </div>
 
-    <div id="dropzone"
+    <div ref="dropzoneRef"
+         @click="pickFile"
+         @dragover.prevent="dropzoneOver = true"
+         @dragenter.prevent="dropzoneOver = true"
+         @dragleave.prevent="dropzoneOver = false"
+         @drop.prevent="onDrop"
+         :class="{ over: dropzoneOver }"
          class="cursor-pointer rounded-[14px] border-[1.5px] border-dashed border-drop bg-card px-4 py-[26px] text-center">
-      <input type="file" id="fileInput" multiple hidden>
+      <input type="file" ref="fileInputRef" multiple hidden @change="onFileChange">
       <div class="mb-1.5 text-[26px]">📎</div>
       <div class="text-[15px] font-semibold">点击选择文件</div>
       <div class="mt-1 text-[12.5px] text-muted">或把文件拖到这里 · 支持多选、任意格式</div>
     </div>
+  </section>
 
-    <div id="list" class="mt-4 flex flex-col gap-2.5 empty:mt-0"></div>
+  <!-- ===== 传输记录（独立区块，只要有记录就显示） ===== -->
+  <section v-if="items.length > 0" class="panel mb-4 rounded-2xl p-5">
+    <div class="mb-3.5 flex items-center justify-between">
+      <h2 class="text-[13px] font-semibold text-strong">传输记录</h2>
+      <button @click="clearItems"
+              class="text-[12px] text-muted transition-colors hover:text-err">
+        清空
+      </button>
+    </div>
+
+    <div class="flex flex-col gap-2.5">
+      <div v-for="item in items" :key="item.id"
+           class="flex items-center gap-3 rounded-xl border border-line bg-card p-3">
+
+        <!-- 图标 -->
+        <div class="grid h-8 w-8 flex-none place-items-center rounded-[9px] text-[15px] font-bold"
+             :class="item.kind === 'send'
+               ? 'bg-send-soft text-send-fg'
+               : 'bg-ok-soft text-ok-fg'">
+          {{ item.kind === 'send' ? '↑' : '↓' }}
+        </div>
+
+        <!-- 主体 -->
+        <div class="min-w-0 flex-1">
+          <div class="mb-1.5 truncate text-[13.5px]" :title="item.name">{{ item.name }}</div>
+
+          <div class="h-[5px] overflow-hidden rounded-[3px] bg-track">
+            <i class="block h-full rounded-[3px] transition-[width] duration-100"
+               :class="fillClass(item)"
+               :style="{ width: (item.progress * 100).toFixed(1) + '%' }"></i>
+          </div>
+
+          <div class="mt-1.5 flex gap-2 text-[11.5px] text-muted">
+            <span>{{ Math.floor(item.progress * 100) }}%</span>
+            <span>{{ fmtSize(item.size) }}</span>
+            <span v-if="item.warnText" class="text-warn-fg">· {{ item.warnText }}</span>
+          </div>
+        </div>
+
+        <!-- 操作区 -->
+        <div class="flex-none">
+          <a v-if="item.status === 'done' && item.url"
+             :href="item.url" :download="item.name"
+             class="inline-block rounded-md bg-chip px-2.5 py-1 text-[12px] font-semibold text-chip-fg
+                    transition hover:brightness-110 active:scale-95">
+            保存
+          </a>
+          <span v-else-if="item.status === 'done'"
+                class="inline-block rounded-md bg-ok-soft px-2 py-1 text-[11.5px] text-ok-fg">
+            完成
+          </span>
+          <span v-else-if="item.status === 'fail'"
+                class="inline-block rounded-md bg-err-soft px-2 py-1 text-[11.5px] text-err-fg">
+            {{ item.failText || '失败' }}
+          </span>
+        </div>
+      </div>
+    </div>
   </section>
 
   <!-- ===== 页脚（含意见反馈入口） ===== -->
@@ -301,440 +343,543 @@
   </p>
 </div>
 
-<div id="toast"
-     class="toast fixed bottom-7 left-1/2 z-50 max-w-[86vw] rounded-[10px] border border-line bg-toast px-[18px] py-2.5 text-center text-[13.5px] text-ink shadow-[0_10px_28px_rgba(0,0,0,.35)]"></div>
+<div class="toast fixed bottom-7 left-1/2 z-50 max-w-[86vw] rounded-[10px] border border-line bg-toast px-[18px] py-2.5 text-center text-[13.5px] text-ink shadow-[0_10px_28px_rgba(0,0,0,.35)]"
+     :class="{ show: toastShow }">{{ toastText }}</div>
+
+</div>
 
 <script src="./utils/peerjs.min.js"></script>
 <script src="./utils/qrcode.js"></script>
+<script src="./utils/vue.global.prod.js"></script>
+
 <script>
-(function () {
-  'use strict';
+/* =====================================================================
+   常量
+===================================================================== */
+const CHUNK_SIZE  = 32 * 1024;
+const BUFFER_HIGH = 4 * 1024 * 1024;
+const ALPHA = 'abcdefghijklmnopqrstuvwxyz0123456789';
 
-  /* ============ 配置 ============ */
-  const CHUNK_SIZE   = 32 * 1024;        // 每片 32KB
-  const BUFFER_HIGH  = 4 * 1024 * 1024;  // 发送缓冲上限 4MB
-  const ALPHA = 'abcdefghijklmnopqrstuvwxyz0123456789';
-
-  /* ============ 状态 ============ */
-  const state = {
-    peer: null,
-    conn: null,
-    role: null,      // 'host' | 'guest'
-    myId: '',
-    recv: null,
-    queue: [],
-    sending: false,
-    connected: false,
-  };
-
-  const $ = (id) => document.getElementById(id);
-  const el = {
-    qr: $('qr'), myId: $('myId'), copyId: $('copyId'),
-    hostBox: $('hostBox'), guestBox: $('guestBox'),
-    guestMsg: $('guestMsg'), retry: $('retry'),
-    targetId: $('targetId'), btnConnect: $('btnConnect'),
-    panelConnect: $('panelConnect'), panelTransfer: $('panelTransfer'),
-    peerLabel: $('peerLabel'), dropzone: $('dropzone'),
-    fileInput: $('fileInput'), list: $('list'), toast: $('toast'),
-  };
-
-  /* ============ 工具 ============ */
-  function rand(n) {
-    try {
-      const a = crypto.getRandomValues(new Uint8Array(n));
-      return Array.from(a).map(b => ALPHA[b % 36]).join('');
-    } catch (e) {
-      let s = '';
-      for (let i = 0; i < n; i++) s += ALPHA[Math.floor(Math.random() * 36)];
-      return s;
-    }
+/* =====================================================================
+   工具函数
+===================================================================== */
+function rand(n) {
+  try {
+    const a = crypto.getRandomValues(new Uint8Array(n));
+    return Array.from(a).map(b => ALPHA[b % 36]).join('');
+  } catch (e) {
+    let s = '';
+    for (let i = 0; i < n; i++) s += ALPHA[Math.floor(Math.random() * 36)];
+    return s;
   }
+}
 
-  let _uid = 0;
-  const uid = () => 'f' + Date.now().toString(36) + (_uid++).toString(36);
+let _uid = 0;
+const uid = () => 'f' + Date.now().toString(36) + (_uid++).toString(36);
 
-  function fmtSize(b) {
-    if (!b) return '0 B';
-    if (b < 1024) return b + ' B';
-    if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
-    if (b < 1073741824) return (b / 1048576).toFixed(1) + ' MB';
-    return (b / 1073741824).toFixed(2) + ' GB';
-  }
+function fmtSize(b) {
+  if (!b) return '0 B';
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+  if (b < 1073741824) return (b / 1048576).toFixed(1) + ' MB';
+  return (b / 1073741824).toFixed(2) + ' GB';
+}
 
-  const byteLen = (d) => (d && (d.byteLength != null ? d.byteLength : d.size)) || 0;
+const byteLen = (d) => (d && (d.byteLength != null ? d.byteLength : d.size)) || 0;
 
-  function toast(msg, ms) {
-    el.toast.textContent = msg;
-    el.toast.classList.add('show');
-    clearTimeout(toast._t);
-    toast._t = setTimeout(() => el.toast.classList.remove('show'), ms || 2200);
-  }
+/* =====================================================================
+   Vue 应用
+===================================================================== */
+const { createApp, ref, reactive, computed, watch, nextTick, onMounted, onBeforeUnmount } = Vue;
 
-  /* ============ 启动 ============ */
-  function boot() {
-    bindUI();
-    const m = /[#&]r=([^&]*)/.exec(location.hash);
-    if (m && m[1]) {
-      state.role = 'guest';
-      el.hostBox.hidden = true;
-      el.guestBox.hidden = false;
-      startGuest(decodeURIComponent(m[1]));
-    } else {
-      state.role = 'host';
-      startHost();
-    }
-  }
+createApp({
+  setup() {
+    /* ---------- 响应式状态 ---------- */
+    const role = ref(null);              // 'host' | 'guest'
+    const myId = ref('');
+    const targetId = ref('');
+    const copyLabel = ref('复制');
+    const guestMsg = ref('正在建立 P2P 连接，请稍候…');
+    const retryVisible = ref(false);
+    const transferVisible = ref(false);
+    const peerLabel = ref('');
+    const dropzoneOver = ref(false);
+    const hasDisconnected = ref(false);  // 是否曾经断开过
 
-  /* ============ 主机（电脑端） ============ */
-  function startHost() {
-    const id = 'xfer-' + rand(8);
-    const peer = new Peer(id, { debug: 1 });
-    state.peer = peer;
+    const toastText = ref('');
+    const toastShow = ref(false);
 
-    peer.on('open', (pid) => {
-      state.myId = pid;
-      el.myId.textContent = pid;
-      renderQR(pid);
-    });
+    const items = reactive([]);          // 传输记录（不会因断开清空）
 
-    peer.on('connection', (conn) => {
-      if (state.conn && state.conn.open) { try { conn.close(); } catch (e) {} return; }
-      attach(conn);
-    });
+    /* ---------- DOM 引用 ---------- */
+    const qrRef = ref(null);
+    const dropzoneRef = ref(null);
+    const fileInputRef = ref(null);
 
-    peer.on('error', (err) => {
-      console.warn('[peer]', err.type, err.message);
-      if (err.type === 'unavailable-id') {
-        try { peer.destroy(); } catch (e) {}
-        setTimeout(startHost, 300);
-      }
-    });
+    /* ---------- 非响应式闭包变量 ---------- */
+    let peer = null;
+    let conn = null;
+    let recvState = null;
+    const queue = [];
+    let sending = false;
+    let toastTimer = null;
+    let guestTimer = null;
 
-    peer.on('disconnected', () => {
-      if (!state.connected) { try { peer.reconnect(); } catch (e) {} }
-    });
-  }
-
-  function renderQR(pid) {
-    const url = location.origin + location.pathname + location.search + '#r=' + encodeURIComponent(pid);
-    try {
-      const qr = qrcode(0, 'M');
-      qr.addData(url);
-      qr.make();
-      el.qr.innerHTML = qr.createSvgTag({ cellSize: 4, margin: 2, scalable: true });
-      const svg = el.qr.querySelector('svg');
-      if (svg) { svg.style.width = '100%'; svg.style.height = 'auto'; svg.style.display = 'block'; }
-    } catch (e) {
-      el.qr.innerHTML = '<div class="py-10 text-center text-[13px] text-[#888]">二维码生成失败<br>请手动输入 ID 连接</div>';
-    }
-  }
-
-  /* ============ 访客（手机端） ============ */
-  function startGuest(hostId) {
-    const peer = new Peer({ debug: 1 });
-    state.peer = peer;
-
-    peer.on('open', () => {
-      const conn = peer.connect(hostId, { reliable: true });
-      attach(conn);
-      setTimeout(() => {
-        if (!state.connected) {
-          el.guestMsg.textContent = '连接超时，请确认电脑端页面仍然打开着，然后重试。';
-          el.retry.hidden = false;
-        }
-      }, 12000);
-    });
-
-    peer.on('error', (err) => {
-      console.warn('[peer]', err.type, err.message);
-      let msg = '连接失败：' + (err.type || err.message);
-      if (err.type === 'peer-unavailable') msg = '找不到对方（ID 可能已失效），请重新扫码。';
-      if (err.type === 'network' || err.type === 'server-error') msg = '无法连接信令服务器，请检查网络后重试。';
-      el.guestMsg.textContent = msg;
-      el.retry.hidden = false;
-    });
-
-    peer.on('disconnected', () => {
-      if (!state.connected) { try { peer.reconnect(); } catch (e) {} }
-    });
-  }
-
-  /* ============ 连接建立 ============ */
-  function attach(conn) {
-    if (state.conn && state.conn !== conn) { try { state.conn.close(); } catch (e) {} }
-    state.conn = conn;
-
-    conn.on('open', () => {
-      state.connected = true;
-      onConnected();
-    });
-    conn.on('data', onData);
-    conn.on('close', () => {
-      state.connected = false;
-      el.peerLabel.textContent = '连接已断开';
-      toast('连接已断开');
-    });
-    conn.on('error', (e) => console.warn('[conn]', e));
-  }
-
-  function onConnected() {
-    el.panelConnect.hidden = true;
-    el.panelTransfer.hidden = false;
-    el.peerLabel.textContent = '已连接 · ' + (state.conn.peer || '');
-    toast('连接成功，可以开始传文件了');
-    if (location.hash) history.replaceState(null, '', location.pathname + location.search);
-  }
-
-  /* ============ 数据接收 ============ */
-  function onData(data) {
-    // 字符串 = 控制消息；二进制 = 文件分片
-    if (typeof data === 'string') {
-      let msg;
-      try { msg = JSON.parse(data); } catch (e) { return; }
-      if (msg.t === 'meta') startRecv(msg);
-      else if (msg.t === 'end') endRecv();
-      return;
-    }
-    const r = state.recv;
-    if (!r) return;
-    r.chunks.push(data);
-    r.got += byteLen(data);
-    r.item.setProgress(r.size ? r.got / r.size : 1);
-  }
-
-  function startRecv(meta) {
-    const item = createItem('recv', meta.name, meta.size);
-    state.recv = {
-      name: meta.name, size: meta.size, mime: meta.mime,
-      chunks: [], got: 0, item: item,
-    };
-  }
-
-  function endRecv() {
-    const r = state.recv;
-    if (!r) return;
-    state.recv = null;
-    const blob = new Blob(r.chunks, { type: r.mime || 'application/octet-stream' });
-    const url = URL.createObjectURL(blob);
-    r.item.done(url, r.name);
-    if (blob.size !== r.size) r.item.warn('大小不符');
-    toast('已收到：' + r.name);
-  }
-
-  /* ============ 发送 ============ */
-  function sendFiles(files) {
-    if (!files || !files.length) return;
-    if (!state.conn || !state.conn.open) { toast('尚未连接'); return; }
-    for (let i = 0; i < files.length; i++) state.queue.push(files[i]);
-    if (!state.sending) pump();
-  }
-
-  async function pump() {
-    state.sending = true;
-    while (state.queue.length) {
-      const file = state.queue.shift();
-      try { await sendOne(file); }
-      catch (e) { console.error(e); toast('发送失败：' + file.name); }
-    }
-    state.sending = false;
-  }
-
-  async function sendOne(file) {
-    const conn = state.conn;
-    const item = createItem('send', file.name, file.size);
-
-    conn.send(JSON.stringify({
-      t: 'meta',
-      name: file.name,
-      size: file.size,
-      mime: file.type || 'application/octet-stream'
-    }));
-
-    if (file.size === 0) {
-      conn.send(JSON.stringify({ t: 'end' }));
-      item.done();
-      return;
+    /* =========================================================
+       工具
+       ========================================================= */
+    function toast(msg, ms) {
+      toastText.value = msg;
+      toastShow.value = true;
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => { toastShow.value = false; }, ms || 2200);
     }
 
-    let offset = 0, tick = 0;
-    while (offset < file.size) {
-      if (!conn.open) throw new Error('连接已断开');
-      const buf = await file.slice(offset, offset + CHUNK_SIZE).arrayBuffer();
-      await drain();
-      conn.send(buf);
-      offset += buf.byteLength;
-      item.setProgress(offset / file.size);
-      if (++tick >= 16) { tick = 0; await new Promise(r => setTimeout(r, 0)); }
+    function reload() {
+      location.reload();
     }
-    conn.send(JSON.stringify({ t: 'end' }));
-    item.done();
-  }
 
-  // 背压控制：缓冲过大时等待
-  function drain() {
-    return new Promise((resolve) => {
-      const dc = state.conn && state.conn.dataChannel;
-      if (!dc) return resolve();
-      const check = () => {
-        if (!dc || dc.readyState !== 'open' || dc.bufferedAmount < BUFFER_HIGH) resolve();
-        else setTimeout(check, 15);
-      };
-      check();
-    });
-  }
-
-  /* ============ 列表项 ============ */
-  function createItem(kind, name, size) {
-    const isSend = kind === 'send';
-
-    const row = document.createElement('div');
-    row.className = 'flex items-center gap-3 rounded-xl border border-line bg-card p-3';
-
-    /* 图标 */
-    const ico = document.createElement('div');
-    ico.className =
-      'grid h-8 w-8 flex-none place-items-center rounded-[9px] text-[15px] font-bold ' +
-      (isSend ? 'bg-send-soft text-send-fg' : 'bg-ok-soft text-ok-fg');
-    ico.textContent = isSend ? '↑' : '↓';
-
-    /* 主体 */
-    const body = document.createElement('div');
-    body.className = 'min-w-0 flex-1';
-
-    const nm = document.createElement('div');
-    nm.className = 'mb-1.5 truncate text-[13.5px]';
-    nm.textContent = name;
-    nm.title = name;
-
-    const bar = document.createElement('div');
-    bar.className = 'h-[5px] overflow-hidden rounded-[3px] bg-track';
-
-    const fill = document.createElement('i');
-    fill.className = 'block h-full w-0 rounded-[3px] transition-[width] duration-100 ' +
-      (isSend
-        ? 'bg-gradient-to-r from-[#4f8cff] to-[#6ee7ff]'
-        : 'bg-gradient-to-r from-[#2ecc71] to-[#6ee7a5]');
-    bar.appendChild(fill);
-
-    const meta = document.createElement('div');
-    meta.className = 'mt-1.5 flex gap-2 text-[11.5px] text-muted';
-    const pct = document.createElement('span');
-    pct.textContent = '0%';
-    const sz = document.createElement('span');
-    sz.textContent = fmtSize(size);
-    meta.append(pct, sz);
-
-    body.append(nm, bar, meta);
-
-    /* 操作区 */
-    const act = document.createElement('div');
-    act.className = 'flex-none';
-
-    row.append(ico, body, act);
-    el.list.prepend(row);
-
-    return {
-      setProgress(p) {
-        p = Math.max(0, Math.min(1, p || 0));
-        fill.style.width = (p * 100).toFixed(1) + '%';
-        pct.textContent = Math.floor(p * 100) + '%';
-      },
-      done(url, filename) {
-        fill.style.width = '100%';
-        fill.className = 'block h-full w-full rounded-[3px] bg-ok';
-        pct.textContent = '100%';
-        act.innerHTML = '';
-        if (url) {
-          const a = document.createElement('a');
-          a.className =
-            'inline-block rounded-md bg-chip px-2.5 py-1 text-[12px] font-semibold text-chip-fg ' +
-            'transition hover:brightness-110 active:scale-95';
-          a.href = url;
-          a.download = filename || name;
-          a.textContent = '保存';
-          act.appendChild(a);
-        } else {
-          const s = document.createElement('span');
-          s.className = 'inline-block rounded-md bg-ok-soft px-2 py-1 text-[11.5px] text-ok-fg';
-          s.textContent = '完成';
-          act.appendChild(s);
-        }
-      },
-      warn(text) {
-        const s = document.createElement('span');
-        s.className = 'ml-2 inline-block rounded-md bg-warn-soft px-2 py-1 text-[11.5px] text-warn-fg';
-        s.textContent = text;
-        act.appendChild(s);
-      },
-      fail(text) {
-        fill.className = 'block h-full w-full rounded-[3px] bg-err';
-        act.innerHTML = '';
-        const s = document.createElement('span');
-        s.className = 'inline-block rounded-md bg-err-soft px-2 py-1 text-[11.5px] text-err-fg';
-        s.textContent = text || '失败';
-        act.appendChild(s);
-      }
-    };
-  }
-
-  /* ============ 交互绑定 ============ */
-  function bindUI() {
-    // 选择文件
-    el.dropzone.addEventListener('click', () => el.fileInput.click());
-    el.fileInput.addEventListener('change', (e) => {
-      const files = Array.prototype.slice.call(e.target.files);
-      e.target.value = '';
-      sendFiles(files);
-    });
-
-    // 拖拽
-    ['dragenter', 'dragover'].forEach((t) =>
-      el.dropzone.addEventListener(t, (e) => {
-        e.preventDefault(); e.stopPropagation();
-        el.dropzone.classList.add('over');
-      })
-    );
-    ['dragleave', 'drop'].forEach((t) =>
-      el.dropzone.addEventListener(t, (e) => {
-        e.preventDefault(); e.stopPropagation();
-        el.dropzone.classList.remove('over');
-      })
-    );
-    el.dropzone.addEventListener('drop', (e) => {
-      const files = e.dataTransfer ? Array.prototype.slice.call(e.dataTransfer.files) : [];
-      sendFiles(files);
-    });
-    window.addEventListener('dragover', (e) => e.preventDefault());
-    window.addEventListener('drop', (e) => e.preventDefault());
-
-    // 复制 ID
-    el.copyId.addEventListener('click', async () => {
+    async function copyId() {
       try {
-        await navigator.clipboard.writeText(state.myId);
-        el.copyId.textContent = '已复制';
-        setTimeout(() => { el.copyId.textContent = '复制'; }, 1200);
+        await navigator.clipboard.writeText(myId.value);
+        copyLabel.value = '已复制';
+        setTimeout(() => { copyLabel.value = '复制'; }, 1200);
       } catch (e) {
         console.log(e);
         toast('复制失败，请手动选择文本');
       }
+    }
+
+    function pickFile() {
+      if (fileInputRef.value) fileInputRef.value.click();
+    }
+
+    function onFileChange(e) {
+      const files = Array.prototype.slice.call(e.target.files);
+      e.target.value = '';
+      sendFiles(files);
+    }
+
+    function onDrop(e) {
+      dropzoneOver.value = false;
+      const files = e.dataTransfer ? Array.prototype.slice.call(e.dataTransfer.files) : [];
+      sendFiles(files);
+    }
+
+    function clearItems() {
+      if (!items.length) return;
+      if (!confirm('清空传输记录？已接收的文件下载链接将失效。')) return;
+      // 释放 blob URL
+      items.forEach(it => { if (it.url) { try { URL.revokeObjectURL(it.url); } catch (e) { /* ignore */ } } });
+      items.splice(0);
+    }
+
+    /* =========================================================
+       二维码渲染
+       ========================================================= */
+    function renderQR(pid) {
+      const box = qrRef.value;
+      if (!box) return;
+      const url = location.origin + location.pathname + location.search +
+                  '#r=' + encodeURIComponent(pid);
+      try {
+        const qr = qrcode(0, 'M');
+        qr.addData(url);
+        qr.make();
+        box.innerHTML = qr.createSvgTag({ cellSize: 4, margin: 2, scalable: true });
+        const svg = box.querySelector('svg');
+        if (svg) {
+          svg.style.width = '100%';
+          svg.style.height = 'auto';
+          svg.style.display = 'block';
+        }
+      } catch (e) {
+        box.innerHTML = '<div class="py-10 text-center text-[13px] text-[#888]">二维码生成失败<br>请手动输入 ID 连接</div>';
+      }
+    }
+
+    watch(myId, async (id) => {
+      if (!id) return;
+      await nextTick();
+      renderQR(id);
     });
 
-    // 手动连接
-    el.btnConnect.addEventListener('click', () => {
-      const id = el.targetId.value.trim();
+    /* 断开后回到连接面板时，需要保证二维码已渲染好 */
+    watch(transferVisible, async (visible) => {
+      if (!visible && role.value === 'host' && myId.value) {
+        await nextTick();
+        renderQR(myId.value);
+      }
+    });
+
+    /* =========================================================
+       主机端（电脑）
+       ========================================================= */
+    function startHost() {
+      const id = 'xfer-' + rand(8);
+      const p = new Peer(id, { debug: 1 });
+      peer = p;
+
+      p.on('open', (pid) => {
+        myId.value = pid;
+      });
+
+      p.on('connection', (c) => {
+        /* 已有活跃连接 → 拒绝新连接 */
+        if (conn && conn.open) {
+          try { c.close(); } catch (e) { /* ignore */ }
+          return;
+        }
+        attach(c);
+      });
+
+      p.on('error', (err) => {
+        console.warn('[peer]', err.type, err.message);
+        if (err.type === 'unavailable-id') {
+          try { p.destroy(); } catch (e) { /* ignore */ }
+          setTimeout(startHost, 300);
+        }
+      });
+
+      p.on('disconnected', () => {
+        if (!transferVisible.value) {
+          try { p.reconnect(); } catch (e) { /* ignore */ }
+        }
+      });
+    }
+
+    /* =========================================================
+       访客端（手机）
+       ========================================================= */
+    function startGuest(hostId) {
+      const p = new Peer({ debug: 1 });
+      peer = p;
+
+      p.on('open', () => {
+        const c = p.connect(hostId, { reliable: true });
+        attach(c);
+        clearTimeout(guestTimer);
+        guestTimer = setTimeout(() => {
+          if (!transferVisible.value) {
+            guestMsg.value = '连接超时，请确认电脑端页面仍然打开着，然后重试。';
+            retryVisible.value = true;
+          }
+        }, 12000);
+      });
+
+      p.on('error', (err) => {
+        console.warn('[peer]', err.type, err.message);
+        let msg = '连接失败：' + (err.type || err.message);
+        if (err.type === 'peer-unavailable') msg = '找不到对方（ID 可能已失效），请重新扫码。';
+        if (err.type === 'network' || err.type === 'server-error') msg = '无法连接信令服务器，请检查网络后重试。';
+        guestMsg.value = msg;
+        retryVisible.value = true;
+      });
+
+      p.on('disconnected', () => {
+        if (!transferVisible.value) {
+          try { p.reconnect(); } catch (e) { /* ignore */ }
+        }
+      });
+    }
+
+    /* =========================================================
+       连接建立 / 断开
+       ========================================================= */
+    function attach(c) {
+      if (conn && conn !== c) {
+        try { conn.close(); } catch (e) { /* ignore */ }
+      }
+      conn = c;
+
+      c.on('open', () => {
+        onConnected();
+      });
+      c.on('data', onData);
+      c.on('close', () => {
+        handleDisconnect();
+      });
+      c.on('error', (e) => console.warn('[conn]', e));
+    }
+
+    function onConnected() {
+      clearTimeout(guestTimer);
+      hasDisconnected.value = false;
+      retryVisible.value = false;
+      transferVisible.value = true;
+      peerLabel.value = '已连接 · ' + (conn.peer || '');
+      toast('连接成功，可以开始传文件了');
+      if (location.hash) {
+        history.replaceState(null, '', location.pathname + location.search);
+      }
+    }
+
+    /**
+     * 连接断开：
+     *  - 保留 items 传输记录，不清空
+     *  - 清理正在接收 / 队列中的临时状态
+     *  - 页面回到连接面板（主机显示二维码等待新连接；访客提示重新连接）
+     */
+    function handleDisconnect() {
+      /* 清理临时状态 */
+      conn = null;
+      recvState = null;
+      queue.length = 0;
+      sending = false;
+
+      /* 若有正在进行的传输项，标记为失败 */
+      items.forEach(it => {
+        if (it.status === 'active') {
+          it.status = 'fail';
+          it.failText = '已中断';
+        }
+      });
+
+      transferVisible.value = false;
+      peerLabel.value = '';
+      hasDisconnected.value = true;
+
+      if (role.value === 'guest') {
+        guestMsg.value = '连接已断开，请确认电脑端页面仍然打开着，然后重新连接。';
+        retryVisible.value = true;
+        toast('连接已断开');
+      } else {
+        toast('对方已断开，等待新连接');
+      }
+    }
+
+    /* =========================================================
+       数据接收
+       ========================================================= */
+    function onData(data) {
+      if (typeof data === 'string') {
+        let msg;
+        try { msg = JSON.parse(data); } catch (e) { return; }
+        if (msg.t === 'meta') startRecv(msg);
+        else if (msg.t === 'end') endRecv();
+        return;
+      }
+      const r = recvState;
+      if (!r) return;
+      r.chunks.push(data);
+      r.got += byteLen(data);
+      r.item.progress = r.size ? r.got / r.size : 1;
+    }
+
+    function startRecv(meta) {
+      const item = createItem('recv', meta.name, meta.size);
+      recvState = {
+        name: meta.name,
+        size: meta.size,
+        mime: meta.mime,
+        chunks: [],
+        got: 0,
+        item: item,
+      };
+    }
+
+    function endRecv() {
+      const r = recvState;
+      if (!r) return;
+      recvState = null;
+
+      const blob = new Blob(r.chunks, { type: r.mime || 'application/octet-stream' });
+      const url = URL.createObjectURL(blob);
+
+      r.item.progress = 1;
+      r.item.status = 'done';
+      r.item.url = url;
+
+      if (blob.size !== r.size) {
+        r.item.warnText = '大小不符（预期 ' + fmtSize(r.size) + '，实际 ' + fmtSize(blob.size) + '）';
+      }
+
+      toast('已收到：' + r.name);
+    }
+
+    /* =========================================================
+       发送
+       ========================================================= */
+    function sendFiles(files) {
+      if (!files || !files.length) return;
+      if (!conn || !conn.open) {
+        toast('尚未连接');
+        return;
+      }
+      for (let i = 0; i < files.length; i++) queue.push(files[i]);
+      if (!sending) pump();
+    }
+
+    async function pump() {
+      sending = true;
+      while (queue.length) {
+        const file = queue.shift();
+        try {
+          await sendOne(file);
+        } catch (e) {
+          console.error(e);
+          toast('发送失败：' + file.name);
+        }
+      }
+      sending = false;
+    }
+
+    async function sendOne(file) {
+      const c = conn;
+      const item = createItem('send', file.name, file.size);
+
+      c.send(JSON.stringify({
+        t: 'meta',
+        name: file.name,
+        size: file.size,
+        mime: file.type || 'application/octet-stream',
+      }));
+
+      if (file.size === 0) {
+        c.send(JSON.stringify({ t: 'end' }));
+        item.progress = 1;
+        item.status = 'done';
+        return;
+      }
+
+      let offset = 0, tick = 0;
+      try {
+        while (offset < file.size) {
+          if (!c.open) throw new Error('连接已断开');
+          const buf = await file.slice(offset, offset + CHUNK_SIZE).arrayBuffer();
+          await drain();
+          c.send(buf);
+          offset += buf.byteLength;
+          item.progress = offset / file.size;
+          if (++tick >= 16) {
+            tick = 0;
+            await new Promise(r => setTimeout(r, 0));
+          }
+        }
+        c.send(JSON.stringify({ t: 'end' }));
+        item.progress = 1;
+        item.status = 'done';
+      } catch (err) {
+        item.status = 'fail';
+        item.failText = err.message || '发送失败';
+        throw err;
+      }
+    }
+
+    function drain() {
+      return new Promise((resolve) => {
+        const dc = conn && conn.dataChannel;
+        if (!dc) return resolve();
+        const check = () => {
+          if (!dc || dc.readyState !== 'open' || dc.bufferedAmount < BUFFER_HIGH) resolve();
+          else setTimeout(check, 15);
+        };
+        check();
+      });
+    }
+
+    /* =========================================================
+       列表项
+       ========================================================= */
+    function createItem(kind, name, size) {
+      const item = reactive({
+        id: uid(),
+        kind,
+        name,
+        size,
+        progress: 0,
+        status: 'active',
+        url: '',
+        warnText: '',
+        failText: '',
+      });
+      items.unshift(item);
+      return item;
+    }
+
+    function fillClass(item) {
+      if (item.status === 'fail') return 'bg-err';
+      if (item.status === 'done') return 'bg-ok';
+      return item.kind === 'send'
+        ? 'bg-gradient-to-r from-[#4f8cff] to-[#6ee7ff]'
+        : 'bg-gradient-to-r from-[#2ecc71] to-[#6ee7a5]';
+    }
+
+    /* =========================================================
+       手动连接
+       ========================================================= */
+    function manualConnect() {
+      const id = targetId.value.trim();
       if (!id) { toast('请输入对方 ID'); return; }
-      if (!state.peer) { toast('尚未就绪，请稍候'); return; }
-      const go = () => attach(state.peer.connect(id, { reliable: true }));
-      if (state.peer.open) go();
-      else state.peer.once('open', go);
+      if (!peer) { toast('尚未就绪，请稍候'); return; }
+      const go = () => attach(peer.connect(id, { reliable: true }));
+      if (peer.open) go();
+      else peer.once('open', go);
       toast('正在连接…');
+    }
+
+    /* =========================================================
+       生命周期
+       ========================================================= */
+    function onWindowDragOver(e) { e.preventDefault(); }
+    function onWindowDrop(e) { e.preventDefault(); }
+
+    onMounted(() => {
+      window.addEventListener('dragover', onWindowDragOver);
+      window.addEventListener('drop', onWindowDrop);
+
+      const m = /[#&]r=([^&]*)/.exec(location.hash);
+      if (m && m[1]) {
+        role.value = 'guest';
+        startGuest(decodeURIComponent(m[1]));
+      } else {
+        role.value = 'host';
+        startHost();
+      }
     });
 
-    el.retry.addEventListener('click', () => location.reload());
-  }
+    onBeforeUnmount(() => {
+      window.removeEventListener('dragover', onWindowDragOver);
+      window.removeEventListener('drop', onWindowDrop);
+      clearTimeout(toastTimer);
+      clearTimeout(guestTimer);
+      /* 释放所有 blob URL */
+      items.forEach(it => { if (it.url) { try { URL.revokeObjectURL(it.url); } catch (e) { /* ignore */ } } });
+      if (peer) {
+        try { peer.destroy(); } catch (e) { /* ignore */ }
+      }
+    });
 
-  boot();
-})();
+    /* ---------- 暴露给模板 ---------- */
+    return {
+      role,
+      myId,
+      targetId,
+      copyLabel,
+      guestMsg,
+      retryVisible,
+      transferVisible,
+      peerLabel,
+      dropzoneOver,
+      hasDisconnected,
+      toastText,
+      toastShow,
+      items,
+      qrRef,
+      dropzoneRef,
+      fileInputRef,
+      fmtSize,
+      copyId,
+      reload,
+      pickFile,
+      onFileChange,
+      onDrop,
+      manualConnect,
+      fillClass,
+      clearItems,
+    };
+  }
+}).mount('#app');
 </script>
 </body>
 </html>

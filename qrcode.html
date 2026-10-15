@@ -5,21 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>二维码生成器</title>
 
-    <!-- ===== ICO / Favicon（内联 SVG，无需额外请求） ===== -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23007AFF'/%3E%3Cg fill='%23fff'%3E%3Crect x='12' y='12' width='16' height='16' rx='3'/%3E%3Crect x='36' y='12' width='16' height='16' rx='3'/%3E%3Crect x='12' y='36' width='16' height='16' rx='3'/%3E%3Crect x='36' y='36' width='8' height='8'/%3E%3Crect x='46' y='36' width='6' height='6'/%3E%3Crect x='36' y='46' width='6' height='6'/%3E%3Crect x='46' y='46' width='6' height='6'/%3E%3C/g%3E%3Cg fill='%23007AFF'%3E%3Crect x='18' y='18' width='4' height='4'/%3E%3Crect x='42' y='18' width='4' height='4'/%3E%3Crect x='18' y='42' width='4' height='4'/%3E%3C/g%3E%3C/svg%3E">
     <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23007AFF'/%3E%3Cg fill='%23fff'%3E%3Crect x='12' y='12' width='16' height='16' rx='3'/%3E%3Crect x='36' y='12' width='16' height='16' rx='3'/%3E%3Crect x='12' y='36' width='16' height='16' rx='3'/%3E%3Crect x='36' y='36' width='8' height='8'/%3E%3Crect x='46' y='36' width='6' height='6'/%3E%3Crect x='36' y='46' width='6' height='6'/%3E%3Crect x='46' y='46' width='6' height='6'/%3E%3C/g%3E%3Cg fill='%23007AFF'%3E%3Crect x='18' y='18' width='4' height='4'/%3E%3Crect x='42' y='18' width='4' height='4'/%3E%3Crect x='18' y='42' width='4' height='4'/%3E%3C/g%3E%3C/svg%3E">
 
-    <!-- 主题色：随系统深浅色自动切换（浏览器地址栏 / 状态栏） -->
     <meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
     <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 
-    <!-- Tailwind CSS CDN -->
     <script src="./utils/tailwindcss.js"></script>
     <script>
       tailwind.config = {
         theme: {
           extend: {
-            // 所有颜色都指向 CSS 变量，由 :root / 暗色媒体查询统一提供
             colors: {
               ink:    'var(--c-ink)',
               muted:  'var(--c-muted)',
@@ -39,46 +35,35 @@
     </script>
 
     <script src="./utils/qrcode.js"></script>
+    <script src="./utils/vue.global.prod.js"></script>
 
     <style>
-        /* ============================================================
-           主题变量：日间（默认）
-           ============================================================ */
         :root{
             color-scheme: light;
-
-            --c-bg:           #f2f2f7;   /* iOS 系统背景灰 */
-            --c-card:         #ffffff;   /* 卡片 */
-            --c-inset:        #f2f2f7;   /* 输入框 / 内嵌区域 */
+            --c-bg:           #f2f2f7;
+            --c-card:         #ffffff;
+            --c-inset:        #f2f2f7;
             --c-inset-focus:  #e8e8ed;
-            --c-seg-bg:       #e8e8ed;   /* 分段控件底槽 */
-            --c-seg-active:   #ffffff;   /* 分段控件选中块 */
-            --c-btn2:         #e8e8ed;   /* 次要按钮 */
+            --c-seg-bg:       #e8e8ed;
+            --c-seg-active:   #ffffff;
+            --c-btn2:         #e8e8ed;
             --c-btn2-hover:   #dcdce1;
-
-            --c-ink:          #1c1c1e;   /* 主文字 */
-            --c-muted:        #8e8e93;   /* 次要文字 */
-            --c-faint:        #aeaeb2;   /* 最弱文字 */
-            --c-line:         #e5e5ea;   /* 分割线 */
-
-            --c-accent:       #007aff;   /* iOS 蓝 */
+            --c-ink:          #1c1c1e;
+            --c-muted:        #8e8e93;
+            --c-faint:        #aeaeb2;
+            --c-line:         #e5e5ea;
+            --c-accent:       #007aff;
             --c-accent-hover: #0066d6;
             --c-accent-ring:  rgba(0, 122, 255, .15);
-
             --c-err:          #ff3b30;
             --c-shadow:       rgba(0, 0, 0, .04);
             --c-shadow-hover: rgba(0, 0, 0, .07);
-
-            --c-qr-bg:        #ffffff;   /* 二维码底色（固定白，保证扫得准） */
+            --c-qr-bg:        #ffffff;
         }
 
-        /* ============================================================
-           主题变量：夜间（跟随系统）
-           ============================================================ */
         @media (prefers-color-scheme: dark){
             :root{
                 color-scheme: dark;
-
                 --c-bg:           #000000;
                 --c-card:         #1c1c1e;
                 --c-inset:        #2c2c2e;
@@ -87,25 +72,20 @@
                 --c-seg-active:   #48484a;
                 --c-btn2:         #2c2c2e;
                 --c-btn2-hover:   #3a3a3c;
-
                 --c-ink:          #ffffff;
                 --c-muted:        #98989f;
                 --c-faint:        #636366;
                 --c-line:         #38383a;
-
                 --c-accent:       #0a84ff;
                 --c-accent-hover: #409cff;
                 --c-accent-ring:  rgba(10, 132, 255, .28);
-
                 --c-err:          #ff453a;
                 --c-shadow:       rgba(0, 0, 0, .45);
                 --c-shadow-hover: rgba(0, 0, 0, .60);
-
                 --c-qr-bg:        #ffffff;
             }
         }
 
-        /* ============ 基础 ============ */
         *{ -webkit-tap-highlight-color: transparent; }
 
         body {
@@ -116,7 +96,6 @@
             transition: background-color .25s ease, color .25s ease;
         }
 
-        /* ============ 卡片 ============ */
         .ios-card {
             background: var(--c-card);
             border-radius: 20px;
@@ -127,7 +106,6 @@
             box-shadow: 0 4px 24px var(--c-shadow-hover), 0 2px 8px var(--c-shadow);
         }
 
-        /* ============ 输入框 ============ */
         .ios-input {
             background: var(--c-inset);
             border: none;
@@ -147,20 +125,17 @@
         .ios-input::placeholder {
             color: var(--c-muted);
         }
-        /* select 保留系统下拉箭头，只接管配色 */
         select.ios-input {
             -webkit-appearance: menulist;
             appearance: auto;
             padding-right: 36px;
             cursor: pointer;
         }
-        /* 复选框跟随强调色 */
         input[type="checkbox"] {
             accent-color: var(--c-accent);
             cursor: pointer;
         }
 
-        /* ============ 分段控件 ============ */
         .segmented-control {
             display: flex;
             background: var(--c-seg-bg);
@@ -197,13 +172,12 @@
             color: var(--c-accent);
         }
 
-        /* ============ 二维码容器 ============ */
         #qrcode-container {
             display: flex;
             justify-content: center;
             align-items: center;
             padding: 24px;
-            background: var(--c-qr-bg);   /* 固定白底，保证扫码识别率 */
+            background: var(--c-qr-bg);
             border-radius: 20px;
             min-height: 260px;
         }
@@ -214,7 +188,6 @@
             height: auto;
         }
 
-        /* ============ 按钮 ============ */
         .ios-btn {
             background: var(--c-accent);
             color: #fff;
@@ -242,7 +215,6 @@
             background: var(--c-btn2-hover);
         }
 
-        /* ============ 表单标签 ============ */
         .field-label {
             font-size: 13px;
             font-weight: 500;
@@ -252,7 +224,6 @@
             letter-spacing: 0.02em;
         }
 
-        /* ============ 二维码预览卡 ============ */
         .qr-preview-card {
             background: var(--c-card);
             border-radius: 20px;
@@ -266,7 +237,6 @@
             transition: background-color .25s ease, box-shadow .25s ease;
         }
 
-        /* ============ 错误提示 ============ */
         .qr-error {
             color: var(--c-err);
             font-size: 14px;
@@ -281,7 +251,6 @@
             font-size: 12px;
         }
 
-        /* ============ 表单进场动画 ============ */
         .form-panel {
             animation: fadeIn 0.25s ease;
         }
@@ -290,7 +259,6 @@
             to   { opacity: 1; transform: translateY(0); }
         }
 
-        /* ============ 响应式微调 ============ */
         @media (max-width: 768px) {
             .segmented-control button {
                 padding: 7px 12px;
@@ -303,10 +271,10 @@
     </style>
 </head>
 <body class="min-h-screen py-6 px-4 md:py-10 font-sans">
+<div id="app">
 
     <div class="max-w-6xl mx-auto">
 
-        <!-- 主布局：左表单 + 右预览 -->
         <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
 
             <!-- 左侧：类型选择 + 表单 -->
@@ -314,28 +282,135 @@
 
                 <!-- 类型分段控件 -->
                 <div class="ios-card p-4">
-                    <div class="segmented-control" id="type-tabs">
-                        <button class="active" data-type="text">文本</button>
-                        <button data-type="url">网址</button>
-                        <button data-type="vcard">名片</button>
-                        <button data-type="wifi">WiFi</button>
-                        <button data-type="sms">短信</button>
-                        <button data-type="tel">电话</button>
-                        <button data-type="email">邮件</button>
+                    <div class="segmented-control">
+                        <button v-for="t in TYPES" :key="t.id"
+                            :class="{ active: currentType === t.id }"
+                            @click="switchType(t.id)">{{ t.label }}</button>
                     </div>
                 </div>
 
                 <!-- 表单区域 -->
                 <div class="ios-card p-6">
-                    <div id="form-area">
-                        <!-- 表单通过 JS 动态渲染 -->
+                    <div class="form-panel" :key="currentType">
+
+                        <!-- 文本 -->
+                        <template v-if="currentType === 'text'">
+                            <label class="field-label">文本内容</label>
+                            <textarea class="ios-input" rows="5" v-model="formData.text.text"
+                                placeholder="输入任意文本内容..."></textarea>
+                            <p class="text-xs text-faint mt-2">支持任意文本、符号和链接</p>
+                        </template>
+
+                        <!-- 网址 -->
+                        <template v-else-if="currentType === 'url'">
+                            <label class="field-label">网址</label>
+                            <input class="ios-input" type="url" v-model="formData.url.url"
+                                placeholder="https://example.com" autocomplete="url">
+                            <p class="text-xs text-faint mt-2">输入完整的网址，包含 http:// 或 https://</p>
+                        </template>
+
+                        <!-- 名片 -->
+                        <template v-else-if="currentType === 'vcard'">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="field-label">姓氏</label>
+                                    <input class="ios-input" v-model="formData.vcard.lastName" placeholder="张">
+                                </div>
+                                <div>
+                                    <label class="field-label">名字</label>
+                                    <input class="ios-input" v-model="formData.vcard.firstName" placeholder="三">
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <label class="field-label">电话</label>
+                                <input class="ios-input" type="tel" v-model="formData.vcard.phone"
+                                    placeholder="+86 138 0000 0000">
+                            </div>
+                            <div class="mt-4">
+                                <label class="field-label">邮箱</label>
+                                <input class="ios-input" type="email" v-model="formData.vcard.email"
+                                    placeholder="name@example.com">
+                            </div>
+                            <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="field-label">公司</label>
+                                    <input class="ios-input" v-model="formData.vcard.company" placeholder="公司名称">
+                                </div>
+                                <div>
+                                    <label class="field-label">职位</label>
+                                    <input class="ios-input" v-model="formData.vcard.title" placeholder="职位">
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- WiFi -->
+                        <template v-else-if="currentType === 'wifi'">
+                            <label class="field-label">网络名称 (SSID)</label>
+                            <input class="ios-input" v-model="formData.wifi.ssid"
+                                placeholder="WiFi 名称" autocomplete="off">
+                            <div class="mt-4">
+                                <label class="field-label">密码</label>
+                                <input class="ios-input" type="password" v-model="formData.wifi.password"
+                                    placeholder="WiFi 密码" autocomplete="new-password">
+                            </div>
+                            <div class="mt-4">
+                                <label class="field-label">加密方式</label>
+                                <select class="ios-input" v-model="formData.wifi.encryption">
+                                    <option value="WPA">WPA/WPA2</option>
+                                    <option value="WEP">WEP</option>
+                                    <option value="nopass">无密码</option>
+                                </select>
+                            </div>
+                            <div class="mt-4 flex items-center gap-3">
+                                <input type="checkbox" id="wifi-hidden" v-model="formData.wifi.hidden"
+                                    class="w-5 h-5 rounded-md">
+                                <label for="wifi-hidden" class="text-sm text-muted">隐藏网络</label>
+                            </div>
+                        </template>
+
+                        <!-- 短信 -->
+                        <template v-else-if="currentType === 'sms'">
+                            <label class="field-label">手机号</label>
+                            <input class="ios-input" type="tel" v-model="formData.sms.phone"
+                                placeholder="+86 138 0000 0000">
+                            <div class="mt-4">
+                                <label class="field-label">短信内容（可选）</label>
+                                <textarea class="ios-input" rows="3" v-model="formData.sms.message"
+                                    placeholder="预填充的短信内容..."></textarea>
+                            </div>
+                        </template>
+
+                        <!-- 电话 -->
+                        <template v-else-if="currentType === 'tel'">
+                            <label class="field-label">电话号码</label>
+                            <input class="ios-input" type="tel" v-model="formData.tel.phone"
+                                placeholder="+86 138 0000 0000">
+                            <p class="text-xs text-faint mt-2">建议使用国际格式（+国家代码）</p>
+                        </template>
+
+                        <!-- 邮件 -->
+                        <template v-else-if="currentType === 'email'">
+                            <label class="field-label">邮箱地址</label>
+                            <input class="ios-input" type="email" v-model="formData.email.address"
+                                placeholder="name@example.com">
+                            <div class="mt-4">
+                                <label class="field-label">邮件主题（可选）</label>
+                                <input class="ios-input" v-model="formData.email.subject" placeholder="主题">
+                            </div>
+                            <div class="mt-4">
+                                <label class="field-label">邮件正文（可选）</label>
+                                <textarea class="ios-input" rows="3" v-model="formData.email.body"
+                                    placeholder="正文内容..."></textarea>
+                            </div>
+                        </template>
+
                     </div>
                 </div>
 
                 <!-- 操作按钮 -->
                 <div class="flex gap-3">
-                    <button class="ios-btn flex-1" id="download-btn">保存二维码</button>
-                    <button class="ios-btn ios-btn-secondary px-5" id="reset-btn">重置</button>
+                    <button class="ios-btn flex-1" @click="downloadQR">保存二维码</button>
+                    <button class="ios-btn ios-btn-secondary px-5" @click="resetForm">重置</button>
                 </div>
 
             </div>
@@ -343,10 +418,10 @@
             <!-- 右侧：二维码预览 -->
             <div class="lg:col-span-2">
                 <div class="qr-preview-card sticky top-6">
-                    <div id="qrcode-container">
-                        <p class="text-faint text-sm">输入内容后自动生成</p>
+                    <div ref="qrContainerRef" id="qrcode-container">
+                        <p v-if="!qrData" class="text-faint text-sm">输入内容后自动生成</p>
                     </div>
-                    <p class="text-xs text-faint mt-4 text-center" id="qr-hint">实时预览</p>
+                    <p class="text-xs text-faint mt-4 text-center">{{ qrHint }}</p>
                 </div>
             </div>
 
@@ -362,472 +437,343 @@
 
     </div>
 
-    <script>
-        (function() {
-            'use strict';
+</div>
 
-            // ============ 状态管理 ============
-            let currentType = 'text';
-            let debounceTimer = null;
+<script>
+/* =====================================================================
+   常量
+===================================================================== */
+const TYPES = [
+  { id: 'text',  label: '文本' },
+  { id: 'url',   label: '网址' },
+  { id: 'vcard', label: '名片' },
+  { id: 'wifi',  label: 'WiFi' },
+  { id: 'sms',   label: '短信' },
+  { id: 'tel',   label: '电话' },
+  { id: 'email', label: '邮件' },
+];
 
-            // 各类型默认表单数据
-            const defaultData = {
-                text: { text: '' },
-                url: { url: '' },
-                vcard: { lastName: '', firstName: '', phone: '', email: '', company: '', title: '' },
-                wifi: { ssid: '', password: '', encryption: 'WPA', hidden: false },
-                sms: { phone: '', message: '' },
-                tel: { phone: '' },
-                email: { address: '', subject: '', body: '' }
-            };
+const TYPE_LABEL = TYPES.reduce((m, t) => { m[t.id] = t.label; return m; }, {});
 
-            // 当前表单数据
-            let formData = JSON.parse(JSON.stringify(defaultData));
+/* 二维码容量上限（字节，UTF-8） */
+const MAX_BYTES = { L: 2953, M: 2331, Q: 1663, H: 1273 };
 
-            // ============ 二维码容量上限（字节，UTF-8） ============
-            const MAX_BYTES = { L: 2953, M: 2331, Q: 1663, H: 1273 };
+/* 各类型默认表单数据 */
+const DEFAULT_DATA = {
+  text:  { text: '' },
+  url:   { url: '' },
+  vcard: { lastName: '', firstName: '', phone: '', email: '', company: '', title: '' },
+  wifi:  { ssid: '', password: '', encryption: 'WPA', hidden: false },
+  sms:   { phone: '', message: '' },
+  tel:   { phone: '' },
+  email: { address: '', subject: '', body: '' },
+};
 
-            // ============ DOM 引用 ============
-            const formArea = document.getElementById('form-area');
-            const qrContainer = document.getElementById('qrcode-container');
-            const qrHint = document.getElementById('qr-hint');
-            const typeTabs = document.getElementById('type-tabs');
-            const downloadBtn = document.getElementById('download-btn');
-            const resetBtn = document.getElementById('reset-btn');
+/* =====================================================================
+   接管 qrcode-generator 的字节编码：改为标准 UTF-8（含 emoji）
+===================================================================== */
+if (typeof qrcode === 'function') {
+  qrcode.stringToBytes = function (str) {
+    const bytes = [];
+    for (let i = 0; i < str.length; i++) {
+      const code = str.charCodeAt(i);
+      if (code < 0x80) {
+        bytes.push(code);
+      } else if (code < 0x800) {
+        bytes.push(0xC0 | (code >> 6), 0x80 | (code & 0x3F));
+      } else if (code >= 0xD800 && code <= 0xDBFF && i + 1 < str.length) {
+        const next = str.charCodeAt(++i);
+        const cp = 0x10000 + ((code - 0xD800) << 10) + (next - 0xDC00);
+        bytes.push(
+          0xF0 | (cp >> 18),
+          0x80 | ((cp >> 12) & 0x3F),
+          0x80 | ((cp >> 6) & 0x3F),
+          0x80 | (cp & 0x3F)
+        );
+      } else {
+        bytes.push(
+          0xE0 | (code >> 12),
+          0x80 | ((code >> 6) & 0x3F),
+          0x80 | (code & 0x3F)
+        );
+      }
+    }
+    return bytes;
+  };
+}
 
-            // ============ 工具函数 ============
-            function escapeHtml(str) {
-                if (!str) return '';
-                return String(str)
-                    .replace(/&/g, '&amp;')
-                    .replace(/</g, '&lt;')
-                    .replace(/>/g, '&gt;')
-                    .replace(/"/g, '&quot;')
-                    .replace(/'/g, '&#39;');
-            }
+/* =====================================================================
+   工具函数
+===================================================================== */
+const escapeHtml = (s) => {
+  if (!s) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+};
 
-            function encodeParam(val) {
-                return encodeURIComponent(val || '');
-            }
+const encodeParam = (v) => encodeURIComponent(v || '');
 
-            // 精确计算 UTF-8 字节长度
-            function utf8Length(str) {
-                if (typeof TextEncoder !== 'undefined') {
-                    try {
-                        return new TextEncoder().encode(str).length;
-                    } catch (e) { /* 降级到手动计算 */ }
-                }
-                let len = 0;
-                for (let i = 0; i < str.length; i++) {
-                    const c = str.charCodeAt(i);
-                    if (c < 0x80) {
-                        len += 1;
-                    } else if (c < 0x800) {
-                        len += 2;
-                    } else if (c >= 0xd800 && c <= 0xdbff && i + 1 < str.length) {
-                        len += 4; // 代理对（emoji 等）
-                        i++;
-                    } else {
-                        len += 3;
-                    }
-                }
-                return len;
-            }
+/** 精确计算 UTF-8 字节长度 */
+function utf8Length(str) {
+  if (typeof TextEncoder !== 'undefined') {
+    try { return new TextEncoder().encode(str).length; } catch (e) { /* fallback */ }
+  }
+  let len = 0;
+  for (let i = 0; i < str.length; i++) {
+    const c = str.charCodeAt(i);
+    if (c < 0x80) len += 1;
+    else if (c < 0x800) len += 2;
+    else if (c >= 0xd800 && c <= 0xdbff && i + 1 < str.length) { len += 4; i++; }
+    else len += 3;
+  }
+  return len;
+}
 
-            // ============ 【关键修复】接管 qrcode-generator 的字节编码 ============
-            // 默认实现按 Latin-1 处理，中文会被截断成乱码；
-            // 这里替换为标准 UTF-8 编码（含 emoji 代理对支持），无 BOM。
-            if (typeof qrcode === 'function') {
-                qrcode.stringToBytes = function(str) {
-                    const bytes = [];
-                    for (let i = 0; i < str.length; i++) {
-                        const code = str.charCodeAt(i);
+/* =====================================================================
+   Vue 应用
+===================================================================== */
+const { createApp, ref, reactive, computed, watch, nextTick } = Vue;
 
-                        if (code < 0x80) {
-                            bytes.push(code);
-                        } else if (code < 0x800) {
-                            bytes.push(0xC0 | (code >> 6), 0x80 | (code & 0x3F));
-                        } else if (code >= 0xD800 && code <= 0xDBFF && i + 1 < str.length) {
-                            // 高代理项：与后面的低代理项组合成 4 字节
-                            const next = str.charCodeAt(++i);
-                            const cp = 0x10000 + ((code - 0xD800) << 10) + (next - 0xDC00);
-                            bytes.push(
-                                0xF0 | (cp >> 18),
-                                0x80 | ((cp >> 12) & 0x3F),
-                                0x80 | ((cp >> 6) & 0x3F),
-                                0x80 | (cp & 0x3F)
-                            );
-                        } else {
-                            bytes.push(
-                                0xE0 | (code >> 12),
-                                0x80 | ((code >> 6) & 0x3F),
-                                0x80 | (code & 0x3F)
-                            );
-                        }
-                    }
-                    return bytes;
-                };
-            }
+createApp({
+  setup() {
+    /* ---------- 状态 ---------- */
+    const currentType = ref('text');
+    const formData = reactive(JSON.parse(JSON.stringify(DEFAULT_DATA)));
 
-            // ============ 表单渲染 ============
-            function renderForm() {
-                const type = currentType;
-                const d = formData[type];
-                let html = '';
+    const qrHint = ref('实时预览');
+    const qrData = ref('');
 
-                switch (type) {
-                    case 'text':
-                        html = `
-                            <label class="field-label">文本内容</label>
-                            <textarea class="ios-input" rows="5" data-field="text" placeholder="输入任意文本内容...">${escapeHtml(d.text)}</textarea>
-                            <p class="text-xs text-faint mt-2">支持任意文本、符号和链接</p>
-                        `;
-                        break;
+    /* ---------- DOM 引用 ---------- */
+    const qrContainerRef = ref(null);
 
-                    case 'url':
-                        html = `
-                            <label class="field-label">网址</label>
-                            <input class="ios-input" type="url" data-field="url" value="${escapeHtml(d.url)}" placeholder="https://example.com" autocomplete="url">
-                            <p class="text-xs text-faint mt-2">输入完整的网址，包含 http:// 或 https://</p>
-                        `;
-                        break;
+    /* ---------- 派生数据：把当前类型表单拼成二维码内容 ---------- */
+    const builtData = computed(() => {
+      const t = currentType.value;
+      const d = formData[t];
 
-                    case 'vcard':
-                        html = `
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label class="field-label">姓氏</label>
-                                    <input class="ios-input" data-field="lastName" value="${escapeHtml(d.lastName)}" placeholder="张">
-                                </div>
-                                <div>
-                                    <label class="field-label">名字</label>
-                                    <input class="ios-input" data-field="firstName" value="${escapeHtml(d.firstName)}" placeholder="三">
-                                </div>
-                            </div>
-                            <div class="mt-4">
-                                <label class="field-label">电话</label>
-                                <input class="ios-input" type="tel" data-field="phone" value="${escapeHtml(d.phone)}" placeholder="+86 138 0000 0000">
-                            </div>
-                            <div class="mt-4">
-                                <label class="field-label">邮箱</label>
-                                <input class="ios-input" type="email" data-field="email" value="${escapeHtml(d.email)}" placeholder="name@example.com">
-                            </div>
-                            <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label class="field-label">公司</label>
-                                    <input class="ios-input" data-field="company" value="${escapeHtml(d.company)}" placeholder="公司名称">
-                                </div>
-                                <div>
-                                    <label class="field-label">职位</label>
-                                    <input class="ios-input" data-field="title" value="${escapeHtml(d.title)}" placeholder="职位">
-                                </div>
-                            </div>
-                        `;
-                        break;
+      switch (t) {
+        case 'text':
+          return d.text || '';
 
-                    case 'wifi':
-                        html = `
-                            <label class="field-label">网络名称 (SSID)</label>
-                            <input class="ios-input" data-field="ssid" value="${escapeHtml(d.ssid)}" placeholder="WiFi 名称" autocomplete="off">
-                            <div class="mt-4">
-                                <label class="field-label">密码</label>
-                                <input class="ios-input" type="password" data-field="password" value="${escapeHtml(d.password)}" placeholder="WiFi 密码" autocomplete="new-password">
-                            </div>
-                            <div class="mt-4">
-                                <label class="field-label">加密方式</label>
-                                <select class="ios-input" data-field="encryption">
-                                    <option value="WPA" ${d.encryption === 'WPA' ? 'selected' : ''}>WPA/WPA2</option>
-                                    <option value="WEP" ${d.encryption === 'WEP' ? 'selected' : ''}>WEP</option>
-                                    <option value="nopass" ${d.encryption === 'nopass' ? 'selected' : ''}>无密码</option>
-                                </select>
-                            </div>
-                            <div class="mt-4 flex items-center gap-3">
-                                <input type="checkbox" id="wifi-hidden" data-field="hidden" ${d.hidden ? 'checked' : ''} class="w-5 h-5 rounded-md">
-                                <label for="wifi-hidden" class="text-sm text-muted">隐藏网络</label>
-                            </div>
-                        `;
-                        break;
+        case 'url':
+          return d.url || '';
 
-                    case 'sms':
-                        html = `
-                            <label class="field-label">手机号</label>
-                            <input class="ios-input" type="tel" data-field="phone" value="${escapeHtml(d.phone)}" placeholder="+86 138 0000 0000">
-                            <div class="mt-4">
-                                <label class="field-label">短信内容（可选）</label>
-                                <textarea class="ios-input" rows="3" data-field="message" placeholder="预填充的短信内容...">${escapeHtml(d.message)}</textarea>
-                            </div>
-                        `;
-                        break;
+        case 'vcard': {
+          const lines = ['BEGIN:VCARD', 'VERSION:3.0'];
+          const lastName = d.lastName || '';
+          const firstName = d.firstName || '';
+          lines.push(`N:${lastName};${firstName};;;`);
+          const fullName = [lastName, firstName].filter(Boolean).join(' ');
+          if (fullName) lines.push(`FN:${fullName}`);
+          if (d.company) lines.push(`ORG:${d.company}`);
+          if (d.title) lines.push(`TITLE:${d.title}`);
+          if (d.phone) lines.push(`TEL;TYPE=CELL:${d.phone}`);
+          if (d.email) lines.push(`EMAIL;TYPE=INTERNET:${d.email}`);
+          lines.push('END:VCARD');
+          return lines.join('\n');
+        }
 
-                    case 'tel':
-                        html = `
-                            <label class="field-label">电话号码</label>
-                            <input class="ios-input" type="tel" data-field="phone" value="${escapeHtml(d.phone)}" placeholder="+86 138 0000 0000">
-                            <p class="text-xs text-faint mt-2">建议使用国际格式（+国家代码）</p>
-                        `;
-                        break;
+        case 'wifi': {
+          const ssid = d.ssid || '';
+          const enc = d.encryption || 'WPA';
+          const pwd = d.password || '';
+          const hidden = d.hidden ? 'H:true;' : 'H:false;';
+          const escapeWifi = (s) => s.replace(/([\\;,":])/g, '\\$1');
+          return `WIFI:S:${escapeWifi(ssid)};T:${enc};P:${escapeWifi(pwd)};${hidden};`;
+        }
 
-                    case 'email':
-                        html = `
-                            <label class="field-label">邮箱地址</label>
-                            <input class="ios-input" type="email" data-field="address" value="${escapeHtml(d.address)}" placeholder="name@example.com">
-                            <div class="mt-4">
-                                <label class="field-label">邮件主题（可选）</label>
-                                <input class="ios-input" data-field="subject" value="${escapeHtml(d.subject)}" placeholder="主题">
-                            </div>
-                            <div class="mt-4">
-                                <label class="field-label">邮件正文（可选）</label>
-                                <textarea class="ios-input" rows="3" data-field="body" placeholder="正文内容...">${escapeHtml(d.body)}</textarea>
-                            </div>
-                        `;
-                        break;
-                }
+        case 'sms': {
+          const phone = d.phone || '';
+          const msg = d.message || '';
+          return msg ? `SMSTO:${phone}:${msg}` : `SMSTO:${phone}`;
+        }
 
-                formArea.innerHTML = `<div class="form-panel">${html}</div>`;
+        case 'tel':
+          return `tel:${d.phone || ''}`;
 
-                // 绑定输入事件
-                formArea.querySelectorAll('[data-field]').forEach(el => {
-                    const eventName = (el.type === 'checkbox' || el.tagName === 'SELECT') ? 'change' : 'input';
-                    el.addEventListener(eventName, function() {
-                        const field = this.dataset.field;
-                        if (this.type === 'checkbox') {
-                            formData[currentType][field] = this.checked;
-                        } else {
-                            formData[currentType][field] = this.value;
-                        }
-                        scheduleUpdate();
-                    });
-                });
+        case 'email': {
+          const addr = d.address || '';
+          if (!addr) return '';
+          let result = `mailto:${addr}`;
+          const params = [];
+          if (d.subject) params.push(`subject=${encodeParam(d.subject)}`);
+          if (d.body) params.push(`body=${encodeParam(d.body)}`);
+          if (params.length) result += '?' + params.join('&');
+          return result;
+        }
 
-                // 立即生成一次
-                updateQRCode();
-            }
+        default:
+          return '';
+      }
+    });
 
-            // ============ 生成二维码数据 ============
-            function buildQRData() {
-                const type = currentType;
-                const d = formData[type];
+    /* ---------- 渲染二维码到 canvas ---------- */
+    function renderQRToCanvas(text, level) {
+      const qr = qrcode(0, level);
+      qr.addData(text);
+      qr.make();
 
-                switch (type) {
-                    case 'text':
-                        return d.text || '';
+      const count = qr.getModuleCount();
+      const margin = 4;
+      const cellSize = Math.max(2, Math.floor(260 / (count + margin * 2)));
+      const size = (count + margin * 2) * cellSize;
 
-                    case 'url':
-                        return d.url || '';
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
 
-                    case 'vcard': {
-                        const lines = ['BEGIN:VCARD', 'VERSION:3.0'];
-                        const lastName = d.lastName || '';
-                        const firstName = d.firstName || '';
-                        lines.push(`N:${lastName};${firstName};;;`);
-                        const fullName = [lastName, firstName].filter(Boolean).join(' ');
-                        if (fullName) lines.push(`FN:${fullName}`);
-                        if (d.company) lines.push(`ORG:${d.company}`);
-                        if (d.title) lines.push(`TITLE:${d.title}`);
-                        if (d.phone) lines.push(`TEL;TYPE=CELL:${d.phone}`);
-                        if (d.email) lines.push(`EMAIL;TYPE=INTERNET:${d.email}`);
-                        lines.push('END:VCARD');
-                        return lines.join('\n');
-                    }
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, size, size);
 
-                    case 'wifi': {
-                        const ssid = d.ssid || '';
-                        const enc = d.encryption || 'WPA';
-                        const pwd = d.password || '';
-                        const hidden = d.hidden ? 'H:true;' : 'H:false;';
-                        const escapeWifi = (s) => s.replace(/([\\;,":])/g, '\\$1');
-                        return `WIFI:S:${escapeWifi(ssid)};T:${enc};P:${escapeWifi(pwd)};${hidden};`;
-                    }
+      ctx.fillStyle = '#1c1c1e';
+      for (let r = 0; r < count; r++) {
+        for (let c = 0; c < count; c++) {
+          if (qr.isDark(r, c)) {
+            ctx.fillRect(
+              (c + margin) * cellSize,
+              (r + margin) * cellSize,
+              cellSize,
+              cellSize
+            );
+          }
+        }
+      }
+      return canvas;
+    }
 
-                    case 'sms': {
-                        const phone = d.phone || '';
-                        const msg = d.message || '';
-                        return msg ? `SMSTO:${phone}:${msg}` : `SMSTO:${phone}`;
-                    }
+    /* ---------- 显示错误 ---------- */
+    function renderError(title, detail) {
+      const box = qrContainerRef.value;
+      if (!box) return;
+      box.innerHTML =
+        '<p class="qr-error">' + escapeHtml(title) +
+        (detail ? '<small>' + escapeHtml(detail) + '</small>' : '') +
+        '</p>';
+    }
 
-                    case 'tel':
-                        return `tel:${d.phone || ''}`;
+    /* ---------- 更新二维码 ---------- */
+    function updateQRCode() {
+      const data = builtData.value;
+      qrData.value = data;
 
-                    case 'email': {
-                        const addr = d.address || '';
-                        if (!addr) return '';
-                        let result = `mailto:${addr}`;
-                        const params = [];
-                        if (d.subject) params.push(`subject=${encodeParam(d.subject)}`);
-                        if (d.body) params.push(`body=${encodeParam(d.body)}`);
-                        if (params.length) result += '?' + params.join('&');
-                        return result;
-                    }
+      const box = qrContainerRef.value;
+      if (!box) return;
 
-                    default:
-                        return '';
-                }
-            }
+      box.innerHTML = '';
 
-            // ============ 显示错误 ============
-            function showQRError(title, detail) {
-                qrContainer.innerHTML =
-                    '<p class="qr-error">' + escapeHtml(title) +
-                    (detail ? '<small>' + escapeHtml(detail) + '</small>' : '') +
-                    '</p>';
-            }
+      if (!data) {
+        box.innerHTML = '<p class="text-faint text-sm">输入内容后自动生成</p>';
+        qrHint.value = '实时预览';
+        return;
+      }
 
-            // ============ 渲染二维码到 canvas（UTF-8 安全） ============
-            // 二维码始终采用「白底 + 深色模块」，无论日间/夜间都能被扫码器稳定识别
-            function renderQRToCanvas(text, level) {
-                // 0 表示让库自动选择最小可用版本号
-                const qr = qrcode(0, level);
-                qr.addData(text);   // 默认 Byte 模式，走我们自定义的 UTF-8 编码
-                qr.make();          // 数据超长时抛出异常，由调用方捕获
+      if (typeof qrcode !== 'function') {
+        renderError('二维码组件加载失败', '请检查网络后刷新页面重试');
+        qrHint.value = '组件未加载';
+        return;
+      }
 
-                const count = qr.getModuleCount();
-                const margin = 4;                                    // 静区宽度（模块数）
-                const cellSize = Math.max(2, Math.floor(260 / (count + margin * 2)));
-                const size = (count + margin * 2) * cellSize;
+      const bytes = utf8Length(data);
+      const charCount = data.length;
 
-                const canvas = document.createElement('canvas');
-                canvas.width = size;
-                canvas.height = size;
+      const levels = ['M', 'L'];
+      let canvas = null;
+      let usedLevel = '';
+      let lastError = null;
 
-                const ctx = canvas.getContext('2d');
+      for (let i = 0; i < levels.length; i++) {
+        try {
+          canvas = renderQRToCanvas(data, levels[i]);
+          usedLevel = levels[i];
+          break;
+        } catch (err) {
+          lastError = err;
+          canvas = null;
+        }
+      }
 
-                // 底色固定为白色（保证任何主题下都清晰可扫）
-                ctx.fillStyle = '#ffffff';
-                ctx.fillRect(0, 0, size, size);
+      if (!canvas) {
+        console.warn('[QRCode] 生成失败：', lastError);
+        if (bytes > MAX_BYTES.L) {
+          renderError(
+            '内容过长，无法生成二维码',
+            `当前 ${bytes} 字节，单个二维码最多约 ${MAX_BYTES.L} 字节`
+          );
+          qrHint.value = `类型：${TYPE_LABEL[currentType.value]} · ${bytes} 字节 · 超出容量`;
+        } else {
+          renderError('二维码生成失败', '请尝试精简内容或删除特殊字符');
+          qrHint.value = `类型：${TYPE_LABEL[currentType.value]} · ${bytes} 字节 · 生成失败`;
+        }
+        return;
+      }
 
-                // 模块颜色：始终使用近黑色，避免因主题反转导致识别失败
-                ctx.fillStyle = '#1c1c1e';
-                for (let r = 0; r < count; r++) {
-                    for (let c = 0; c < count; c++) {
-                        if (qr.isDark(r, c)) {
-                            ctx.fillRect(
-                                (c + margin) * cellSize,
-                                (r + margin) * cellSize,
-                                cellSize,
-                                cellSize
-                            );
-                        }
-                    }
-                }
-                return canvas;
-            }
+      box.appendChild(canvas);
+      qrHint.value =
+        `类型：${TYPE_LABEL[currentType.value]} · ${charCount} 字符 / ${bytes} 字节` +
+        (usedLevel === 'L' ? ' · 已降低纠错级别' : '');
+    }
 
-            // ============ 更新二维码 ============
-            function updateQRCode() {
-                const data = buildQRData();
+    /* ---------- 类型切换 ---------- */
+    function switchType(id) {
+      if (id === currentType.value) return;
+      currentType.value = id;
+    }
 
-                qrContainer.innerHTML = '';
+    /* ---------- 重置 ---------- */
+    function resetForm() {
+      Object.assign(formData[currentType.value],
+        JSON.parse(JSON.stringify(DEFAULT_DATA[currentType.value])));
+    }
 
-                if (!data) {
-                    qrContainer.innerHTML = '<p class="text-faint text-sm">输入内容后自动生成</p>';
-                    qrHint.textContent = '实时预览';
-                    return;
-                }
+    /* ---------- 下载 ---------- */
+    function downloadQR() {
+      const box = qrContainerRef.value;
+      const canvas = box && box.querySelector('canvas');
+      if (!canvas) {
+        alert('请先输入内容生成二维码');
+        return;
+      }
+      const link = document.createElement('a');
+      link.download = `qrcode-${currentType.value}-${Date.now()}.png`;
+      link.href = canvas.toDataURL('image/png');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
 
-                // 依赖检查
-                if (typeof qrcode !== 'function') {
-                    showQRError('二维码组件加载失败', '请检查网络后刷新页面重试');
-                    qrHint.textContent = '组件未加载';
-                    return;
-                }
+    /* ---------- 防抖更新 ---------- */
+    let debounceTimer = null;
+    function scheduleUpdate() {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(updateQRCode, 180);
+    }
 
-                const bytes = utf8Length(data);
-                const charCount = data.length;
+    /* ---------- 监听：数据或类型变化时更新 ---------- */
+    watch(builtData, () => scheduleUpdate());
+    watch(currentType, () => scheduleUpdate());
 
-                // 依次尝试：M（更耐污损）→ L（容量更大）
-                const levels = ['M', 'L'];
-                let canvas = null;
-                let usedLevel = '';
-                let lastError = null;
+    /* 首次挂载后渲染一次 */
+    nextTick(() => updateQRCode());
 
-                for (let i = 0; i < levels.length; i++) {
-                    try {
-                        canvas = renderQRToCanvas(data, levels[i]);
-                        usedLevel = levels[i];
-                        break;
-                    } catch (err) {
-                        lastError = err;
-                        canvas = null;
-                    }
-                }
-
-                if (!canvas) {
-                    console.warn('[QRCode] 生成失败：', lastError);
-
-                    if (bytes > MAX_BYTES.L) {
-                        showQRError(
-                            '内容过长，无法生成二维码',
-                            `当前 ${bytes} 字节，单个二维码最多约 ${MAX_BYTES.L} 字节`
-                        );
-                        qrHint.textContent = `类型：${getTypeLabel(currentType)} · ${bytes} 字节 · 超出容量`;
-                    } else {
-                        showQRError('二维码生成失败', '请尝试精简内容或删除特殊字符');
-                        qrHint.textContent = `类型：${getTypeLabel(currentType)} · ${bytes} 字节 · 生成失败`;
-                    }
-                    return;
-                }
-
-                qrContainer.appendChild(canvas);
-                qrHint.textContent =
-                    `类型：${getTypeLabel(currentType)} · ${charCount} 字符 / ${bytes} 字节` +
-                    (usedLevel === 'L' ? ' · 已降低纠错级别' : '');
-            }
-
-            function getTypeLabel(type) {
-                const map = { text: '文本', url: '网址', vcard: '名片', wifi: 'WiFi', sms: '短信', tel: '电话', email: '邮件' };
-                return map[type] || type;
-            }
-
-            // ============ 防抖更新 ============
-            function scheduleUpdate() {
-                if (debounceTimer) clearTimeout(debounceTimer);
-                debounceTimer = setTimeout(() => {
-                    updateQRCode();
-                }, 180);
-            }
-
-            // ============ 类型切换 ============
-            typeTabs.addEventListener('click', function(e) {
-                const btn = e.target.closest('button[data-type]');
-                if (!btn) return;
-                const newType = btn.dataset.type;
-                if (newType === currentType) return;
-
-                typeTabs.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-
-                currentType = newType;
-                renderForm();
-            });
-
-            // ============ 保存二维码 ============
-            downloadBtn.addEventListener('click', function() {
-                const canvas = qrContainer.querySelector('canvas');
-
-                if (!canvas) {
-                    alert('请先输入内容生成二维码');
-                    return;
-                }
-
-                const link = document.createElement('a');
-                link.download = `qrcode-${currentType}-${Date.now()}.png`;
-                link.href = canvas.toDataURL('image/png');
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            });
-
-            // ============ 重置 ============
-            resetBtn.addEventListener('click', function() {
-                formData[currentType] = JSON.parse(JSON.stringify(defaultData[currentType]));
-                renderForm();
-            });
-
-            // ============ 初始化 ============
-            renderForm();
-
-        })();
-    </script>
-
+    /* ---------- 暴露 ---------- */
+    return {
+      TYPES,
+      currentType,
+      formData,
+      qrHint,
+      qrData,
+      qrContainerRef,
+      switchType,
+      resetForm,
+      downloadQR,
+    };
+  }
+}).mount('#app');
+</script>
 </body>
 </html>
