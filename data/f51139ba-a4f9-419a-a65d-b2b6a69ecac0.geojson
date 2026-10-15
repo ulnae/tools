@@ -16,22 +16,6 @@
         "type": "f51139ba-a4f9-419a-a65d-b2b6a69ecac0",
         "created_at": "2026-10-15T07:40:23.682Z"
       }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          113.9599431115396,
-          35.03812221840094
-        ]
-      },
-      "properties": {
-        "title": "5555",
-        "description": "66",
-        "type": "f51139ba-a4f9-419a-a65d-b2b6a69ecac0",
-        "created_at": "2026-10-15T07:40:31.521Z"
-      }
     }
   ]
 }
