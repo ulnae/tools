@@ -418,9 +418,9 @@
             <!-- 右侧：二维码预览 -->
             <div class="lg:col-span-2">
                 <div class="qr-preview-card sticky top-6">
-                    <div ref="qrContainerRef" id="qrcode-container">
-                        <p v-if="!qrData" class="text-faint text-sm">输入内容后自动生成</p>
-                    </div>
+                    <!-- 关键修复：容器内不放任何 Vue 指令 / 子节点，
+                         完全交给原生 JS 渲染，避免 Vue 与手动 DOM 操作冲突 -->
+                    <div ref="qrContainerRef" id="qrcode-container"></div>
                     <p class="text-xs text-faint mt-4 text-center">{{ qrHint }}</p>
                 </div>
             </div>
@@ -536,7 +536,7 @@ function utf8Length(str) {
 /* =====================================================================
    Vue 应用
 ===================================================================== */
-const { createApp, ref, reactive, computed, watch, nextTick } = Vue;
+const { createApp, ref, reactive, computed, watch, onMounted } = Vue;
 
 createApp({
   setup() {
@@ -646,9 +646,16 @@ createApp({
       return canvas;
     }
 
+    /* ---------- 清空容器（唯一入口，保证 DOM 与内部状态一致） ---------- */
+    function clearContainer() {
+      const box = qrContainerRef.value;
+      if (box) box.innerHTML = '';
+      return box;
+    }
+
     /* ---------- 显示错误 ---------- */
     function renderError(title, detail) {
-      const box = qrContainerRef.value;
+      const box = clearContainer();
       if (!box) return;
       box.innerHTML =
         '<p class="qr-error">' + escapeHtml(title) +
@@ -658,13 +665,11 @@ createApp({
 
     /* ---------- 更新二维码 ---------- */
     function updateQRCode() {
-      const data = builtData.value;
-      qrData.value = data;
-
-      const box = qrContainerRef.value;
+      const box = clearContainer();
       if (!box) return;
 
-      box.innerHTML = '';
+      const data = builtData.value;
+      qrData.value = data;
 
       if (!data) {
         box.innerHTML = '<p class="text-faint text-sm">输入内容后自动生成</p>';
@@ -757,8 +762,8 @@ createApp({
     watch(builtData, () => scheduleUpdate());
     watch(currentType, () => scheduleUpdate());
 
-    /* 首次挂载后渲染一次 */
-    nextTick(() => updateQRCode());
+    /* 挂载后渲染一次（此时模板 ref 已就绪） */
+    onMounted(() => updateQRCode());
 
     /* ---------- 暴露 ---------- */
     return {
