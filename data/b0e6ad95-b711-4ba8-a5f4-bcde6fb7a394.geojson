@@ -100,6 +100,22 @@
         "type": "b0e6ad95-b711-4ba8-a5f4-bcde6fb7a394",
         "created_at": "2026-10-20T07:40:57.419Z"
       }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          113.66631567478181,
+          34.82241317581696
+        ]
+      },
+      "properties": {
+        "title": "大观音寺",
+        "description": "心诚则灵",
+        "type": "b0e6ad95-b711-4ba8-a5f4-bcde6fb7a394",
+        "created_at": "2026-10-20T07:44:59.283Z"
+      }
     }
   ]
 }
