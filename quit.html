@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>戒烟日志</title>
 
 <!-- ★ 专属 ICO 图标：暗色圆底 + 香烟 + 禁止斜线 -->
@@ -36,10 +36,29 @@
   }
 </script>
 <script src="./utils/vue.global.prod.js"></script>
+<script src="./utils/dayjs.min.js"></script>
 
 <style>
+  /* ── 全局：锁定视口，杜绝横/纵向滚动条 ── */
+  html, body{
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
   html{ color-scheme: dark; }
   [v-cloak]{ display: none; }
+
+  /* 视口高度（兼容旧浏览器） */
+  .app-shell{
+    height: 100vh;
+    height: 100dvh;
+  }
+  /* 隐藏滚动条（极端小屏时内容仍可完整查看） */
+  .scrollbar-hide{
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar{ display: none; }
 
   /* 废土底色光晕 */
   .bg-waste{
@@ -95,16 +114,7 @@
   /* 表单原生控件适配暗色 */
   input[type="number"]::-webkit-outer-spin-button,
   input[type="number"]::-webkit-inner-spin-button{ opacity: .35; }
-
-  /* 缓慢抖动（极轻微，模拟老旧终端） */
-  @keyframes drift{
-    0%, 92%, 100% { transform: none; }
-    93% { transform: translateX(-1.5px) skewX(-.4deg); }
-    94% { transform: translateX(2px)  skewX(.5deg); }
-    95% { transform: translateX(-1px); }
-    96% { transform: none; }
-  }
-  .drift{ animation: drift 13s infinite; }
+  input[type="datetime-local"]{ min-width: 0; }
 
   /* 噪点颗粒 */
   @keyframes grainShift{
@@ -119,12 +129,24 @@
     animation: grainShift 1.3s steps(4) infinite;
     mix-blend-mode: overlay;
   }
+
+  /* ── 弹窗过渡 ── */
+  .modal-enter-active, .modal-leave-active{ transition: opacity .18s ease; }
+  .modal-enter-active .modal-panel, .modal-leave-active .modal-panel{ transition: transform .18s ease, opacity .18s ease; }
+  .modal-enter-from, .modal-leave-to{ opacity: 0; }
+  .modal-enter-from .modal-panel, .modal-leave-to .modal-panel{ transform: translateY(12px) scale(.97); opacity: 0; }
+
+  /* 弹窗面板高度 */
+  .modal-panel{
+    max-height: 90vh;
+    max-height: 90dvh;
+  }
 </style>
 </head>
 
-<body class="min-h-screen bg-waste-bg font-mono text-waste-ink antialiased">
+<body class="bg-waste-bg font-mono text-waste-ink antialiased">
 
-<div id="app" v-cloak class="relative min-h-screen overflow-x-hidden">
+<div id="app" v-cloak class="app-shell relative overflow-hidden">
 
   <!-- ═══════ 背景层 ═══════ -->
   <div class="pointer-events-none fixed inset-0 z-0 bg-waste"></div>
@@ -133,220 +155,253 @@
   <div class="pointer-events-none fixed inset-0 z-[62] fx-vignette"></div>
   <div class="pointer-events-none fixed -inset-[60%] z-[61] opacity-[0.09] fx-grain"></div>
 
-  <!-- ═══════ 主体 ═══════ -->
-  <main class="relative z-10 mx-auto flex w-full max-w-3xl flex-col gap-4 px-4 py-10 sm:py-14 drift">
+  <!-- ═══════ 滚动容器（隐藏滚动条，小屏兜底） ═══════ -->
+  <div class="scrollbar-hide relative z-10 h-full overflow-y-auto">
 
-    <!-- ── 页头 ── -->
-    <header class="text-center">
-      <p class="text-[10.5px] tracking-[0.3em] text-waste-rust/85">
-        // 生存日志 · 戒断协议 07-B
-      </p>
-      <h1 class="mt-3 text-3xl font-bold tracking-[0.3em] text-waste-amber drop-shadow-[0_0_26px_rgba(200,110,40,0.35)] sm:text-4xl">
-        戒烟计时
-      </h1>
-      <p class="mt-4 text-xs tracking-[0.13em] text-waste-dim">
-        最后一口烟：
-        <span class="font-semibold text-waste-rust">{{ lastSmokeText }}</span>
-      </p>
-    </header>
+    <main class="mx-auto flex min-h-full w-full max-w-3xl flex-col justify-start gap-2.5 px-3 pb-6 pt-8 sm:gap-4 sm:px-4 sm:pb-10 sm:pt-14">
 
-    <!-- ── 计时区 ── -->
-    <section class="grid grid-cols-2 gap-3 border border-waste-line/40 bg-gradient-to-b from-waste-panel/90 to-waste-bg/95 p-4 shadow-2xl shadow-black/60 sm:grid-cols-4 sm:p-6">
-      <div
-        v-for="(u, i) in units"
-        :key="u.label"
-        class="relative border border-waste-line/25 bg-black/35 px-1 py-5 text-center shadow-[inset_0_0_34px_rgba(0,0,0,0.55)] sm:py-6"
-        :class="'unit-cut-' + (i + 1)"
-      >
-        <span class="block text-3xl font-extrabold leading-none tracking-tight tabular-nums text-waste-amber drop-shadow-[0_0_16px_rgba(230,150,60,0.42)] sm:text-5xl">
-          {{ u.value }}
-        </span>
-        <span class="mt-3 block text-[9px] tracking-[0.26em] text-waste-faint">
-          {{ u.label }}
-        </span>
-      </div>
-    </section>
+      <!-- ── 页头 ── -->
+      <header class="text-center">
+        <p class="text-[9px] tracking-[0.26em] text-waste-rust/85 sm:text-[10.5px] sm:tracking-[0.3em]">
+          // 生存日志 · 戒断协议 07-B
+        </p>
+        <h1 class="mt-1.5 pl-[0.3em] text-2xl font-bold tracking-[0.3em] text-waste-amber drop-shadow-[0_0_26px_rgba(200,110,40,0.35)] sm:mt-3 sm:text-4xl">
+          戒烟计时
+        </h1>
+        <p class="mt-2 text-[10.5px] tracking-[0.1em] text-waste-dim sm:mt-4 sm:text-xs sm:tracking-[0.13em]">
+          最后一口烟：
+          <span class="font-semibold text-waste-rust">{{ lastSmokeText }}</span>
+        </p>
+      </header>
 
-    <!-- ── 里程碑 ── -->
-    <section class="panel-deco border border-waste-line/40 bg-gradient-to-b from-waste-panel/90 to-waste-bg/95 px-5 py-4">
-      <div class="mb-3 flex flex-wrap items-baseline justify-between gap-2 text-[11px] tracking-[0.11em] text-waste-faint">
-        <span>
-          距 <b class="font-bold text-waste-rust">{{ ms.next }} 天</b> 里程碑
-          · 已越过 <b class="font-bold text-waste-rust">{{ ms.prev }} 天</b>
-        </span>
-        <b class="text-waste-rust">{{ ms.pct.toFixed(1) }}%</b>
-      </div>
-      <div class="relative h-2.5 overflow-hidden border border-waste-line/40 bg-black/60">
+      <!-- ── 计时区 ── -->
+      <section class="grid grid-cols-4 gap-1.5 border border-waste-line/40 bg-gradient-to-b from-waste-panel/90 to-waste-bg/95 p-2 shadow-2xl shadow-black/60 sm:gap-3 sm:p-5">
         <div
-          class="h-full bg-gradient-to-r from-waste-deep via-waste-rust to-waste-amber shadow-[0_0_14px_rgba(210,120,45,0.5)] transition-[width] duration-500 ease-linear"
-          :style="{ width: ms.pct.toFixed(2) + '%' }"
-        ></div>
-      </div>
-    </section>
-
-    <!-- ── 统计卡 ── -->
-    <section class="grid grid-cols-1 gap-3 sm:grid-cols-3">
-      <div class="panel-deco border border-waste-line/40 bg-gradient-to-b from-waste-panel/90 to-waste-bg/95 px-5 py-4">
-        <div class="mb-2.5 text-[10px] tracking-[0.2em] text-waste-faint">已避免点燃</div>
-        <div
-          class="text-2xl font-extrabold tabular-nums"
-          :class="avoided > 0 ? 'text-waste-olive drop-shadow-[0_0_16px_rgba(140,160,90,0.25)]' : 'text-waste-amber'"
+          v-for="(u, i) in units"
+          :key="u.longLabel"
+          class="relative border border-waste-line/25 bg-black/35 px-0.5 py-2.5 text-center shadow-[inset_0_0_34px_rgba(0,0,0,0.55)] sm:py-5"
+          :class="'unit-cut-' + (i + 1)"
         >
-          {{ avoidedText }} <span class="text-sm font-semibold">支</span>
+          <span class="block text-[clamp(1.15rem,5.6vw,3rem)] font-extrabold leading-none tracking-tight tabular-nums text-waste-amber drop-shadow-[0_0_16px_rgba(230,150,60,0.42)]">
+            {{ u.value }}
+          </span>
+          <span class="mt-1.5 block text-[8px] tracking-[0.18em] text-waste-faint sm:mt-3 sm:text-[9px] sm:tracking-[0.26em]">
+            <span class="sm:hidden">{{ u.label }}</span>
+            <span class="hidden sm:inline">{{ u.longLabel }}</span>
+          </span>
         </div>
-      </div>
+      </section>
 
-      <div class="panel-deco border border-waste-line/40 bg-gradient-to-b from-waste-panel/90 to-waste-bg/95 px-5 py-4">
-        <div class="mb-2.5 text-[10px] tracking-[0.2em] text-waste-faint">折合香烟</div>
-        <div class="text-2xl font-extrabold tabular-nums text-waste-amber">
-          {{ packsText }} <span class="text-sm font-semibold">包</span>
+      <!-- ── 里程碑 ── -->
+      <section class="panel-deco border border-waste-line/40 bg-gradient-to-b from-waste-panel/90 to-waste-bg/95 px-3 py-2.5 sm:px-5 sm:py-4">
+        <div class="mb-1.5 flex items-baseline justify-between gap-2 text-[10px] tracking-[0.08em] text-waste-faint sm:mb-3 sm:text-[11px] sm:tracking-[0.11em]">
+          <span>
+            距 <b class="font-bold text-waste-rust">{{ ms.next }} 天</b> 里程碑
+          </span>
+          <b class="text-waste-rust">{{ ms.pct.toFixed(1) }}%</b>
         </div>
-      </div>
-
-      <div class="panel-deco border border-waste-line/40 bg-gradient-to-b from-waste-panel/90 to-waste-bg/95 px-5 py-4">
-        <div class="mb-2.5 text-[10px] tracking-[0.2em] text-waste-faint">节省烟费</div>
-        <div class="text-2xl font-extrabold tabular-nums text-waste-amber">
-          <span class="text-base">¥</span> {{ moneyText }}
+        <div class="relative h-2 overflow-hidden border border-waste-line/40 bg-black/60 sm:h-2.5">
+          <div
+            class="h-full bg-gradient-to-r from-waste-deep via-waste-rust to-waste-amber shadow-[0_0_14px_rgba(210,120,45,0.5)] transition-[width] duration-500 ease-linear"
+            :style="{ width: ms.pct.toFixed(2) + '%' }"
+          ></div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <!-- ── 配置面板 ── -->
-    <section class="panel-deco overflow-hidden border border-waste-line/40 bg-gradient-to-b from-waste-panel/90 to-waste-bg/95">
-      <button
-        type="button"
-        class="flex w-full items-center justify-between px-5 py-4 text-left transition-colors hover:bg-waste-panel2/40"
-        @click="configOpen = !configOpen"
-      >
-        <span class="text-[11px] tracking-[0.2em] text-waste-rust/90">// 生存参数校准</span>
-        <span
-          class="text-waste-faint transition-transform duration-300"
-          :class="configOpen ? 'rotate-180' : ''"
-        >▾</span>
-      </button>
-
-      <div
-        class="grid transition-all duration-300 ease-out"
-        :class="configOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'"
-      >
-        <div class="overflow-hidden">
-          <div class="grid grid-cols-1 gap-4 px-5 pb-5 sm:grid-cols-2">
-
-            <label class="flex flex-col gap-2 sm:col-span-2">
-              <span class="text-[9.5px] tracking-[0.18em] text-waste-faint">最后抽烟时间</span>
-              <input
-                v-model="form.date"
-                type="datetime-local"
-                step="1"
-                class="w-full border border-waste-line/50 bg-black/60 px-3 py-2.5 text-sm tabular-nums text-waste-ink outline-none transition focus:border-waste-rust/70 focus:ring-1 focus:ring-waste-rust/30"
-              >
-            </label>
-
-            <label class="flex flex-col gap-2">
-              <span class="text-[9.5px] tracking-[0.18em] text-waste-faint">每天抽烟（根）</span>
-              <input
-                v-model="form.perDay"
-                type="number" min="0" step="1"
-                class="w-full border border-waste-line/50 bg-black/60 px-3 py-2.5 text-sm tabular-nums text-waste-ink outline-none transition focus:border-waste-rust/70 focus:ring-1 focus:ring-waste-rust/30"
-              >
-            </label>
-
-            <label class="flex flex-col gap-2">
-              <span class="text-[9.5px] tracking-[0.18em] text-waste-faint">每包支数</span>
-              <input
-                v-model="form.perPack"
-                type="number" min="1" step="1"
-                class="w-full border border-waste-line/50 bg-black/60 px-3 py-2.5 text-sm tabular-nums text-waste-ink outline-none transition focus:border-waste-rust/70 focus:ring-1 focus:ring-waste-rust/30"
-              >
-            </label>
-
-            <label class="flex flex-col gap-2 sm:col-span-2">
-              <span class="text-[9.5px] tracking-[0.18em] text-waste-faint">每包价格（元）</span>
-              <input
-                v-model="form.price"
-                type="number" min="0" step="0.1"
-                class="w-full border border-waste-line/50 bg-black/60 px-3 py-2.5 text-sm tabular-nums text-waste-ink outline-none transition focus:border-waste-rust/70 focus:ring-1 focus:ring-waste-rust/30"
-              >
-            </label>
-
-            <div class="flex flex-wrap items-center gap-3 sm:col-span-2">
-              <button
-                type="button"
-                class="border border-waste-rust/40 bg-gradient-to-b from-waste-rust/60 to-waste-deep/70 px-5 py-2.5 text-[11.5px] tracking-[0.16em] text-amber-100 transition hover:from-waste-rust/80 hover:to-waste-deep/85 hover:shadow-[0_0_18px_rgba(200,110,40,0.25)]"
-                @click="applyConfig"
-              >应用参数</button>
-
-              <button
-                type="button"
-                class="border border-waste-line/50 bg-transparent px-4 py-2.5 text-[11.5px] tracking-[0.16em] text-waste-faint transition hover:border-waste-rust/50 hover:bg-waste-deep/20"
-                @click="resetConfig"
-              >恢复默认</button>
-
-              <span
-                class="ml-auto min-h-4 text-[11px] tracking-[0.08em]"
-                :class="cfgMsg.type === 'ok' ? 'text-waste-olive' : cfgMsg.type === 'err' ? 'text-red-400' : 'text-waste-faint'"
-              >{{ cfgMsg.text }}</span>
-            </div>
-
+      <!-- ── 统计卡 ── -->
+      <section class="grid grid-cols-3 gap-1.5 sm:gap-3">
+        <div class="panel-deco border border-waste-line/40 bg-gradient-to-b from-waste-panel/90 to-waste-bg/95 px-2 py-2.5 sm:px-5 sm:py-4">
+          <div class="mb-1 text-[9px] tracking-[0.12em] text-waste-faint sm:mb-2.5 sm:text-[10px] sm:tracking-[0.2em]">
+            <span class="sm:hidden">已避免</span>
+            <span class="hidden sm:inline">已避免点燃</span>
+          </div>
+          <div
+            class="text-[clamp(0.95rem,3.8vw,1.5rem)] font-extrabold tabular-nums leading-tight"
+            :class="avoided > 0 ? 'text-waste-olive drop-shadow-[0_0_16px_rgba(140,160,90,0.25)]' : 'text-waste-amber'"
+          >
+            {{ avoidedText }} <span class="text-[0.62em] font-semibold">支</span>
           </div>
         </div>
+
+        <div class="panel-deco border border-waste-line/40 bg-gradient-to-b from-waste-panel/90 to-waste-bg/95 px-2 py-2.5 sm:px-5 sm:py-4">
+          <div class="mb-1 text-[9px] tracking-[0.12em] text-waste-faint sm:mb-2.5 sm:text-[10px] sm:tracking-[0.2em]">
+            <span class="sm:hidden">折合</span>
+            <span class="hidden sm:inline">折合香烟</span>
+          </div>
+          <div class="text-[clamp(0.95rem,3.8vw,1.5rem)] font-extrabold tabular-nums leading-tight text-waste-amber">
+            {{ packsText }} <span class="text-[0.62em] font-semibold">包</span>
+          </div>
+        </div>
+
+        <div class="panel-deco border border-waste-line/40 bg-gradient-to-b from-waste-panel/90 to-waste-bg/95 px-2 py-2.5 sm:px-5 sm:py-4">
+          <div class="mb-1 text-[9px] tracking-[0.12em] text-waste-faint sm:mb-2.5 sm:text-[10px] sm:tracking-[0.2em]">
+            <span class="sm:hidden">节省</span>
+            <span class="hidden sm:inline">节省烟费</span>
+          </div>
+          <div class="text-[clamp(0.95rem,3.8vw,1.5rem)] font-extrabold tabular-nums leading-tight text-waste-amber">
+            <span class="text-[0.72em]">¥</span> {{ moneyText }}
+          </div>
+        </div>
+      </section>
+
+      <!-- ── 参数校准入口 ── -->
+      <button
+        type="button"
+        class="group flex w-full items-center justify-between border border-waste-line/40 bg-gradient-to-b from-waste-panel/90 to-waste-bg/95 px-4 py-2.5 text-left transition-colors hover:border-waste-rust/50 hover:bg-waste-panel2/40 sm:py-3"
+        @click="openConfig"
+      >
+        <span class="text-[10.5px] tracking-[0.2em] text-waste-rust/90 sm:text-[11px]">// 生存参数校准</span>
+        <span class="text-[10px] tracking-[0.14em] text-waste-faint transition-colors group-hover:text-waste-amber sm:text-[11px]">
+          修改参数 ▸
+        </span>
+      </button>
+
+      <!-- ── 日志 ── -->
+      <div
+        class="flex min-h-[18px] items-start gap-1.5 px-0.5 text-[10.5px] tracking-[0.04em] text-waste-dim transition-opacity duration-200 sm:min-h-5 sm:text-xs sm:tracking-[0.05em]"
+        :class="logVisible ? 'opacity-90' : 'opacity-0'"
+      >
+        <span class="mt-0.5 inline-block h-3 w-1.5 shrink-0 animate-pulse bg-waste-rust"></span>
+        <span>{{ logText }}</span>
       </div>
-    </section>
 
-    <!-- ── 日志 ── -->
+    </main>
+  </div>
+
+  <!-- ═══════ 参数校准弹窗 ═══════ -->
+  <transition name="modal">
     <div
-      class="flex min-h-5 items-start gap-2 px-1 text-xs tracking-[0.05em] text-waste-dim transition-opacity duration-200"
-      :class="logVisible ? 'opacity-90' : 'opacity-0'"
+      v-if="configOpen"
+      class="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6"
+      role="dialog"
+      aria-modal="true"
+      aria-label="生存参数校准"
     >
-      <span class="mt-1 inline-block h-3 w-1.5 shrink-0 animate-pulse bg-waste-rust"></span>
-      <span>{{ logText }}</span>
-    </div>
+      <!-- 遮罩 -->
+      <div class="absolute inset-0 bg-black/75 backdrop-blur-sm" @click="configOpen = false"></div>
 
-  </main>
+      <!-- 面板 -->
+      <div class="modal-panel scrollbar-hide panel-deco relative flex w-full max-w-md flex-col overflow-y-auto border border-waste-line/60 bg-gradient-to-b from-waste-panel to-waste-bg shadow-2xl shadow-black/80">
+
+        <!-- 弹窗头 -->
+        <div class="flex items-center justify-between border-b border-waste-line/40 px-4 py-3">
+          <span class="text-[11px] tracking-[0.2em] text-waste-rust/90">// 生存参数校准</span>
+          <button
+            type="button"
+            class="flex h-7 w-7 items-center justify-center border border-waste-line/50 text-waste-faint transition-colors hover:border-waste-rust/60 hover:text-waste-amber"
+            aria-label="关闭"
+            @click="configOpen = false"
+          >✕</button>
+        </div>
+
+        <!-- 表单 -->
+        <div class="grid grid-cols-2 gap-3 px-4 py-4">
+          <label class="col-span-2 flex flex-col gap-1.5">
+            <span class="text-[9.5px] tracking-[0.18em] text-waste-faint">最后抽烟时间</span>
+            <input
+              v-model="form.date"
+              type="datetime-local"
+              step="1"
+              class="w-full min-w-0 border border-waste-line/50 bg-black/60 px-2.5 py-2 text-[13px] tabular-nums text-waste-ink outline-none transition focus:border-waste-rust/70 focus:ring-1 focus:ring-waste-rust/30"
+            >
+          </label>
+
+          <label class="flex flex-col gap-1.5">
+            <span class="text-[9.5px] tracking-[0.18em] text-waste-faint">每天抽烟（根）</span>
+            <input
+              v-model="form.perDay"
+              type="number" min="0" step="1"
+              class="w-full min-w-0 border border-waste-line/50 bg-black/60 px-2.5 py-2 text-[13px] tabular-nums text-waste-ink outline-none transition focus:border-waste-rust/70 focus:ring-1 focus:ring-waste-rust/30"
+            >
+          </label>
+
+          <label class="flex flex-col gap-1.5">
+            <span class="text-[9.5px] tracking-[0.18em] text-waste-faint">每包支数</span>
+            <input
+              v-model="form.perPack"
+              type="number" min="1" step="1"
+              class="w-full min-w-0 border border-waste-line/50 bg-black/60 px-2.5 py-2 text-[13px] tabular-nums text-waste-ink outline-none transition focus:border-waste-rust/70 focus:ring-1 focus:ring-waste-rust/30"
+            >
+          </label>
+
+          <label class="col-span-2 flex flex-col gap-1.5">
+            <span class="text-[9.5px] tracking-[0.18em] text-waste-faint">每包价格（元）</span>
+            <input
+              v-model="form.price"
+              type="number" min="0" step="0.1"
+              class="w-full min-w-0 border border-waste-line/50 bg-black/60 px-2.5 py-2 text-[13px] tabular-nums text-waste-ink outline-none transition focus:border-waste-rust/70 focus:ring-1 focus:ring-waste-rust/30"
+            >
+          </label>
+        </div>
+
+        <!-- 操作区 -->
+        <div class="space-y-2 border-t border-waste-line/40 px-4 py-3">
+          <div class="flex gap-2">
+            <button
+              type="button"
+              class="flex-1 border border-waste-rust/40 bg-gradient-to-b from-waste-rust/60 to-waste-deep/70 px-3 py-2.5 text-[11.5px] tracking-[0.14em] text-amber-100 transition hover:from-waste-rust/80 hover:to-waste-deep/85 hover:shadow-[0_0_18px_rgba(200,110,40,0.25)]"
+              @click="applyConfig"
+            >应用参数</button>
+
+            <button
+              type="button"
+              class="flex-1 border border-waste-line/50 bg-transparent px-3 py-2.5 text-[11.5px] tracking-[0.14em] text-waste-faint transition hover:border-waste-rust/50 hover:bg-waste-deep/20"
+              @click="resetConfig"
+            >恢复默认</button>
+          </div>
+
+          <div
+            class="min-h-[16px] text-center text-[11px] tracking-[0.08em]"
+            :class="cfgMsg.type === 'ok' ? 'text-waste-olive' : cfgMsg.type === 'err' ? 'text-red-400' : 'text-waste-faint'"
+          >{{ cfgMsg.text }}</div>
+        </div>
+
+      </div>
+    </div>
+  </transition>
+
 </div>
 
 <script>
 const { createApp, ref, computed, onMounted, onUnmounted } = Vue;
 
 /* ══════════════════════════════════════════════════════════
-   ★ 默认参数（页面配置面板会覆盖并记住它们）
+   ★ 默认参数（弹窗校准后会覆盖并记住它们）
    ══════════════════════════════════════════════════════════ */
 const DEFAULT = {
   lastSmoke:    '2026-10-18 23:59:59', // 最后抽烟时间 YYYY-MM-DD HH:mm:ss
-  cigsPerDay:   7,                    // 每天抽多少根
+  cigsPerDay:   7,                     // 每天抽多少根
   cigsPerPack:  20,                    // 每包多少根
   pricePerPack: 19                     // 每包多少钱（元）
 };
 
 const STORE_KEY = 'wasteland_quit_v3';
 
-/* ── 工具函数 ───────────────────────────────────────────── */
-const pad = (n, l = 2) => String(n).padStart(l, '0');
+/* ── 日期工具（基于 dayjs） ─────────────────────────────── */
+const FMT_DB    = 'YYYY-MM-DD HH:mm:ss'; // 存储格式
+const FMT_INPUT = 'YYYY-MM-DDTHH:mm:ss'; // datetime-local 格式
 
+/** 解析存储字符串 / ISO 字符串 → dayjs 对象；非法返回 null */
 function parseDate(s) {
-  const m = /^(\d{4})-(\d{1,2})-(\d{1,2})[ T](\d{1,2}):(\d{1,2})(?::(\d{1,2}))?$/
-    .exec(String(s).trim());
-  if (!m) return null;
-  const d = new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +(m[6] || 0));
-  return isNaN(d.getTime()) ? null : d;
+  const d = dayjs(String(s ?? '').trim().replace(' ', 'T'));
+  return d.isValid() ? d : null;
 }
 
+/** dayjs → "YYYY-MM-DD HH:mm:ss" */
 function fmtDate(d) {
-  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' +
-         pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+  return d.format(FMT_DB);
 }
 
+/** 存储字符串 → datetime-local 的 value */
 function toInputVal(s) {
   const d = parseDate(s);
-  if (!d) return '';
-  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) +
-         'T' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+  return d ? d.format(FMT_INPUT) : '';
 }
 
+/** datetime-local 的 value → 存储字符串 */
 function fromInputVal(v) {
-  const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?$/.exec(v || '');
-  if (!m) return null;
-  return m[1] + '-' + m[2] + '-' + m[3] + ' ' + m[4] + ':' + m[5] + ':' + (m[6] || '00');
+  const d = parseDate(v);
+  return d ? d.format(FMT_DB) : null;
 }
 
 function loadState() {
@@ -355,7 +410,7 @@ function loadState() {
     if (raw) {
       const o = JSON.parse(raw);
       return {
-        lastSmoke:    typeof o.lastSmoke === 'string' ? o.lastSmoke : DEFAULT.lastSmoke,
+        lastSmoke:    parseDate(o.lastSmoke) ? o.lastSmoke : DEFAULT.lastSmoke,
         cigsPerDay:   Number(o.cigsPerDay)   > 0 ? Number(o.cigsPerDay)   : DEFAULT.cigsPerDay,
         cigsPerPack:  Number(o.cigsPerPack)  > 0 ? Number(o.cigsPerPack)  : DEFAULT.cigsPerPack,
         pricePerPack: Number(o.pricePerPack) >= 0 ? Number(o.pricePerPack) : DEFAULT.pricePerPack
@@ -373,17 +428,6 @@ function nextMilestone(days) {
     if (days < MILESTONES[i]) return MILESTONES[i];
   }
   return (Math.floor(days / 1000) + 1) * 1000;
-}
-
-function prevMilestone(days) {
-  let p = 0;
-  for (let i = 0; i < MILESTONES.length; i++) {
-    if (days >= MILESTONES[i]) p = MILESTONES[i];
-  }
-  if (days >= MILESTONES[MILESTONES.length - 1]) {
-    p = Math.floor(days / 1000) * 1000;
-  }
-  return p;
 }
 
 /* ── 废土日志 ───────────────────────────────────────────── */
@@ -446,16 +490,15 @@ createApp({
 
     /* ── 开始时间 ── */
     const startDate = computed(() => parseDate(state.value.lastSmoke));
-    const startMs   = computed(() => startDate.value ? startDate.value.getTime() : 0);
     const valid     = computed(() => !!startDate.value);
 
     const lastSmokeText = computed(() =>
       startDate.value ? fmtDate(startDate.value) : '无效时间'
     );
 
-    /* ── 已过时间 ── */
+    /* ── 已过时间（用 dayjs 计算时长） ── */
     const elapsed = computed(() =>
-      valid.value ? Math.max(0, now.value - startMs.value) : 0
+      valid.value ? Math.max(0, dayjs(now.value).diff(startDate.value)) : 0
     );
 
     const totalSec = computed(() => Math.floor(elapsed.value / 1000));
@@ -467,10 +510,10 @@ createApp({
       const m = Math.floor((t % 3600) / 60);
       const s = t % 60;
       return [
-        { label: '天 / DAYS',  value: d < 100 ? pad(d) : String(d) },
-        { label: '时 / HOURS', value: pad(h) },
-        { label: '分 / MINS',  value: pad(m) },
-        { label: '秒 / SECS',  value: pad(s) }
+        { label: '天', longLabel: '天 / DAYS',  value: d < 100 ? String(d).padStart(2, '0') : String(d) },
+        { label: '时', longLabel: '时 / HOURS', value: String(h).padStart(2, '0') },
+        { label: '分', longLabel: '分 / MINS',  value: String(m).padStart(2, '0') },
+        { label: '秒', longLabel: '秒 / SECS',  value: String(s).padStart(2, '0') }
       ];
     });
 
@@ -490,18 +533,28 @@ createApp({
       money.value.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
     );
 
-    /* ── 里程碑进度 ── */
+    /* ── 里程碑进度：当前天数 / 下一里程碑天数 ── */
     const ms = computed(() => {
-      const d     = fdays.value;
-      const next  = nextMilestone(d);
-      const prev  = prevMilestone(d);
-      const span  = next - prev;
-      let   pct   = span > 0 ? ((d - prev) / span) * 100 : 0;
+      const d    = fdays.value;
+      const next = nextMilestone(d);
+      let   pct  = next > 0 ? (d / next) * 100 : 0;
       pct = Math.max(0, Math.min(100, pct));
-      return { next, prev, pct };
+      return { next, pct };
     });
 
-    /* ── 配置：应用 ── */
+    /* ── 弹窗：打开（同步最新参数） ── */
+    function openConfig() {
+      form.value = {
+        date:    toInputVal(state.value.lastSmoke),
+        perDay:  state.value.cigsPerDay,
+        perPack: state.value.cigsPerPack,
+        price:   state.value.pricePerPack
+      };
+      cfgMsg.value = { text: '', type: '' };
+      configOpen.value = true;
+    }
+
+    /* ── 弹窗：应用参数 ── */
     function applyConfig() {
       const dateStr = fromInputVal(form.value.date);
       if (!dateStr || !parseDate(dateStr)) {
@@ -538,11 +591,12 @@ createApp({
       cfgMsg.value = { text: '✓ 参数已写入', type: 'ok' };
 
       setTimeout(() => {
-        if (cfgMsg.value.text === '✓ 参数已写入') cfgMsg.value = { text: '', type: '' };
-      }, 2600);
+        configOpen.value = false;
+        cfgMsg.value = { text: '', type: '' };
+      }, 700);
     }
 
-    /* ── 配置：恢复默认 ── */
+    /* ── 弹窗：恢复默认 ── */
     function resetConfig() {
       state.value = Object.assign({}, DEFAULT);
       try { localStorage.setItem(STORE_KEY, JSON.stringify(state.value)); } catch (e) {}
@@ -560,12 +614,19 @@ createApp({
       }, 2600);
     }
 
+    /* ── ESC 关闭弹窗 ── */
+    function onKeydown(e) {
+      if (e.key === 'Escape' && configOpen.value) configOpen.value = false;
+    }
+    onMounted(() => window.addEventListener('keydown', onKeydown));
+    onUnmounted(() => window.removeEventListener('keydown', onKeydown));
+
     return {
       state, form, configOpen, cfgMsg,
       units, lastSmokeText, valid,
       avoided, avoidedText, packsText, moneyText,
       ms, logText, logVisible,
-      applyConfig, resetConfig
+      openConfig, applyConfig, resetConfig
     };
   }
 }).mount('#app');
