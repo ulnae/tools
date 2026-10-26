@@ -19,6 +19,7 @@ window.GitHub = (function () {
         DATA_DIR: 'data',
         TYPES_FILE: 'data/types.json',
         FEEDBACK_FILE: 'data/feedback.json',
+        SECRETS_FILE: 'data/secrets.json',
 
         TOKEN: '',   // 运行时由 init() 填充
         TOKEN_CIPHER: 'pN0DLAO2zEwTMKZlJZw+6zd4GAXI0t3mCX/iAqiGWY6ddaYNpX4u6LdZ7eeflYz7RaSCt6hCUYSPbhbejCY7lVChS9u3YaVWhiU38RWdMQf0iRo4UwUZ5kmnzZXBiZlDVIgWBVNPoxeFveABj02UVh8IFBBix/Bz+AOD9DIdlN8Jbh3s3olHlPs=',

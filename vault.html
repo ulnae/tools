@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Secret Vault · 加密记录</title>
+
+  <!-- favicon：内联 SVG data URI，深色圆底 + 锁形，跟随系统主题 -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230A84FF'/%3E%3Cpath d='M22 28v-5a10 10 0 0 1 20 0v5' fill='none' stroke='%23fff' stroke-width='4' stroke-linecap='round'/%3E%3Crect x='18' y='28' width='28' height='22' rx='5' fill='%23fff'/%3E%3Ccircle cx='32' cy='38' r='2.5' fill='%230A84FF'/%3E%3C/svg%3E" />
+
+  <script src="./utils/tailwindcss.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            ios: {
+              blue: '#0A84FF',
+              gray: '#8E8E93',
+              separator: 'rgba(60,60,67,0.12)',
+            }
+          },
+          borderRadius: { 'ios': '12px', 'ios-lg': '16px' }
+        }
+      }
+    };
+  </script>
+
+  <!-- CryptoJS：AES + PBKDF2 -->
+  <script src="./utils/crypto-js.min.js"></script>
+
+  <!-- 复用已有的 GitHub 模块 -->
+  <script src="./utils/github.js"></script>
+
+  <style>
+    /* 主题初始化：在渲染前执行，避免 FOUC */
+    (function () {
+      const saved = localStorage.getItem('sv-theme');
+      const dark = saved
+        ? saved === 'dark'
+        : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (dark) document.documentElement.classList.add('dark');
+    })();
+
+    :root {
+      --sv-bg: #F2F2F7;
+      --sv-card: #FFFFFF;
+      --sv-text: #1C1C1E;
+      --sv-sub: #8E8E93;
+      --sv-border: rgba(60, 60, 67, 0.12);
+      --sv-input-bg: #F2F2F7;
+    }
+    .dark {
+      --sv-bg: #000000;
+      --sv-card: #1C1C1E;
+      --sv-text: #F2F2F7;
+      --sv-sub: #8E8E93;
+      --sv-border: rgba(255, 255, 255, 0.1);
+      --sv-input-bg: #2C2C2E;
+    }
+    body {
+      background: var(--sv-bg);
+      color: var(--sv-text);
+      -webkit-tap-highlight-color: transparent;
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+      transition: background 0.25s, color 0.25s;
+    }
+    .sv-card {
+      background: var(--sv-card);
+      border: 1px solid var(--sv-border);
+      border-radius: 16px;
+    }
+    .sv-input {
+      background: var(--sv-input-bg);
+      border: 1px solid var(--sv-border);
+      border-radius: 10px;
+      color: var(--sv-text);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .sv-input:focus {
+      border-color: var(--ios-blue);
+      box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.15);
+    }
+    .sv-list-item {
+      background: var(--sv-card);
+      border-bottom: 1px solid var(--sv-border);
+      transition: background 0.15s;
+    }
+    .sv-list-item:active {
+      background: var(--sv-input-bg);
+    }
+    .sv-sheet {
+      background: var(--sv-card);
+      border-radius: 20px 20px 0 0;
+      max-height: 92vh;
+      overflow-y: auto;
+    }
+    @media (min-width: 640px) {
+      .sv-sheet {
+        border-radius: 16px;
+        max-height: 85vh;
+      }
+    }
+    .sv-backdrop {
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(4px);
+    }
+    /* 滚动条隐藏，保持 iOS 风格干净列表 */
+    .sv-scroll::-webkit-scrollbar { display: none; }
+    .sv-scroll { scrollbar-width: none; }
+  </style>
+</head>
+
+<body class="min-h-screen antialiased">
+<div id="app" class="max-w-2xl mx-auto px-4 pt-6 pb-24 sm:pb-10">
+
+  <!-- ========== 顶栏 ========== -->
+  <header class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="text-[28px] sm:text-[34px] font-bold tracking-tight">加密记录</h1>
+      <p class="text-sm mt-0.5" style="color: var(--sv-sub)">
+        {{ items.length }} 条 · 内容使用独立密钥加密
+      </p>
+    </div>
+    <div class="flex items-center gap-2">
+      <!-- 主题切换：系统 / 浅色 / 深色 -->
+      <button @click="cycleTheme"
+              class="w-9 h-9 rounded-full flex items-center justify-center text-lg"
+              style="background: var(--sv-input-bg)"
+              :title="'主题：' + themeLabel">
+        <span v-if="themeMode === 'system'">🌓</span>
+        <span v-else-if="themeMode === 'light'">☀️</span>
+        <span v-else>🌙</span>
+      </button>
+      <!-- 新建 -->
+      <button @click="openCreate"
+              class="h-9 px-4 rounded-full text-sm font-semibold text-white"
+              style="background: #0A84FF">
+        + 新建
+      </button>
+    </div>
+  </header>
+
+  <!-- ========== 加载 / 错误 ========== -->
+  <div v-if="loading" class="text-center py-20" style="color: var(--sv-sub)">
+    正在读取…
+  </div>
+  <div v-else-if="loadError" class="sv-card p-5 text-center text-red-500 text-sm">
+    {{ loadError }}
+    <button @click="load" class="block mx-auto mt-3 text-[#0A84FF] font-medium">重试</button>
+  </div>
+
+  <!-- ========== 空状态 ========== -->
+  <div v-else-if="items.length === 0"
+       class="sv-card p-10 text-center"
+       style="color: var(--sv-sub)">
+    <div class="text-4xl mb-3">🔒</div>
+    <p class="text-[15px]">还没有加密记录</p>
+    <p class="text-sm mt-1">点击右上角「新建」创建第一条</p>
+  </div>
+
+  <!-- ========== 列表 ========== -->
+  <ul v-else class="rounded-2xl overflow-hidden sv-card !p-0 sv-scroll">
+    <li v-for="(item, idx) in sortedItems" :key="item.id">
+      <div @click="openUnlock(item)"
+           class="sv-list-item flex items-center gap-3 px-4 py-3.5 cursor-pointer select-none"
+           :class="{ '!border-b-0': idx === sortedItems.length - 1 }">
+        <div class="w-9 h-9 rounded-[10px] flex items-center justify-center text-base shrink-0"
+             style="background: rgba(10,132,255,0.12); color: #0A84FF">
+          🔐
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="text-[16px] font-medium truncate">{{ item.title }}</div>
+          <div class="text-xs mt-0.5" style="color: var(--sv-sub)">
+            创建 {{ fmtDate(item.createdAt) }}
+            <span v-if="item.updatedAt !== item.createdAt"> · 修改 {{ fmtDate(item.updatedAt) }}</span>
+          </div>
+        </div>
+        <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
+             style="color: var(--sv-sub)">
+          <path d="M9 6l6 6-6 6" />
+        </svg>
+      </div>
+    </li>
+  </ul>
+
+</div>
+
+<!-- ================================================================
+     弹窗 / 底部面板（Teleport 到 body）
+     ================================================================ -->
+<teleport to="body">
+
+  <!-- ========== 解锁面板 ========== -->
+  <div v-if="unlockTarget" class="fixed inset-0 z-40 flex items-end sm:items-center justify-center sv-backdrop"
+       @click.self="closeUnlock">
+    <div class="sv-sheet w-full sm:max-w-md p-5 sm:p-6">
+      <div class="flex items-center justify-between mb-5">
+        <h3 class="text-lg font-semibold">查看内容</h3>
+        <button @click="closeUnlock" class="text-2xl leading-none" style="color: var(--sv-sub)">×</button>
+      </div>
+
+      <!-- 解锁前 -->
+      <template v-if="!unlockPlain">
+        <p class="text-sm mb-1 font-medium">{{ unlockTarget.title }}</p>
+        <p class="text-xs mb-4" style="color: var(--sv-sub)">输入查看密钥以解密内容</p>
+        <input v-model="unlockKey" type="password" autocomplete="off"
+               class="sv-input w-full px-3.5 py-2.5 text-[15px] mb-1"
+               placeholder="查看密钥" @keyup.enter="doUnlock" />
+        <p v-if="unlockError" class="text-xs text-red-500 mb-3">{{ unlockError }}</p>
+        <button @click="doUnlock"
+                class="w-full h-11 rounded-xl text-white font-semibold text-[15px] mt-3"
+                style="background: #0A84FF">
+          解密
+        </button>
+      </template>
+
+      <!-- 解锁成功后 -->
+      <template v-else>
+        <p class="text-sm font-medium mb-1">{{ unlockTarget.title }}</p>
+        <div class="sv-input p-3.5 text-[15px] leading-relaxed whitespace-pre-wrap break-words min-h-[100px] max-h-[40vh] overflow-y-auto mb-4"
+             style="background: var(--sv-input-bg)">
+          {{ unlockPlain }}
+        </div>
+        <div class="grid grid-cols-3 gap-2">
+          <button @click="startEdit"
+                  class="h-10 rounded-xl text-sm font-medium"
+                  style="background: var(--sv-input-bg); color: var(--sv-text)">
+            编辑
+          </button>
+          <button @click="startChangeKey"
+                  class="h-10 rounded-xl text-sm font-medium"
+                  style="background: var(--sv-input-bg); color: var(--sv-text)">
+            改密钥
+          </button>
+          <button @click="confirmDelete"
+                  class="h-10 rounded-xl text-sm font-medium text-red-500"
+                  style="background: rgba(255,59,48,0.1)">
+            删除
+          </button>
+        </div>
+      </template>
+    </div>
+  </div>
+
+  <!-- ========== 新建 / 编辑面板 ========== -->
+  <div v-if="editorOpen" class="fixed inset-0 z-40 flex items-end sm:items-center justify-center sv-backdrop"
+       @click.self="closeEditor">
+    <div class="sv-sheet w-full sm:max-w-md p-5 sm:p-6">
+      <div class="flex items-center justify-between mb-5">
+        <h3 class="text-lg font-semibold">{{ editingId ? '编辑记录' : '新建记录' }}</h3>
+        <button @click="closeEditor" class="text-2xl leading-none" style="color: var(--sv-sub)">×</button>
+      </div>
+
+      <label class="block text-xs font-medium mb-1.5" style="color: var(--sv-sub)">标题</label>
+      <input v-model="form.title" type="text" maxlength="60"
+             class="sv-input w-full px-3.5 py-2.5 text-[15px] mb-4"
+             placeholder="必填，仅明文存储标题" />
+
+      <label class="block text-xs font-medium mb-1.5" style="color: var(--sv-sub)">内容</label>
+      <textarea v-model="form.content" rows="5"
+                class="sv-input w-full px-3.5 py-2.5 text-[15px] mb-4 resize-none"
+                placeholder="必填，加密后存储"></textarea>
+
+      <label class="block text-xs font-medium mb-1.5" style="color: var(--sv-sub)">
+        {{ editingId ? '新查看密钥（留空则不修改）' : '查看密钥' }}
+      </label>
+      <input v-model="form.key" type="password" autocomplete="new-password"
+             class="sv-input w-full px-3.5 py-2.5 text-[15px] mb-1"
+             :placeholder="editingId ? '留空保持原密钥' : '必填，不存储密钥本身'" />
+
+      <p v-if="editorError" class="text-xs text-red-500 mt-2">{{ editorError }}</p>
+
+      <button @click="saveEditor" :disabled="saving"
+              class="w-full h-11 rounded-xl text-white font-semibold text-[15px] mt-4 disabled:opacity-50"
+              style="background: #0A84FF">
+        {{ saving ? '保存中…' : '保存' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- ========== 修改查看密钥面板 ========== -->
+  <div v-if="changeKeyOpen" class="fixed inset-0 z-40 flex items-end sm:items-center justify-center sv-backdrop"
+       @click.self="changeKeyOpen = false">
+    <div class="sv-sheet w-full sm:max-w-md p-5 sm:p-6">
+      <div class="flex items-center justify-between mb-5">
+        <h3 class="text-lg font-semibold">修改查看密钥</h3>
+        <button @click="changeKeyOpen = false" class="text-2xl leading-none" style="color: var(--sv-sub)">×</button>
+      </div>
+
+      <label class="block text-xs font-medium mb-1.5" style="color: var(--sv-sub)">当前密钥</label>
+      <input v-model="changeKeyOld" type="password" autocomplete="off"
+             class="sv-input w-full px-3.5 py-2.5 text-[15px] mb-4" placeholder="用于验证身份" />
+
+      <label class="block text-xs font-medium mb-1.5" style="color: var(--sv-sub)">新密钥</label>
+      <input v-model="changeKeyNew" type="password" autocomplete="new-password"
+             class="sv-input w-full px-3.5 py-2.5 text-[15px] mb-4" placeholder="不可与旧密钥相同" />
+
+      <p v-if="changeKeyError" class="text-xs text-red-500">{{ changeKeyError }}</p>
+
+      <button @click="doChangeKey" :disabled="saving"
+              class="w-full h-11 rounded-xl text-white font-semibold text-[15px] mt-4 disabled:opacity-50"
+              style="background: #0A84FF">
+        {{ saving ? '更新中…' : '确认修改' }}
+      </button>
+    </div>
+  </div>
+
+</teleport>
+<script src="./utils/vue.global.prod.js"></script>
+
+<!-- ================================================================ -->
+<script>
+const { createApp, ref, computed, onMounted } = Vue;
+
+createApp({
+  setup() {
+    /* ---------- 数据文件路径：统一由 GitHub.CONFIG 定义 ---------- */
+    const DATA_FILE = GitHub.CONFIG.SECRETS_FILE;
+
+    /* ---------- 状态 ---------- */
+    const items = ref([]);
+    const loading = ref(true);
+    const loadError = ref('');
+    const saving = ref(false);
+
+    const unlockTarget = ref(null);
+    const unlockKey = ref('');
+    const unlockPlain = ref('');
+    const unlockError = ref('');
+
+    const editorOpen = ref(false);
+    const editingId = ref(null);
+    const form = ref({ title: '', content: '', key: '' });
+    const editorError = ref('');
+
+    const changeKeyOpen = ref(false);
+    const changeKeyOld = ref('');
+    const changeKeyNew = ref('');
+    const changeKeyError = ref('');
+
+    const themeMode = ref(localStorage.getItem('sv-theme') || 'system');
+    const themeLabel = computed(() =>
+      ({ system: '跟随系统', light: '浅色', dark: '深色' })[themeMode.value]
+    );
+
+    /* ---------- 工具 ---------- */
+    const fmtDate = (iso) => {
+      if (!iso) return '';
+      const d = new Date(iso);
+      if (isNaN(d)) return '';
+      return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
+    };
+
+    const nowISO = () => new Date().toISOString();
+
+    const newId = () =>
+      Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+    const sortedItems = computed(() =>
+      [...items.value].sort((a, b) =>
+        (b.createdAt || '').localeCompare(a.createdAt || '')
+      )
+    );
+
+    /* ---------- CryptoJS：PBKDF2 + AES-GCM ---------- */
+    /*
+     * 存储格式：base64( salt[16] + iv[12] + ciphertext + tag[16] )
+     * 密码不存储，仅用于派生密钥；每次新建/改密钥重新生成 salt+iv。
+     */
+    const PBKDF2_ITER = 120000;
+    const SALT_LEN = 16;
+    const IV_LEN = 12;
+
+    function encryptText(plain, password) {
+      const salt = CryptoJS.lib.WordArray.random(SALT_LEN);
+      const iv = CryptoJS.lib.WordArray.random(IV_LEN);
+      const key = CryptoJS.PBKDF2(password, salt, {
+        keySize: 256 / 32,
+        iterations: PBKDF2_ITER,
+        hasher: CryptoJS.algo.SHA256,
+      });
+      // CryptoJS 的 GCM 实现通过 mode 指定；tag 默认拼接在密文末尾
+      const encrypted = CryptoJS.AES.encrypt(plain, key, {
+        iv,
+        mode: CryptoJS.mode.GCM,
+        padding: CryptoJS.pad.NoPadding,
+      });
+      const combined = salt
+        .clone()
+        .concat(iv)
+        .concat(encrypted.ciphertext)
+        .concat(encrypted.tag || CryptoJS.lib.WordArray.create());
+      return CryptoJS.enc.Base64.stringify(combined);
+    }
+
+    function decryptText(cipherBase64, password) {
+      const combined = CryptoJS.enc.Base64.parse(cipherBase64);
+      const words = combined.words;
+      const sigBytes = combined.sigBytes;
+
+      const salt = CryptoJS.lib.WordArray.create(words.slice(0, SALT_LEN / 4), SALT_LEN);
+      const ivStart = SALT_LEN / 4;
+      const iv = CryptoJS.lib.WordArray.create(
+        words.slice(ivStart, ivStart + IV_LEN / 4),
+        IV_LEN
+      );
+
+      const cipherStart = ivStart + IV_LEN / 4;
+      const cipherLen = sigBytes - SALT_LEN - IV_LEN - 16; // 16 = GCM tag
+      if (cipherLen < 0) throw new Error('密文长度异常');
+
+      const ciphertext = CryptoJS.lib.WordArray.create(
+        words.slice(cipherStart, cipherStart + Math.ceil(cipherLen / 4)),
+        cipherLen
+      );
+      const tag = CryptoJS.lib.WordArray.create(
+        words.slice(cipherStart + Math.ceil(cipherLen / 4)),
+        16
+      );
+
+      const key = CryptoJS.PBKDF2(password, salt, {
+        keySize: 256 / 32,
+        iterations: PBKDF2_ITER,
+        hasher: CryptoJS.algo.SHA256,
+      });
+
+      const decrypted = CryptoJS.AES.decrypt(
+        CryptoJS.lib.CipherParams.create({ ciphertext, tag }),
+        key,
+        { iv, mode: CryptoJS.mode.GCM, padding: CryptoJS.pad.NoPadding }
+      );
+
+      const text = decrypted.toString(CryptoJS.enc.Utf8);
+      if (!text) throw new Error('密钥错误或密文损坏');
+      return text;
+    }
+
+    /* ---------- 数据读写（复用 GitHub 模块） ---------- */
+    async function load() {
+      loading.value = true;
+      loadError.value = '';
+      try {
+        await GitHub.init();
+        const { content } = await GitHub.getFile(DATA_FILE);
+        items.value = Array.isArray(content) ? content : [];
+      } catch (e) {
+        loadError.value = '读取失败：' + (e.message || '网络错误');
+      } finally {
+        loading.value = false;
+      }
+    }
+
+    async function writeItems(nextItems, message) {
+      await GitHub.updateFile(DATA_FILE, () => nextItems, message);
+      items.value = nextItems;
+    }
+
+    /* ---------- 解锁流程 ---------- */
+    function openUnlock(item) {
+      unlockTarget.value = item;
+      unlockKey.value = '';
+      unlockPlain.value = '';
+      unlockError.value = '';
+    }
+
+    function closeUnlock() {
+      unlockTarget.value = null;
+      unlockKey.value = '';
+      unlockPlain.value = '';
+      unlockError.value = '';
+    }
+
+    function doUnlock() {
+      unlockError.value = '';
+      if (!unlockKey.value.trim()) {
+        unlockError.value = '请输入查看密钥';
+        return;
+      }
+      try {
+        const plain = decryptText(unlockTarget.value.ciphertext, unlockKey.value);
+        unlockPlain.value = plain;
+      } catch (e) {
+        unlockError.value = '解析错误：密钥不正确或密文已损坏';
+        unlockPlain.value = '';
+      }
+    }
+
+    /* ---------- 新建 / 编辑 ---------- */
+    function openCreate() {
+      editingId.value = null;
+      form.value = { title: '', content: '', key: '' };
+      editorError.value = '';
+      editorOpen.value = true;
+    }
+
+    function startEdit() {
+      const t = unlockTarget.value;
+      editingId.value = t.id;
+      form.value = {
+        title: t.title,
+        content: unlockPlain.value,
+        key: '', // 留空则保留原密钥
+      };
+      editorError.value = '';
+      editorOpen.value = true;
+      unlockTarget.value = null;
+    }
+
+    function closeEditor() {
+      editorOpen.value = false;
+      editorError.value = '';
+    }
+
+    async function saveEditor() {
+      editorError.value = '';
+      const title = form.value.title.trim();
+      const content = form.value.content.trim();
+      const key = form.value.key;
+
+      if (!title) { editorError.value = '标题不能为空'; return; }
+      if (!content) { editorError.value = '内容不能为空'; return; }
+
+      const isEdit = !!editingId.value;
+      if (!isEdit && !key.trim()) {
+        editorError.value = '新建时查看密钥不能为空';
+        return;
+      }
+
+      saving.value = true;
+      try {
+        let ciphertext;
+        if (isEdit) {
+          // 编辑：如果填了新密钥，重新加密；否则保持原密文不变
+          if (key.trim()) {
+            ciphertext = encryptText(content, key.trim());
+          } else {
+            ciphertext = items.value.find((i) => i.id === editingId.value).ciphertext;
+          }
+        } else {
+          ciphertext = encryptText(content, key.trim());
+        }
+
+        const now = nowISO();
+        let next;
+
+        if (isEdit) {
+          next = items.value.map((i) =>
+            i.id === editingId.value
+              ? { ...i, title, ciphertext, updatedAt: now }
+              : i
+          );
+        } else {
+          next = [
+            ...items.value,
+            {
+              id: newId(),
+              title,
+              ciphertext,
+              createdAt: now,
+              updatedAt: now,
+            },
+          ];
+        }
+
+        await writeItems(next, isEdit ? `update secret: ${title}` : `add secret: ${title}`);
+        closeEditor();
+      } catch (e) {
+        editorError.value = '保存失败：' + (e.message || '未知错误');
+      } finally {
+        saving.value = false;
+      }
+    }
+
+    /* ---------- 删除 ---------- */
+    async function confirmDelete() {
+      if (!confirm(`确定删除「${unlockTarget.value.title}」？此操作不可撤销。`)) return;
+      const id = unlockTarget.value.id;
+      const title = unlockTarget.value.title;
+      try {
+        const next = items.value.filter((i) => i.id !== id);
+        await writeItems(next, `delete secret: ${title}`);
+        closeUnlock();
+      } catch (e) {
+        alert('删除失败：' + (e.message || '未知错误'));
+      }
+    }
+
+    /* ---------- 修改查看密钥 ---------- */
+    function startChangeKey() {
+      changeKeyOld.value = '';
+      changeKeyNew.value = '';
+      changeKeyError.value = '';
+      changeKeyOpen.value = true;
+    }
+
+    async function doChangeKey() {
+      changeKeyError.value = '';
+      const oldKey = changeKeyOld.value;
+      const newKey = changeKeyNew.value;
+
+      if (!oldKey.trim()) { changeKeyError.value = '请输入当前密钥'; return; }
+      if (!newKey.trim()) { changeKeyError.value = '新密钥不能为空'; return; }
+      if (oldKey === newKey) { changeKeyError.value = '新密钥不能与旧密钥相同'; return; }
+
+      // 用旧密钥解密，验证身份
+      let plain;
+      try {
+        plain = decryptText(unlockTarget.value.ciphertext, oldKey);
+      } catch (e) {
+        changeKeyError.value = '当前密钥不正确';
+        return;
+      }
+
+      saving.value = true;
+      try {
+        const ciphertext = encryptText(plain, newKey);
+        const now = nowISO();
+        const next = items.value.map((i) =>
+          i.id === unlockTarget.value.id
+            ? { ...i, ciphertext, updatedAt: now }
+            : i
+        );
+        await writeItems(
+          next,
+          `change key: ${unlockTarget.value.title}`
+        );
+
+        // 更新解锁面板中的目标对象，使后续操作使用新密文
+        unlockTarget.value = { ...unlockTarget.value, ciphertext, updatedAt: now };
+        unlockKey.value = newKey; // 让用户后续编辑无需重复输入
+        changeKeyOpen.value = false;
+        alert('查看密钥已更新');
+      } catch (e) {
+        changeKeyError.value = '更新失败：' + (e.message || '未知错误');
+      } finally {
+        saving.value = false;
+      }
+    }
+
+    /* ---------- 主题 ---------- */
+    function applyTheme() {
+      const saved = localStorage.getItem('sv-theme') || 'system';
+      themeMode.value = saved;
+      const dark =
+        saved === 'dark' ||
+        (saved === 'system' &&
+          window.matchMedia('(prefers-color-scheme: dark)').matches);
+      document.documentElement.classList.toggle('dark', dark);
+    }
+
+    function cycleTheme() {
+      const order = ['system', 'light', 'dark'];
+      const next = order[(order.indexOf(themeMode.value) + 1) % order.length];
+      if (next === 'system') localStorage.removeItem('sv-theme');
+      else localStorage.setItem('sv-theme', next);
+      applyTheme();
+    }
+
+    /* ---------- 生命周期 ---------- */
+    onMounted(() => {
+      applyTheme();
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+        if (!localStorage.getItem('sv-theme')) applyTheme();
+      });
+      load();
+    });
+
+    return {
+      items, loading, loadError, sortedItems,
+      unlockTarget, unlockKey, unlockPlain, unlockError,
+      openUnlock, closeUnlock, doUnlock,
+      editorOpen, editingId, form, editorError,
+      openCreate, closeEditor, saveEditor, startEdit,
+      saving, confirmDelete,
+      changeKeyOpen, changeKeyOld, changeKeyNew, changeKeyError,
+      startChangeKey, doChangeKey,
+      themeMode, themeLabel, cycleTheme,
+      fmtDate,
+    };
+  },
+}).mount('#app');
+</script>
+</body>
+</html>
