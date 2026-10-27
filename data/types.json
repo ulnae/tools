@@ -1,37 +1,35 @@
-{
-  "types": [
-    {
-      "id": "2be06627-fddf-4ce6-8b7b-36610738ed57",
-      "name": "美食",
-      "color": "#ffcc00",
-      "created_at": "2026-09-22T06:10:58.277Z",
-      "updated_at": "2026-09-29T02:53:58.424Z"
-    },
-    {
-      "id": "85fda8c7-8a2f-4d93-a2cd-f20731025156",
-      "name": "风景",
-      "color": "#007aff",
-      "created_at": "2026-09-22T06:11:24.074Z",
-      "updated_at": "2026-09-29T02:55:36.095Z"
-    },
-    {
-      "id": "c39c7221-216f-454a-814d-52ac0af788cd",
-      "name": "钓点",
-      "color": "#af52de",
-      "created_at": "2026-09-22T06:11:54.722Z",
-      "updated_at": "2026-09-29T02:54:20.728Z"
-    },
-    {
-      "id": "bf93521a-2d3d-400a-9348-392f70f3f6bb",
-      "name": "避雷",
-      "color": "#ef4444",
-      "created_at": "2026-09-22T06:38:51.939Z"
-    },
-    {
-      "id": "b0e6ad95-b711-4ba8-a5f4-bcde6fb7a394",
-      "name": "游玩",
-      "color": "#00c7be",
-      "created_at": "2026-09-30T09:33:12.796Z"
-    }
-  ]
-}
+[
+  {
+    "id": "2be06627-fddf-4ce6-8b7b-36610738ed57",
+    "name": "美食",
+    "color": "#ffcc00",
+    "created_at": 1790057458277,
+    "updated_at": 1790650438424
+  },
+  {
+    "id": "85fda8c7-8a2f-4d93-a2cd-f20731025156",
+    "name": "风景",
+    "color": "#007aff",
+    "created_at": 1790057484074,
+    "updated_at": 1790650536095
+  },
+  {
+    "id": "c39c7221-216f-454a-814d-52ac0af788cd",
+    "name": "钓点",
+    "color": "#af52de",
+    "created_at": 1790057514722,
+    "updated_at": 1790650460728
+  },
+  {
+    "id": "bf93521a-2d3d-400a-9348-392f70f3f6bb",
+    "name": "避雷",
+    "color": "#ef4444",
+    "created_at": 1790059131939
+  },
+  {
+    "id": "b0e6ad95-b711-4ba8-a5f4-bcde6fb7a394",
+    "name": "游玩",
+    "color": "#00c7be",
+    "created_at": 1790760792796
+  }
+]

@@ -365,8 +365,8 @@
         const normalizeFC = c =>
             (c && c.type === 'FeatureCollection' && Array.isArray(c.features)) ? c : emptyFC();
 
-        const normalizeTypes = c =>
-            (c && Array.isArray(c.types)) ? c : { types: [] };
+        /* types.json 直接为数组：["{...}", "{...}"] */
+        const normalizeTypes = c => Array.isArray(c) ? c : [];
 
         function normalizeHex(v) {
             v = (v || '').trim();
@@ -475,7 +475,7 @@
                 const ICON_CANCEL = `<svg class="w-[16px] h-[16px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>`;
 
                 /* ---------- 响应式状态 ---------- */
-                const typesList = ref([]);
+                const typesList = ref([]);              // types.json 直接为数组
                 const typeData = reactive({});
                 const activeTypeIds = ref([]);
                 const searchKeyword = ref('');
@@ -529,7 +529,7 @@
                 /* ---------- 数据加载 ---------- */
                 async function loadTypes() {
                     const { content } = await GitHub.getFile(GitHub.CONFIG.TYPES_FILE);
-                    typesList.value = normalizeTypes(content).types;
+                    typesList.value = normalizeTypes(content);
                 }
 
                 function loadTypeData(typeId) {
@@ -691,18 +691,20 @@
                     if (RESERVED_COLORS.includes(color)) return showToast('该颜色为系统保留色，请更换', 'error');
 
                     savingType.value = true;
-                    const newType = { id: genId(), name, color, created_at: new Date().toISOString() };
+                    /* 时间统一使用毫秒时间戳 */
+                    const newType = { id: genId(), name, color, created_at: Date.now() };
 
                     try {
+                        /* types.json 直接存数组 */
                         const res = await GitHub.updateFile(GitHub.CONFIG.TYPES_FILE, content => {
                             const data = normalizeTypes(content);
-                            if (data.types.some(t => (t.name || '').toLowerCase() === name.toLowerCase())) throw new Error('类型名称已存在');
-                            if (data.types.some(t => (t.color || '').toLowerCase() === color)) throw new Error('该颜色已被其他类型使用，请更换');
-                            data.types.push(newType);
+                            if (data.some(t => (t.name || '').toLowerCase() === name.toLowerCase())) throw new Error('类型名称已存在');
+                            if (data.some(t => (t.color || '').toLowerCase() === color)) throw new Error('该颜色已被其他类型使用，请更换');
+                            data.push(newType);
                             return data;
                         }, `新增类型「${name}」 - ${new Date().toLocaleString('zh-CN')}`);
 
-                        typesList.value = normalizeTypes(res.content).types;
+                        typesList.value = normalizeTypes(res.content);
                         await ensureTypeDataFile(newType.id);
                         activeTypeIds.value = [...activeTypeIds.value, newType.id];
                         renderMarkers();
@@ -816,7 +818,8 @@
                                 await appendMarkerToType(typeId, {
                                     type: 'Feature',
                                     geometry: { type: 'Point', coordinates: [lng, lat] },
-                                    properties: { title, description: desc, type: typeId, created_at: new Date().toISOString() }
+                                    /* 时间统一使用毫秒时间戳 */
+                                    properties: { title, description: desc, type: typeId, created_at: Date.now() }
                                 });
                                 renderMarkers();
                                 addMode.value = false;

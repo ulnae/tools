@@ -798,9 +798,9 @@
             return emptyFC();
         }
 
+        /* types.json 直接为数组 */
         function normalizeTypes(content) {
-            if (content && Array.isArray(content.types)) return content;
-            return { types: [] };
+            return Array.isArray(content) ? content : [];
         }
 
         function normalizeHex(v) {
@@ -819,13 +819,21 @@
             return `rgba(${r},${g},${b},${a})`;
         }
 
-        function formatDateTime(input) {
-            if (!input) return '';
-            const d = new Date(input);
+        /* 时间以毫秒时间戳存储，读取时按时间戳解析 */
+        function formatDateTime(ts) {
+            if (ts === null || ts === undefined || ts === '') return '';
+            const n = Number(ts);
+            if (!isFinite(n)) return '';
+            const d = new Date(n);
             if (isNaN(d.getTime())) return '';
-            const p = n => String(n).padStart(2, '0');
+            const p = n2 => String(n2).padStart(2, '0');
             return `${d.getFullYear()}/${p(d.getMonth() + 1)}/${p(d.getDate())} ` +
                 `${p(d.getHours())}:${p(d.getMinutes())}`;
+        }
+
+        function toTs(v) {
+            const n = Number(v);
+            return isFinite(n) ? n : 0;
         }
 
         function fmtCoord(c) {
@@ -840,7 +848,7 @@
             const ca = (a.geometry && a.geometry.coordinates) || [];
             const cb = (b.geometry && b.geometry.coordinates) || [];
             return (pa.title || '') === (pb.title || '')
-                && (pa.created_at || '') === (pb.created_at || '')
+                && toTs(pa.created_at) === toTs(pb.created_at)
                 && ca[0] === cb[0] && ca[1] === cb[1];
         }
 
@@ -877,7 +885,7 @@
                 const TAB_OFF = TAB_BASE + ' text-[color:var(--text-3)] hover:text-[color:var(--text-1)]';
 
                 /* ---------- 数据 ---------- */
-                const typesData = ref({ types: [] });
+                const typesData = ref([]);              // 直接为数组
                 const typeData = reactive({});
                 const loadedTypes = reactive({});
                 const loadingTypes = reactive({});
@@ -902,7 +910,7 @@
                 const typePageSize = ref(10);
 
                 /* ---------- 计算属性 ---------- */
-                const allTypes = computed(() => typesData.value.types);
+                const allTypes = computed(() => typesData.value);
 
                 const pendingCount = computed(() => {
                     const ids = allTypes.value.map(t => t.id);
@@ -929,8 +937,12 @@
                             out.push({ typeId: t.id, typeName: t.name, color: t.color, feature: f });
                         });
                     });
-                    out.sort((a, b) => String((b.feature.properties && b.feature.properties.created_at) || '')
-                        .localeCompare(String((a.feature.properties && a.feature.properties.created_at) || '')));
+                    /* 按时间戳降序排列 */
+                    out.sort((a, b) => {
+                        const ta = toTs(a.feature.properties && a.feature.properties.created_at);
+                        const tb = toTs(b.feature.properties && b.feature.properties.created_at);
+                        return tb - ta;
+                    });
                     return out;
                 });
 
@@ -1191,7 +1203,8 @@
                             title,
                             description: desc,
                             type: typeId,
-                            updated_at: new Date().toISOString()
+                            /* 更新时间使用毫秒时间戳 */
+                            updated_at: Date.now()
                         }
                     };
 
@@ -1314,23 +1327,25 @@
                     savingType.value = true;
 
                     try {
+                        /* types.json 直接为数组 */
                         const res = await GitHub.updateFile(GitHub.CONFIG.TYPES_FILE, (content) => {
                             const data = normalizeTypes(content);
-                            const t = data.types.find(x => x.id === typeId);
+                            const t = data.find(x => x.id === typeId);
                             if (!t) throw new Error('该类型已不存在，可能已被其他人删除');
 
-                            if (data.types.some(x => x.id !== typeId &&
+                            if (data.some(x => x.id !== typeId &&
                                 (x.name || '').toLowerCase() === name.toLowerCase())) {
                                 throw new Error('类型名称已存在');
                             }
-                            if (data.types.some(x => x.id !== typeId &&
+                            if (data.some(x => x.id !== typeId &&
                                 (x.color || '').toLowerCase() === color)) {
                                 throw new Error('该颜色已被其他类型使用，请更换');
                             }
 
                             t.name = name;
                             t.color = color;
-                            t.updated_at = new Date().toISOString();
+                            /* 更新时间使用毫秒时间戳 */
+                            t.updated_at = Date.now();
                             return data;
                         }, `更新类型「${name}」 - ${new Date().toLocaleString('zh-CN')}`);
 
@@ -1363,9 +1378,9 @@
                     try {
                         await GitHub.updateFile(GitHub.CONFIG.TYPES_FILE, (content) => {
                             const data = normalizeTypes(content);
-                            const idx = data.types.findIndex(x => x.id === typeId);
+                            const idx = data.findIndex(x => x.id === typeId);
                             if (idx === -1) return null;
-                            data.types.splice(idx, 1);
+                            data.splice(idx, 1);
                             return data;
                         }, `删除类型「${t.name}」 - ${stamp}`);
 
@@ -1386,7 +1401,7 @@
                         delete loadingTypes[typeId];
                         delete typeLoadPromises[typeId];
 
-                        typesData.value.types = typesData.value.types.filter(x => x.id !== typeId);
+                        typesData.value = typesData.value.filter(x => x.id !== typeId);
 
                         toast(fileDeleted ? '类型与数据文件已删除' : '类型已删除', 'success');
                     } catch (e) {
