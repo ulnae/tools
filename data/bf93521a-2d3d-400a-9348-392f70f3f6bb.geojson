@@ -1,22 +1,4 @@
 {
   "type": "FeatureCollection",
-  "features": [
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          113.4992071225911,
-          34.868738754988485
-        ]
-      },
-      "properties": {
-        "title": "有点远",
-        "description": "哈哈哈哈-edit",
-        "type": "bf93521a-2d3d-400a-9348-392f70f3f6bb",
-        "created_at": 1793071090524,
-        "updated_at": 1793071104876
-      }
-    }
-  ]
+  "features": []
 }
