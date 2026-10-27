@@ -22,7 +22,6 @@
             theme: {
                 extend: {
                     colors: {
-                        base: 'var(--bg)',
                         surface: 'var(--surface)',
                         'surface-2': 'var(--surface-2)',
                         border: 'var(--border)',
@@ -43,11 +42,7 @@
                     },
                     boxShadow: {
                         sm: 'var(--shadow-sm)',
-                        md: 'var(--shadow-md)',
                         lg: 'var(--shadow-lg)',
-                    },
-                    fontFamily: {
-                        sans: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Text"', '"Helvetica Neue"', '"PingFang SC"', 'sans-serif'],
                     },
                     keyframes: {
                         pageIn: {
@@ -94,7 +89,6 @@
             --danger-soft: rgba(255, 59, 48, 0.1);
             --hover: #f5f5f7;
             --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
-            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
             --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.18);
         }
 
@@ -115,7 +109,6 @@
                 --danger-soft: rgba(255, 69, 58, 0.15);
                 --hover: #2c2c2e;
                 --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
-                --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.45);
                 --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.65);
             }
         }
@@ -280,25 +273,27 @@
             <transition-group v-else name="list" tag="ul"
                 class="list-none p-0 m-0 flex flex-col gap-2 animate-fade-in">
                 <li v-for="item in filteredItems" :key="item.id"
-                    class="flex items-center gap-4 px-4 py-3.5 cursor-pointer bg-surface border border-border rounded-14 transition-all duration-150 hover:border-border-strong hover:shadow-sm active:scale-[0.99] active:bg-surface-2"
+                    class="flex flex-col gap-1 px-4 py-3.5 cursor-pointer bg-surface border border-border rounded-14 transition-all duration-150 hover:border-border-strong hover:shadow-sm active:scale-[0.99] active:bg-surface-2"
                     @click="openUnlock(item)">
-                    <div class="w-[46px] h-[46px] rounded-[13px] flex items-center justify-center shrink-0 text-white shadow-[inset_0_-2px_6px_rgba(0,0,0,0.15),0_2px_6px_rgba(0,0,0,0.1)]"
-                        :style="getIconStyle(item)">
-                        <icon name="lock" :size="22"></icon>
-                    </div>
-                    <div class="flex-1 min-w-0 overflow-hidden">
-                        <div class="text-base font-semibold text-fg tracking-[-0.005em] truncate max-w-full"
-                            :title="item.title">{{ item.title }}</div>
-                        <div class="mt-1 flex flex-col gap-0.5 text-xs text-fg-2 leading-snug">
-                            <span v-if="isEdited(item)" class="inline-flex items-center gap-1 min-w-0">
-                                <icon name="clock" :size="12" class="text-fg-3 shrink-0"></icon>
-                                <span class="truncate leading-snug">编辑 {{ fmtEditTime(item.updatedAt) }}</span>
-                            </span>
-                            <span v-else class="inline-flex items-center gap-1 min-w-0">
-                                <icon name="calendar" :size="12" class="text-fg-3 shrink-0"></icon>
-                                <span class="truncate leading-snug">创建 {{ fmtDate(item.createdAt) }}</span>
-                            </span>
-                        </div>
+
+                    <!-- 标题 -->
+                    <div class="text-base font-semibold text-fg tracking-[-0.005em] truncate max-w-full"
+                        :title="item.title">{{ item.title }}</div>
+
+                    <!-- ID -->
+                    <div class="text-[11px] text-fg-3 font-mono leading-snug truncate max-w-full"
+                        :title="item.id">ID：{{ item.id }}</div>
+
+                    <!-- 创建时间 + 修改时间（同一行，图标表示，显示到秒；未修改时不显示修改时间） -->
+                    <div class="flex items-center gap-x-3 gap-y-1 flex-wrap text-xs text-fg-2 leading-snug">
+                        <span class="inline-flex items-center gap-1 min-w-0" title="创建时间">
+                            <icon name="calendar" :size="12" class="text-fg-3 shrink-0"></icon>
+                            <span class="truncate">{{ fmtDate(item.createdAt) }}</span>
+                        </span>
+                        <span v-if="isEdited(item)" class="inline-flex items-center gap-1 min-w-0" title="修改时间">
+                            <icon name="clock" :size="12" class="text-fg-3 shrink-0"></icon>
+                            <span class="truncate">{{ fmtEditTime(item.updatedAt) }}</span>
+                        </span>
                     </div>
                 </li>
             </transition-group>
@@ -320,7 +315,7 @@
         <transition name="modal">
             <div v-if="unlockTarget"
                 class="fixed inset-0 z-50 flex justify-center items-end sm:items-center sm:p-5 bg-black/45 sm:bg-black/50"
-                :class="{ 'pointer-events-none !bg-black/25': editorOpen }" @click.self="closeUnlock">
+                :class="{ 'pointer-events-none !bg-black/25': editorOpen }">
                 <div class="modal-sheet">
                     <div class="flex items-center justify-between mb-[18px]">
                         <h3 class="text-[17px] font-semibold m-0">{{ unlockPlain ? '查看内容' : '解锁记录' }}</h3>
@@ -388,7 +383,7 @@
         <transition name="modal">
             <div v-if="editorOpen"
                 class="fixed inset-0 z-50 flex justify-center items-end sm:items-center sm:p-5 bg-black/45 sm:bg-black/50"
-                :class="{ '!bg-black/25': !!unlockTarget }" @click.self="closeEditor">
+                :class="{ '!bg-black/25': !!unlockTarget }">
                 <div class="modal-sheet">
                     <div class="flex items-center justify-between mb-[18px]">
                         <h3 class="text-[17px] font-semibold m-0">{{ editingId ? '编辑记录' : '新建记录' }}</h3>
@@ -442,8 +437,7 @@
         ================================================================ -->
         <transition name="confirm">
             <div v-if="confirmState.show"
-                class="fixed inset-0 z-[60] flex items-center justify-center p-5 bg-black/45 sm:bg-black/50"
-                @click.self="confirmNo">
+                class="fixed inset-0 z-[60] flex items-center justify-center p-5 bg-black/45 sm:bg-black/50">
                 <div
                     class="confirm-dialog w-full max-w-[320px] bg-surface border border-border rounded-2xl px-5 pt-6 pb-4 text-center shadow-lg">
                     <h3 class="text-base font-semibold m-0 mb-2 text-fg">{{ confirmState.title }}</h3>
@@ -497,18 +491,6 @@
       style="display:inline-block;vertical-align:middle;flex-shrink:0"
       v-html="path"></svg>`,
         };
-
-        /* ============================== 列表图标渐变 ============================== */
-        const ICON_GRADIENTS = [
-            ['#409cff', '#0071e3'],
-            ['#5ac96f', '#34c759'],
-            ['#ffb340', '#ff9500'],
-            ['#ff6b5e', '#ff3b30'],
-            ['#c47ee7', '#af52de'],
-            ['#ff5d7a', '#ff2d55'],
-            ['#7a78e0', '#5856d6'],
-            ['#3ed5ce', '#00c7be'],
-        ];
 
         /* ============================== 应用 ============================== */
         const app = createApp({
@@ -578,7 +560,7 @@
                     try {
                         if (typeof dayjs === 'function') {
                             const d = dayjs(ts);
-                            if (d.isValid()) return d.format('YYYY/MM/DD HH:mm');
+                            if (d.isValid()) return d.format('YYYY/MM/DD HH:mm:ss');
                         }
                     } catch (_) { }
                     const d = new Date(ts);
@@ -588,21 +570,14 @@
                     const day = String(d.getDate()).padStart(2, '0');
                     const hh = String(d.getHours()).padStart(2, '0');
                     const mm = String(d.getMinutes()).padStart(2, '0');
-                    return `${y}/${m}/${day} ${hh}:${mm}`;
+                    const ss = String(d.getSeconds()).padStart(2, '0');
+                    return `${y}/${m}/${day} ${hh}:${mm}:${ss}`;
                 };
                 const fmtDate = fmtDateTime;
                 const fmtEditTime = fmtDateTime;
 
                 const isEdited = (item) => !!(item && item.updatedAt && item.createdAt && item.updatedAt !== item.createdAt);
                 const newId = () => crypto.randomUUID();
-
-                function getIconStyle(item) {
-                    const key = item.id || item.title || '';
-                    let hash = 0;
-                    for (let i = 0; i < key.length; i++) hash = ((hash << 5) - hash + key.charCodeAt(i)) | 0;
-                    const [start, end] = ICON_GRADIENTS[Math.abs(hash) % ICON_GRADIENTS.length];
-                    return { background: `linear-gradient(135deg, ${start}, ${end})` };
-                }
 
                 const sortedItems = computed(() =>
                     [...items.value].sort((a, b) => (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0))
@@ -815,13 +790,13 @@
 
                 return {
                     items, loading, loadError, saving, deleting,
-                    searchQuery, sortedItems, filteredItems, clearSearch,
+                    searchQuery, filteredItems, clearSearch,
                     unlockTarget, unlockKey, unlockPlain, unlockError,
                     editorOpen, editingId, form, editorError,
                     openUnlock, closeUnlock, doUnlock,
                     openCreate, closeEditor, saveEditor, startEdit,
                     confirmDelete,
-                    load, fmtDate, fmtEditTime, isEdited, getIconStyle,
+                    load, fmtDate, fmtEditTime, isEdited,
                     confirmState, confirmYes, confirmNo,
                 };
             },
