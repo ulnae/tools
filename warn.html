@@ -34,13 +34,15 @@
   input { font-variant-numeric: tabular-nums; }
   @keyframes itemIn { from { opacity: 0; transform: translateY(-6px); } }
   .animate-item { animation: itemIn .28s cubic-bezier(.22, 1, .36, 1); }
+  /* 关键修复：挂载前隐藏未编译的原始模板，避免 v-for 模板项被提前渲染导致高度跳变 */
+  [v-cloak] { display: none !important; }
 </style>
 </head>
 
 <body class="min-h-screen bg-[#f2f2f7] font-sans text-black transition-colors duration-300
              dark:bg-black dark:text-white">
 
-<div id="app" class="mx-auto w-full max-w-lg px-4 pt-[max(2rem,env(safe-area-inset-top))] pb-24">
+<div id="app" v-cloak class="mx-auto w-full max-w-lg px-4 pt-[max(2rem,env(safe-area-inset-top))] pb-24">
 
   <!-- 头部 -->
   <header class="px-1">
@@ -314,9 +316,8 @@
 
         reminders.value.forEach(function (r) {
           var target = r.hh * 3600 + r.mm * 60 + r.ss;
-          // 今天还没触发过，且已到点（且在容错窗口内）→ 触发
           if (r.lastFired !== today && cur >= target && cur - target < win) {
-            r.lastFired = today;   // 标记今天已完成，明天自然再次触发
+            r.lastFired = today;
             changed = true;
             fire(r);
           }
@@ -338,7 +339,7 @@
         var d = new Date(now.value);
         d.setHours(r.hh, r.mm, r.ss, 0);
         var diff = d.getTime() - now.value;
-        if (diff < 0) diff += 86400000;          // 今天已过点 → 算到明天
+        if (diff < 0) diff += 86400000;
 
         var t = Math.ceil(diff / 1000);
         if (t <= 5) return '马上提醒';
@@ -394,7 +395,7 @@
           id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
           title: title.value.trim() || '时间到啦',
           hh: h, mm: m, ss: s,
-          lastFired: passed ? today : null   // 今天已过点 → 今天不再触发
+          lastFired: passed ? today : null
         });
 
         sortList();
@@ -415,17 +416,14 @@
         now.value = Date.now();
         quick(5);
 
-        // 保活 1：内联 Worker 计时（后台标签页不会被节流到 1 分钟）
         try {
           var src = 'let i=0;onmessage=()=>{clearInterval(i);i=setInterval(()=>postMessage(0),1000)};';
           var w = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
           w.onmessage = function () { tick(); };
-        } catch (e) { /* 不支持时由下方 setInterval 兜底 */ }
+        } catch (e) { /* ignore */ }
 
-        // 保活 2：主线程兜底定时器
         setInterval(function () { tick(); }, 1000);
 
-        // 保活 3：屏幕唤醒锁，避免息屏后页面被冻结
         var lock = function () {
           try {
             if ('wakeLock' in navigator) navigator.wakeLock.request('screen').catch(function () {});
