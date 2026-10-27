@@ -627,8 +627,9 @@
 
         const now = () => dayjs().format('YYYY/MM/DD HH:mm');
 
-        const formatDateTime = iso => (iso && dayjs(iso).isValid())
-            ? dayjs(iso).format('YYYY/MM/DD HH:mm')
+        /* created_at 一律为毫秒时间戳 */
+        const formatDateTime = ts => (typeof ts === 'number' && ts > 0)
+            ? dayjs(ts).format('YYYY/MM/DD HH:mm')
             : '';
 
         function summary(s, n = 70) {
@@ -641,9 +642,9 @@
             return String(v == null ? '' : v).trim();
         }
 
+        /* 存储结构：顶层数组 */
         function normalizeFeedback(content) {
-            if (content && Array.isArray(content.feedback)) return content;
-            return { feedback: [] };
+            return Array.isArray(content) ? content : [];
         }
 
         function hexToRgba(hex, a) {
@@ -727,7 +728,7 @@
                             }
                             return true;
                         })
-                        .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')));
+                        .sort((a, b) => (b.created_at || 0) - (a.created_at || 0));
                 });
 
                 const totalPages = computed(() =>
@@ -833,7 +834,7 @@
 
                     try {
                         const { content } = await GitHub.getFile(GitHub.CONFIG.FEEDBACK_FILE);
-                        feedback.value = normalizeFeedback(content).feedback.filter(x => x && x.id);
+                        feedback.value = normalizeFeedback(content).filter(x => x && x.id);
                         selected.clear();
                         syncSelectedSize();
                         setStatus('ok', `已加载 ${feedback.value.length} 条反馈`);
@@ -854,11 +855,11 @@
                 async function deleteByIds(ids) {
                     const idSet = new Set(ids);
                     const res = await GitHub.updateFile(GitHub.CONFIG.FEEDBACK_FILE, (content) => {
-                        const data = normalizeFeedback(content);
-                        const before = data.feedback.length;
-                        data.feedback = data.feedback.filter(x => !(x && idSet.has(x.id)));
-                        if (data.feedback.length === before) return null;
-                        return data;
+                        const list = normalizeFeedback(content);
+                        const before = list.length;
+                        const next = list.filter(x => !(x && idSet.has(x.id)));
+                        if (next.length === before) return null;
+                        return next;
                     }, `删除意见反馈 ${ids.length} 条 - ${now()}`);
 
                     ids.forEach(id => selected.delete(id));

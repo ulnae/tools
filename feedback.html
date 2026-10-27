@@ -382,8 +382,8 @@
         }
 
         function normalizeFeedback(content) {
-            if (content && Array.isArray(content.feedback)) return content;
-            return { feedback: [] };
+            if (content && Array.isArray(content)) return content;
+            return [];
         }
 
         const TOAST_BG = {
@@ -461,13 +461,13 @@
                         content: text,
                         contact: contactVal,
                         source: getSourceFromUrl(),
-                        created_at: new Date().toISOString()
+                        created_at: Date.now()
                     };
 
                     try {
                         await GitHub.updateFile(GitHub.CONFIG.FEEDBACK_FILE, (c) => {
                             const data = normalizeFeedback(c);
-                            data.feedback.push(item);
+                            data.push(item);
                             return data;
                         }, `新增意见反馈（${item.type}） - ${now()}`);
 
