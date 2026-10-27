@@ -289,7 +289,7 @@
       </div>
     </div>
 
-    <div class="scroll-y safe-bottom flex-1 overflow-y-auto overscroll-contain px-3 pb-6">
+    <div class="scroll-y flex-1 overflow-y-auto overscroll-contain px-3 pb-4">
       <!-- 空状态 -->
       <div v-if="!novels.length"
            class="flex flex-col items-center justify-center gap-4 px-4 py-20 text-center">
@@ -352,6 +352,21 @@
           </div>
         </li>
       </ul>
+    </div>
+
+    <!-- 反馈入口 -->
+    <div class="safe-bottom shrink-0 border-t border-app-sep/25 px-5 py-3">
+      <div class="flex items-center justify-between gap-2 text-[11.5px] leading-none">
+        <span class="text-app-muted/80">本地阅读 · 数据不上传</span>
+        <a
+          href="./feedback?f=小说阅读器"
+          target="_blank"
+          rel="noopener"
+          class="press rounded-md px-1.5 py-0.5 font-semibold text-app-accent
+                 transition hover:underline focus-visible:outline-none focus-visible:ring-2
+                 focus-visible:ring-app-accent/30"
+        >意见反馈</a>
+      </div>
     </div>
   </aside>
 

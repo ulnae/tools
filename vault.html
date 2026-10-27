@@ -303,11 +303,15 @@
                 </li>
             </transition-group>
 
-            <p v-if="items.length > 0"
-                class="text-center text-xs text-fg-3 mt-6 flex items-center justify-center gap-1.5 leading-normal">
-                <icon name="shield" :size="13"></icon>
-                <span>内容使用 AES-256-GCM 加密存储，密钥不保存于任何地方</span>
-            </p>
+            <!-- ========== 页脚（单行） ========== -->
+            <footer
+                class="mt-6 flex items-center justify-center gap-1.5 text-xs text-fg-3 whitespace-nowrap leading-normal">
+                <icon name="shield" :size="13" class="shrink-0"></icon>
+                <span>AES-256 加密 · 密钥不保存</span>
+                <span class="mx-0.5">·</span>
+                <a href="./feedback?f=加密记录" target="_blank" rel="noopener"
+                    class="text-accent transition-colors hover:underline">意见反馈</a>
+            </footer>
         </div>
 
         <!-- ================================================================
