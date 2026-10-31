@@ -82,6 +82,22 @@
         "created_at": 1791087385009,
         "updated_at": 1791170810430
       }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.76689105391405,
+          30.296441609379237
+        ]
+      },
+      "properties": {
+        "title": "鲈鱼位置",
+        "description": "",
+        "type": "c39c7221-216f-454a-814d-52ac0af788cd",
+        "created_at": 1793456693328
+      }
     }
   ]
 }
