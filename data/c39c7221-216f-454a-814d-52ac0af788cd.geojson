@@ -114,6 +114,22 @@
         "type": "c39c7221-216f-454a-814d-52ac0af788cd",
         "created_at": 1793695567606
       }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          118.97472189606574,
+          38.01685507042034
+        ]
+      },
+      "properties": {
+        "title": "中心渔港",
+        "description": "海钓鲈鱼、海鲇鱼",
+        "type": "c39c7221-216f-454a-814d-52ac0af788cd",
+        "created_at": 1793695662134
+      }
     }
   ]
 }
