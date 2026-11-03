@@ -98,6 +98,22 @@
         "type": "c39c7221-216f-454a-814d-52ac0af788cd",
         "created_at": 1793456693328
       }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.09482070399243,
+          37.91342430212459
+        ]
+      },
+      "properties": {
+        "title": "孤东海堤",
+        "description": "鲈鱼、海鲇鱼",
+        "type": "c39c7221-216f-454a-814d-52ac0af788cd",
+        "created_at": 1793695567606
+      }
     }
   ]
 }
