@@ -80,9 +80,9 @@ window.GitHub = (function () {
     }
 
     /** 读取 JSON：永远返回 { content, sha }，不存在/解析失败时 content 为 null */
-    async function getFile(path) {
+    async function getFile(path, branch) {
         try {
-            const data = await api(path);
+            const data = await api(branch ? `${path}?ref=${encodeURIComponent(branch)}` : path);
             const raw = atob((data.content || '').replace(/\s/g, ''));
             if (!raw) return { content: null, sha: data.sha };
             const text = decodeURIComponent(escape(raw));
@@ -98,18 +98,18 @@ window.GitHub = (function () {
         }
     }
 
-    async function putFile(path, obj, message, sha) {
+    async function putFile(path, obj, message, sha, branch) {
         const content = btoa(unescape(encodeURIComponent(JSON.stringify(obj, null, 2))));
-        const body = { message, content, branch: CONFIG.BRANCH };
+        const body = { message, content, branch: branch || CONFIG.BRANCH };
         if (sha) body.sha = sha;
         return api(path, { method: 'PUT', body: JSON.stringify(body) });
     }
 
     /** 删除文件；文件不存在时返回 false（不抛错） */
-    async function deleteFile(path, message) {
+    async function deleteFile(path, message, branch) {
         let sha = null;
         try {
-            const data = await api(path);
+            const data = await api(branch ? `${path}?ref=${encodeURIComponent(branch)}` : path);
             sha = data.sha;
         } catch (e) {
             if (/not found|404/i.test(e.message)) return false;
@@ -117,7 +117,7 @@ window.GitHub = (function () {
         }
         await api(path, {
             method: 'DELETE',
-            body: JSON.stringify({ message, sha, branch: CONFIG.BRANCH })
+            body: JSON.stringify({ message, sha, branch: branch || CONFIG.BRANCH })
         });
         return true;
     }
@@ -128,16 +128,16 @@ window.GitHub = (function () {
      *   - 新对象  → 提交写入
      *   - null/undefined → 视为无需修改，跳过（返回 skipped: true）
      */
-    async function updateFile(path, mutate, message, maxAttempts = 4) {
+    async function updateFile(path, mutate, message, maxAttempts = 4, branch) {
         let lastErr = null;
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-            const { content, sha } = await getFile(path);
+            const { content, sha } = await getFile(path, branch);
             const next = await mutate(content, sha);
             if (next === null || next === undefined) {
                 return { content, sha, skipped: true };
             }
             try {
-                const res = await putFile(path, next, message, sha);
+                const res = await putFile(path, next, message, sha, branch);
                 return { content: next, sha: res.content.sha, skipped: false };
             } catch (err) {
                 lastErr = err;
