@@ -436,31 +436,72 @@
         const buildNavigationUrl = (lat, lng) =>
             `https://uri.amap.com/navigation?to=${lng.toFixed(6)},${lat.toFixed(6)},标点&mode=car&policy=1`;
 
-        /* ---------- IP 定位 ---------- */
+        /* ---------- IP 定位 ----------
+           优先 ipwho.is（免 Key、HTTPS、CORS 开放），失败后依次尝试其他公共接口 */
         async function fetchIpLocation() {
+            const toGcj = (lng, lat) => wgs84ToGcj02(lng, lat).reverse();
             const services = [
-                async () => {
-                    const d = await (await fetch('https://api.vore.top/api/IPdata')).json();
-                    const lat = parseFloat(d?.ipdata?.lat), lng = parseFloat(d?.ipdata?.lng);
-                    if (!isFinite(lat) || !isFinite(lng)) throw 0;
-                    return wgs84ToGcj02(lng, lat).reverse();
-                },
-                async () => {
-                    const d = await (await fetch('https://ip.useragentinfo.com/json')).json();
-                    const lat = parseFloat(d.latitude), lng = parseFloat(d.longitude);
-                    if (!isFinite(lat) || !isFinite(lng)) throw 0;
-                    return wgs84ToGcj02(lng, lat).reverse();
-                },
+                /* 1. ipwho.is */
                 async () => {
                     const d = await (await fetch('https://ipwho.is/')).json();
                     if (d.success === false || typeof d.latitude !== 'number' || typeof d.longitude !== 'number') throw 0;
-                    return wgs84ToGcj02(d.longitude, d.latitude).reverse();
+                    return toGcj(d.longitude, d.latitude);
+                },
+                /* 2. GeoJS */
+                async () => {
+                    const d = await (await fetch('https://get.geojs.io/v1/ip/geo.json')).json();
+                    const lat = parseFloat(d.latitude), lng = parseFloat(d.longitude);
+                    if (!isFinite(lat) || !isFinite(lng)) throw 0;
+                    return toGcj(lng, lat);
+                },
+                /* 3. ipapi.co */
+                async () => {
+                    const d = await (await fetch('https://ipapi.co/json/')).json();
+                    const lat = parseFloat(d.latitude), lng = parseFloat(d.longitude);
+                    if (!isFinite(lat) || !isFinite(lng)) throw 0;
+                    return toGcj(lng, lat);
+                },
+                /* 4. ipinfo.io（loc 为 "纬度,经度" 字符串） */
+                async () => {
+                    const d = await (await fetch('https://ipinfo.io/json')).json();
+                    const [lat, lng] = String(d.loc || '').split(',').map(parseFloat);
+                    if (!isFinite(lat) || !isFinite(lng)) throw 0;
+                    return toGcj(lng, lat);
+                },
+                /* 5. freeipapi.com */
+                async () => {
+                    const d = await (await fetch('https://freeipapi.com/api/json')).json();
+                    const lat = parseFloat(d.latitude), lng = parseFloat(d.longitude);
+                    if (!isFinite(lat) || !isFinite(lng)) throw 0;
+                    return toGcj(lng, lat);
                 }
             ];
             for (const fn of services) {
                 try { return await fn(); } catch { /* 下一个服务 */ }
             }
             return null;
+        }
+
+        /* 浏览器原生定位（GPS/WiFi，米级精度；需 HTTPS + 用户授权，失败/拒绝/超时返回 null 降级到 IP 定位） */
+        function fetchBrowserLocation(timeoutMs = 10000) {
+            return new Promise(resolve => {
+                if (!window.isSecureContext || !('geolocation' in navigator)) return resolve(null);
+                let done = false;
+                const timer = setTimeout(() => { if (!done) { done = true; resolve(null); } }, timeoutMs);
+                navigator.geolocation.getCurrentPosition(
+                    pos => {
+                        if (!done) {
+                            done = true; clearTimeout(timer);
+                            const c = pos.coords;
+                            if (isFinite(c.latitude) && isFinite(c.longitude)) {
+                                resolve({ lat: c.latitude, lng: c.longitude, accuracy: c.accuracy });
+                            } else resolve(null);
+                        }
+                    },
+                    () => { if (!done) { done = true; clearTimeout(timer); resolve(null); } },
+                    { enableHighAccuracy: true, timeout: timeoutMs, maximumAge: 60000 }
+                );
+            });
         }
 
         /* ============================================================
@@ -891,8 +932,18 @@
 
                     renderMarkers();
 
-                    const ipLoc = await ipPromise;
-                    if (ipLoc) map.flyTo(ipLoc, CONFIG.IP_ZOOM, { duration: 1.5 });
+                    /* 优先浏览器高精度定位（GPS/WiFi，米级），失败再降级 IP 定位（城市级，仅参考） */
+                    const geoLoc = CONFIG.USE_IP_LOCATION ? await fetchBrowserLocation() : null;
+                    if (geoLoc) {
+                        const p = wgs84ToGcj02(geoLoc.lng, geoLoc.lat).reverse();
+                        map.flyTo(p, Math.max(CONFIG.IP_ZOOM, 15), { duration: 1.5 });
+                    } else {
+                        const ipLoc = await ipPromise;
+                        if (ipLoc) {
+                            map.flyTo(ipLoc, CONFIG.IP_ZOOM, { duration: 1.5 });
+                            showToast('使用 IP 定位，精度有限仅供参考', 'info');
+                        }
+                    }
 
                     /* 事件绑定 */
                     if (mobileMQ.addEventListener) mobileMQ.addEventListener('change', onMQChange);
