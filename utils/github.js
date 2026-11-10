@@ -64,6 +64,10 @@ window.GitHub = (function () {
         const url = `https://api.github.com/repos/${CONFIG.OWNER}/${CONFIG.REPO}/contents/${path}`;
         const res = await fetch(url, {
             ...options,
+            /* GitHub 对 contents 接口返回 Cache-Control: public, max-age=60，
+               浏览器会缓存 GET 60 秒：写入后再读会拿到旧内容与旧 sha，
+               PUT 必然 409 失败。这里强制绕过 HTTP 缓存。 */
+            cache: 'no-store',
             headers: {
                 'Accept': 'application/vnd.github+json',
                 'Authorization': `Bearer ${CONFIG.TOKEN}`,

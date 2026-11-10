@@ -1,34 +1,33 @@
 /**
- * fingerprint.js — 浏览器指纹 + 访问记录（FingerprintJS v4 + GitHub 共享存储）
+ * fingerprint.js — 浏览器指纹 + 云端访问统计（FingerprintJS v4 + GitHub 仓库存储）
  *
  * 引入方式（绝对地址，任意目录层级通用）：
  *   <script src="https://ulnae.github.io/tools/utils/tracker-config.js"></script>
  *   <script src="https://ulnae.github.io/tools/utils/fp.min.js"></script>
  *   <script src="https://ulnae.github.io/tools/utils/fingerprint.js"></script>
  *
- * 引入后自动完成：
- *   1. 获取浏览器指纹，输出到控制台；
- *   2. 记录本次访问（时间 / 指纹 / 页面 / UA 等）到本地 localStorage；
- *   3. 启用 GitHub 共享存储时，把记录追加到仓库 stats 分支的 data/visits.json。
+ * 数据全部存放在仓库（默认 stats 分支），**不使用 localStorage**：
+ *   data/users.json        用户索引
+ *                          { updated, users: [ { id, fp, created, ua, screen, lang, tz } ] }
+ *   data/visits/{id}.json  单个用户的访问数据
+ *                          { id, fp, created, updated, total, pages, days, visits: [...] }
+ *
+ * 执行流程：
+ *   1. 计算浏览器指纹并输出到控制台；
+ *   2. 读取 users.json，用指纹匹配已有用户；
+ *   3. 匹配不到 → 新建用户（生成 id）并写入 users.json；
+ *   4. 把本次访问（页面 / 时间 / 来源等）追加到该用户自己的 {id}.json 里。
+ *
+ * 失败即放弃：不回写本地、不排队补传（按需求不做补偿），只在控制台告警。
  *
  * 对外 API（window.VisitTracker）：
- *   await VisitTracker.ready                 // 初始化完成的 Promise
- *   await VisitTracker.track({ extra: 1 })   // 手动补记一次访问
- *   await VisitTracker.getStats()            // { total, pages, days, fps, updated }
- *   await VisitTracker.getVisits(50)         // 最近 N 条访问明细
- *   VisitTracker.mode                        // 'github' | 'local'
- *   await VisitTracker.sync()                // 把本地未同步记录补传云端
- *   VisitTracker.clearLocal()                // 清空本地记录（不动云端）
- *
- * 两种存储模式（按优先级自动选择）：
- *   1. github：CFG.github = true 时，把明细写入 GitHub 仓库的独立分支
- *      （默认 data/visits.json @ stats 分支），免注册、免登录、写入不触发 Pages 构建；
- *   2. local ：GitHub 不可用时只写 localStorage，功能不中断，恢复后 sync() 补传。
- *
- * 设计要点：
- *   - 本地优先：任何环境下都能记录，离线/请求失败不影响主流程；
- *   - 只保存访客标识的短哈希，不把原始指纹写进公开仓库；
- *   - 明细用「读-改-写 + sha 冲突重试」保证并发追加不丢数据。
+ *   await VisitTracker.ready                  // 初始化完成（含自动上报）
+ *   await VisitTracker.track()                // 手动记录一次访问
+ *   await VisitTracker.getUsers()             // 用户索引数组
+ *   await VisitTracker.getUser(id)            // 单个用户的完整数据
+ *   await VisitTracker.removeVisit(id, vid)   // 删除该用户的一条访问
+ *   await VisitTracker.removeUser(id)         // 删除用户（索引 + 数据文件）
+ *   await VisitTracker.clearAll()             // 清空全部用户与数据
  *
  * 依赖库：FingerprintJS v4.6.2（BSL 1.1，Change Date 后转 MIT）
  */
@@ -43,17 +42,13 @@
     const CFG = {
         disableAutoTrack: false,          // true = 不自动记录本次访问（统计页等后台页面使用）
 
-        /* GitHub 共享存储：用仓库的独立分支存放访问明细。
-           零成本、无需注册新服务，写入不触发 Pages 构建（不在 master 上）。 */
-        github: false,
-        ghBranch: 'stats',                // 数据所在分支
-        ghPath: 'data/visits.json',       // 数据文件路径
+        ghBranch: 'stats',                // 数据所在分支（避开 master，写入不触发 Pages 构建）
+        usersPath: 'data/users.json',     // 用户索引
+        visitsDir: 'data/visits',         // 单用户数据目录，文件名即用户 id
         ghModule: '',                     // github.js 地址，留空 = 自动按同目录加载
-        maxCloudVisits: 300,              // 云端明细上限
 
-        localVisits: 'tb:local:visits',   // 本地：明细镜像（含未同步记录）
-        maxLocalVisits: 300,              // 本地明细上限
-        keepDays: 90,                     // 统计保留天数
+        maxVisits: 200,                   // 单个用户保留的访问明细条数（total/pages/days 仍累计全部）
+        keepDays: 90,                     // 按天统计的保留天数
         debug: true
     };
 
@@ -70,18 +65,13 @@
     /* ==================== 小工具 ==================== */
     const pad = n => String(n).padStart(2, '0');
     const dayKey = (d = new Date()) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-    const rid = () => Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+    const rnd = (n = 5) => Math.random().toString(36).slice(2, 2 + n);
 
-    function readJSON(key, fallback) {
-        try {
-            const raw = localStorage.getItem(key);
-            return raw ? JSON.parse(raw) : fallback;
-        } catch (_) { return fallback; }
-    }
-    function writeJSON(key, value) {
-        try { localStorage.setItem(key, JSON.stringify(value)); return true; }
-        catch (_) { return false; }
-    }
+    /* 用户 id：u + 时间戳36进制 + 随机串，直接当文件名用 */
+    const newUserId = () => 'u' + Date.now().toString(36) + rnd(4);
+    const newVisitId = () => 'v' + Date.now().toString(36) + rnd(5);
+
+    const userFilePath = id => `${CFG.visitsDir}/${id}.json`;
 
     /* ==================== 1. 指纹 ==================== */
     async function getBrowserFingerprint() {
@@ -105,9 +95,7 @@
         return fpPromise;
     }
 
-    /* ==================== 2. GitHub 共享存储 ==================== */
-    const hasGithub = () => !!CFG.github;
-
+    /* ==================== 2. GitHub 存储 ==================== */
     let ghPromise = null;
     function loadGithub() {
         if (window.GitHub) return Promise.resolve(window.GitHub);
@@ -119,189 +107,250 @@
             s.src = CFG.ghModule || utilUrl('github.js');
             s.async = true;
             s.onload = () => done(window.GitHub || null);
-            s.onerror = () => { warn('github.js 加载失败，回退本地'); done(null); };
+            s.onerror = () => { warn('github.js 加载失败，无法读写云端数据'); done(null); };
             setTimeout(() => done(window.GitHub || null), 8000);
             document.head.appendChild(s);
         });
         return ghPromise;
     }
 
-    /* 访客标识脱敏：仓库是公开的，只存短哈希，不存原始指纹 */
-    function vidHash(v) {
-        if (!v) return '';
-        let h = 0x811c9dc5;
-        for (let i = 0; i < v.length; i++) { h ^= v.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
-        return 'h' + h.toString(16).padStart(8, '0');
-    }
-
-    async function ghRead() {
+    async function requireGithub() {
         const gh = await loadGithub();
         if (!gh) throw new Error('github.js 不可用');
         await gh.init();
-        const { content } = await gh.getFile(CFG.ghPath, CFG.ghBranch);
-        return content && Array.isArray(content.visits) ? content.visits : [];
+        return gh;
     }
 
-    async function ghSave(records) {
-        if (!hasGithub() || !records.length) return false;
-        try {
-            const gh = await loadGithub();
-            if (!gh) return false;
-            await gh.init();
-            const clean = records.map(r => Object.assign({}, r, { vid: vidHash(r.vid), cloud: true }));
-            await gh.updateFile(CFG.ghPath, latest => {
-                const list = latest && Array.isArray(latest.visits) ? latest.visits : [];
-                const ids = new Set(clean.map(r => r.id));
-                return {
-                    visits: clean.concat(list.filter(r => !ids.has(r.id))).slice(0, CFG.maxCloudVisits),
-                    updated: Date.now()
-                };
-            }, `chore(stats): 记录 ${clean.length} 次访问`, 4, CFG.ghBranch);
-            return true;
-        } catch (err) {
-            warn('GitHub 写入失败，回退本地：', err && err.message);
-            return false;
-        }
+    /* ==================== 3. 数据规范化 ==================== */
+    function normalizeUsers(c) {
+        const list = (c && Array.isArray(c.users)) ? c.users : (Array.isArray(c) ? c : []);
+        return {
+            updated: (c && typeof c.updated === 'number') ? c.updated : 0,
+            users: list.filter(u => u && u.id)
+        };
     }
 
-    /* ==================== 3. 访问记录构造 ==================== */
-    function buildRecord(extra = {}) {
+    function normalizeUserFile(c, id, fp) {
+        const f = (c && typeof c === 'object' && !Array.isArray(c)) ? c : {};
+        return {
+            id: id || f.id || '',
+            fp: f.fp || fp || '',
+            created: Number(f.created) || Date.now(),
+            updated: Number(f.updated) || 0,
+            total: Number(f.total) || 0,
+            pages: (f.pages && typeof f.pages === 'object') ? f.pages : {},
+            days: (f.days && typeof f.days === 'object') ? f.days : {},
+            visits: Array.isArray(f.visits) ? f.visits : []
+        };
+    }
+
+    /* 新用户首次访问时记录的环境信息（不随每次访问重复存） */
+    function envInfo() {
         const nav = window.navigator || {};
+        const s = window.screen || {};
+        return {
+            ua: nav.userAgent || '',
+            screen: `${s.width || 0}x${s.height || 0}`,
+            dpr: window.devicePixelRatio || 1,
+            lang: nav.language || '',
+            tz: (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch (_) { return ''; } })()
+        };
+    }
+
+    function buildVisit(extra = {}) {
         const loc = window.location;
-        const page = (loc.pathname.split('/').pop() || 'index.html');
         return Object.assign({
-            id: rid(),
+            id: newVisitId(),
             ts: Date.now(),
-            iso: new Date().toISOString(),
             day: dayKey(),
-            page,
+            page: (loc.pathname.split('/').pop() || 'index.html'),
             path: loc.pathname,
             title: document.title || '',
-            referrer: (() => { try { return document.referrer ? new URL(document.referrer).host : ''; } catch (_) { return ''; } })(),
-            vid: '',
-            fpConf: null,
-            lang: nav.language || '',
-            tz: (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch (_) { return ''; } })(),
-            screen: (() => { const s = window.screen || {}; return `${s.width || 0}x${s.height || 0}`; })(),
-            dpr: window.devicePixelRatio || 1,
-            ua: nav.userAgent || '',
-            cloud: false
+            ref: (() => { try { return document.referrer ? new URL(document.referrer).host : ''; } catch (_) { return ''; } })()
         }, extra);
     }
 
-    /* ==================== 4. 统计聚合 ==================== */
-    function bumpStats(stats, rec) {
-        const s = stats && typeof stats === 'object' ? stats : {};
-        s.total = (s.total || 0) + 1;
-        s.pages = s.pages || {};
-        s.days = s.days || {};
-        s.fps = s.fps || {};
+    /* ==================== 4. 用户索引 ==================== */
+    async function readUsers() {
+        const gh = await requireGithub();
+        const { content } = await gh.getFile(CFG.usersPath, CFG.ghBranch);
+        return normalizeUsers(content);
+    }
 
-        const p = s.pages[rec.page] || { n: 0, last: 0 };
-        p.n += 1; p.last = rec.ts;
-        s.pages[rec.page] = p;
+    /**
+     * 按指纹找用户，找不到就新建一条写进 users.json。
+     * 并发首访时由 updateFile 内的二次校验兜底，不会建出重复用户。
+     */
+    async function ensureUser(fpId, conf) {
+        const idx = await readUsers();
+        const hit = idx.users.find(u => u.fp === fpId);
+        if (hit) return hit;
 
-        s.days[rec.day] = (s.days[rec.day] || 0) + 1;
+        const gh = await requireGithub();
+        let created = null;
 
-        if (rec.vid) {
-            const f = s.fps[rec.vid] || { n: 0, first: rec.ts, last: rec.ts };
-            f.n += 1; f.last = rec.ts;
-            s.fps[rec.vid] = f;
+        const res = await gh.updateFile(CFG.usersPath, latest => {
+            const data = normalizeUsers(latest);
+            if (data.users.some(u => u.fp === fpId)) return null;   // 其他标签页已创建
+            created = Object.assign(
+                { id: newUserId(), fp: fpId, created: Date.now(), conf: conf == null ? null : Math.round(conf * 1000) / 1000 },
+                envInfo()
+            );
+            data.users.push(created);
+            data.updated = Date.now();
+            return data;
+        }, `新增访客 ${fpId.slice(0, 8)}`, 4, CFG.ghBranch);
+
+        const final = normalizeUsers(res.content).users.find(u => u.fp === fpId);
+        if (final) {
+            if (created && final.id === created.id) log('新用户已创建：' + final.id);
+            return final;
         }
+        if (created) { warn('用户索引写入未生效，仍按临时 id 记录'); return created; }
+        throw new Error('用户索引写入失败');
+    }
 
-        // 只保留最近 keepDays 天，避免统计键无限增长
+    /* ==================== 5. 单用户访问数据 ==================== */
+    function trimDays(days) {
         const cutoff = dayKey(new Date(Date.now() - CFG.keepDays * 864e5));
-        Object.keys(s.days).forEach(d => { if (d < cutoff) delete s.days[d]; });
-
-        s.updated = rec.ts;
-        return s;
+        Object.keys(days).forEach(d => { if (d < cutoff) delete days[d]; });
     }
 
-    /* ==================== 5. 本地存取 ==================== */
-    function readLocalVisits() { return readJSON(CFG.localVisits, []); }
-    function pushLocalVisit(rec) {
-        const list = readLocalVisits();
-        list.unshift(rec);
-        writeJSON(CFG.localVisits, list.slice(0, CFG.maxLocalVisits));
-    }
-    function markLocalSynced(ids) {
-        const set = new Set(ids);
-        const list = readLocalVisits().map(r => (set.has(r.id) ? Object.assign({}, r, { cloud: true }) : r));
-        writeJSON(CFG.localVisits, list);
+    async function appendVisit(user, visit) {
+        const gh = await requireGithub();
+        const path = userFilePath(user.id);
+
+        const res = await gh.updateFile(path, latest => {
+            const f = normalizeUserFile(latest, user.id, user.fp);
+            if (f.visits.some(v => v.id === visit.id)) return null;   // 重复提交，跳过
+
+            f.visits.unshift(visit);
+            f.visits = f.visits.slice(0, CFG.maxVisits);
+            f.total += 1;
+            f.pages[visit.page] = (f.pages[visit.page] || 0) + 1;
+            f.days[visit.day] = (f.days[visit.day] || 0) + 1;
+            trimDays(f.days);
+            f.updated = visit.ts;
+            f.fp = f.fp || user.fp;
+            return f;
+        }, `访问记录 ${user.id} · ${visit.page}`, 4, CFG.ghBranch);
+
+        return normalizeUserFile(res.content, user.id, user.fp);
     }
 
-    /* ==================== 6. 云端写入 ==================== */
-    /* 免注册通道：写入 GitHub 仓库独立分支 */
-    async function githubSaveVisit(rec) {
-        return hasGithub() ? ghSave([rec]) : false;
-    }
-
-    /* ==================== 7. 对外 API ==================== */
+    /* ==================== 6. 对外 API ==================== */
     const VisitTracker = {
-        /* 当前存储模式：'github' | 'local' */
-        get mode() {
-            return hasGithub() ? 'github' : 'local';
-        },
+        /* 数据只存云端，恒为 'cloud' */
+        get mode() { return 'cloud'; },
 
         async track(extra = {}) {
-            /* 先拿指纹，再建记录，保证本地与云端记录字段一致 */
             let fp = null;
             try { fp = await fpCached(); }
-            catch (err) { warn('指纹获取失败，记录将不含 vid：', err && err.message); }
+            catch (err) { warn('指纹获取失败：' + (err && err.message)); }
 
-            const rec = buildRecord(Object.assign({
-                vid: fp ? fp.visitorId : '',
-                fpConf: fp && fp.confidence ? fp.confidence.score : null
-            }, extra));
-
-            pushLocalVisit(rec);
-            rec.cloud = await githubSaveVisit(rec);
-            if (rec.cloud) markLocalSynced([rec.id]);
-
-            document.dispatchEvent(new CustomEvent(TRACKED_EVENT, { detail: rec }));
-            return rec;
-        },
-
-        async getVisits(limit = 50) {
-            if (hasGithub()) {
-                try {
-                    const list = await ghRead();
-                    return list.slice(0, limit);
-                } catch (err) { warn('GitHub 读取失败，回退本地：', err && err.message); }
+            if (!fp || !fp.visitorId) {
+                warn('缺少指纹，本次访问未上报');
+                return null;
             }
-            return readLocalVisits().slice(0, limit);
+
+            const user = await ensureUser(fp.visitorId, fp.confidence && fp.confidence.score);
+            const visit = buildVisit(extra);
+            await appendVisit(user, visit);
+
+            document.dispatchEvent(new CustomEvent(TRACKED_EVENT, { detail: { user, visit } }));
+            return { user, visit };
         },
 
-        async getStats() {
-            if (hasGithub()) {
-                try {
-                    const list = await ghRead();
-                    const s = list.reduce((acc, r) => bumpStats(acc, r), {});
-                    if (!s.updated) s.updated = Date.now();
-                    return s;
-                } catch (err) { warn('GitHub 统计读取失败，回退本地：', err && err.message); }
+        /* 用户索引（按创建时间倒序） */
+        async getUsers() {
+            const idx = await readUsers();
+            return idx.users.slice().sort((a, b) => (b.created || 0) - (a.created || 0));
+        },
+
+        /* 单个用户的完整数据；文件不存在时返回 null */
+        async getUser(id) {
+            if (!id) return null;
+            const gh = await requireGithub();
+            const { content } = await gh.getFile(userFilePath(id), CFG.ghBranch);
+            if (!content) return null;
+            return normalizeUserFile(content, id);
+        },
+
+        /* 删除某用户的一条访问记录（同步修正 total / pages / days） */
+        async removeVisit(userId, visitId) {
+            if (!userId || !visitId) return false;
+            const gh = await requireGithub();
+
+            const res = await gh.updateFile(userFilePath(userId), latest => {
+                const f = normalizeUserFile(latest, userId);
+                const target = f.visits.find(v => v.id === visitId);
+                if (!target) return null;
+
+                f.visits = f.visits.filter(v => v.id !== visitId);
+                f.total = Math.max(0, f.total - 1);
+
+                if (target.page && f.pages[target.page]) {
+                    f.pages[target.page] -= 1;
+                    if (f.pages[target.page] <= 0) delete f.pages[target.page];
+                }
+                if (target.day && f.days[target.day]) {
+                    f.days[target.day] -= 1;
+                    if (!f.days[target.day]) delete f.days[target.day];
+                }
+                return f;
+            }, `删除访问记录 ${userId} · ${visitId}`, 4, CFG.ghBranch);
+
+            return !res.skipped;
+        },
+
+        /* 删除用户：索引条目 + 该用户的数据文件 */
+        async removeUser(id) {
+            if (!id) return false;
+            const gh = await requireGithub();
+
+            const res = await gh.updateFile(CFG.usersPath, latest => {
+                const data = normalizeUsers(latest);
+                const next = data.users.filter(u => u.id !== id);
+                if (next.length === data.users.length) return null;
+                data.users = next;
+                data.updated = Date.now();
+                return data;
+            }, `删除访客 ${id}`, 4, CFG.ghBranch);
+
+            try {
+                await gh.deleteFile(userFilePath(id), `删除访客数据 ${id}`, CFG.ghBranch);
+            } catch (err) {
+                warn('用户数据文件删除失败：' + err.message);
             }
-            // 本地兜底：用本地明细现算
-            return readLocalVisits().reduce((acc, r) => bumpStats(acc, r), {});
+            return !res.skipped;
         },
 
-        async sync() {
-            if (!hasGithub()) return 0;
-            const pending = readLocalVisits().filter(r => !r.cloud);
-            if (!pending.length) return 0;
+        /* 清空全部用户与访问数据 */
+        async clearAll() {
+            const gh = await requireGithub();
+            const users = (await readUsers()).users;
 
-            /* 一次提交合并全部待同步记录，避免每条一次 commit */
-            const done = await ghSave(pending);
-            if (done) markLocalSynced(pending.map(r => r.id));
-            log(`GitHub 补传 ${done ? pending.length : 0}/${pending.length} 条记录`);
-            return done ? pending.length : 0;
-        },
+            await gh.updateFile(CFG.usersPath, latest => {
+                const data = normalizeUsers(latest);
+                if (!data.users.length) return null;
+                data.users = [];
+                data.updated = Date.now();
+                return data;
+            }, '清空访客索引', 4, CFG.ghBranch);
 
-        clearLocal() { writeJSON(CFG.localVisits, []); }
+            for (const u of users) {
+                try {
+                    await gh.deleteFile(userFilePath(u.id), `删除访客数据 ${u.id}`, CFG.ghBranch);
+                } catch (err) {
+                    warn(`删除 ${u.id} 失败：` + err.message);
+                }
+            }
+            return users.length;
+        }
     };
     window.VisitTracker = VisitTracker;
 
-    /* ==================== 8. 自动执行 ==================== */
+    /* ==================== 7. 自动执行 ==================== */
     VisitTracker.ready = (async () => {
         /* 统计/后台页面可置 disableAutoTrack: true，避免自身访问被计入 */
         if (CFG.disableAutoTrack) {
@@ -309,39 +358,38 @@
             return null;
         }
 
-        /* 1. 先算指纹；失败也继续记录（只是缺 vid） */
-        let fpResult = null;
+        let fp = null;
         try {
-            fpResult = await fpCached();
-
+            fp = await fpCached();
             console.groupCollapsed(
-                '%c浏览器指纹 (FingerprintJS v' + fpResult.version + ')',
+                '%c浏览器指纹 (FingerprintJS v' + fp.version + ')',
                 'color:#007AFF;font-weight:bold'
             );
-            console.log('visitorId:', fpResult.visitorId);
-            console.log('置信度:', fpResult.confidence && fpResult.confidence.score);
-            console.log('组件明细:', fpResult.components);
-            try { console.table(Object.keys(fpResult.components)); } catch (_) { /* ignore */ }
+            console.log('visitorId:', fp.visitorId);
+            console.log('置信度:', fp.confidence && fp.confidence.score);
+            console.log('组件明细:', fp.components);
             console.groupEnd();
-
-            window.dispatchEvent(new CustomEvent(LIB_READY_EVENT, { detail: fpResult }));
+            window.dispatchEvent(new CustomEvent(LIB_READY_EVENT, { detail: fp }));
         } catch (err) {
             console.error('[fingerprint.js] 获取指纹失败:', err && err.message);
+            return null;
         }
 
-        /* 2. 立刻记录本次访问：本地先落库，再尝试远程（网络慢/挂掉都不会漏记） */
-        const rec = await VisitTracker.track();
-
-        /* 3. 补传历史待同步记录，放到记录之后且不阻塞页面 */
-        if (hasGithub()) VisitTracker.sync().catch(() => {});
-
-        console.groupCollapsed('%c本次访问已记录', 'color:#34C759;font-weight:bold');
-        console.log('时间:', rec.iso);
-        console.log('页面:', rec.page);
-        console.log('指纹:', rec.vid || '(未获取)');
-        console.log('存储:', rec.cloud ? 'GitHub 共享数据 + 本地' : '仅本地（云端未生效）');
-        console.groupEnd();
-
-        return rec;
+        try {
+            const result = await VisitTracker.track();
+            if (!result) return null;
+            const { user, visit } = result;
+            console.groupCollapsed('%c本次访问已写入云端', 'color:#34C759;font-weight:bold');
+            console.log('用户 ID:', user.id);
+            console.log('指纹:', user.fp);
+            console.log('页面:', visit.page);
+            console.log('时间:', new Date(visit.ts).toLocaleString('zh-CN'));
+            console.log('数据文件:', userFilePath(user.id));
+            console.groupEnd();
+            return result;
+        } catch (err) {
+            console.warn('[VisitTracker] 上报失败（不做本地补偿）:', err && err.message);
+            return null;
+        }
     })();
 })();
