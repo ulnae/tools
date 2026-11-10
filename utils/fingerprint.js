@@ -65,11 +65,24 @@
     /* ==================== 小工具 ==================== */
     const pad = n => String(n).padStart(2, '0');
     const dayKey = (d = new Date()) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-    const rnd = (n = 5) => Math.random().toString(36).slice(2, 2 + n);
 
-    /* 用户 id：u + 时间戳36进制 + 随机串，直接当文件名用 */
-    const newUserId = () => 'u' + Date.now().toString(36) + rnd(4);
-    const newVisitId = () => 'v' + Date.now().toString(36) + rnd(5);
+    /* 用户/访问 id：浏览器原生 crypto.randomUUID()（HTTPS 下均可用）；
+       老旧环境退化为 crypto.getRandomValues 拼装 v4 格式 */
+    const newId = () => {
+        if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+            return crypto.randomUUID();
+        }
+        if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+            const b = crypto.getRandomValues(new Uint8Array(16));
+            b[6] = (b[6] & 0x0f) | 0x40;
+            b[8] = (b[8] & 0x3f) | 0x80;
+            const hex = [...b].map(x => x.toString(16).padStart(2, '0')).join('');
+            return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+        }
+        return 'id-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+    };
+    const newUserId = newId;
+    const newVisitId = newId;
 
     const userFilePath = id => `${CFG.visitsDir}/${id}.json`;
 
