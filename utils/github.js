@@ -22,7 +22,7 @@ window.GitHub = (function () {
         SECRETS_FILE: 'data/secrets.json',
 
         TOKEN: '',   // 运行时由 init() 填充
-        TOKEN_CIPHER: 'pN0DLAO2zEwTMKZlJZw+6zd4GAXI0t3mCX/iAqiGWY6ddaYNpX4u6LdZ7eeflYz7RaSCt6hCUYSPbhbejCY7lVChS9u3YaVWhiU38RWdMQf0iRo4UwUZ5kmnzZXBiZlDVIgWBVNPoxeFveABj02UVh8IFBBix/Bz+AOD9DIdlN8Jbh3s3olHlPs=',
+        TOKEN_CIPHER: 'z+w4RMsC1xj2k7xcxmtT5dfjjTWOzrY1laXaZVqUimZz65oynD6A/x+hcdvAFLsd7WwFYhHGH4T7IKMLOypCuX0JTkvba71oARTvPd1Ydp+gmWZo+lI+5S3uSDAPYrOAl5CApeElAvWvZUmMxnqg6btgknrThLYBjKyOFTq9wcBN9jccHygvT1w=',
         TOKEN_PASS: 'ulnae'
     };
 
