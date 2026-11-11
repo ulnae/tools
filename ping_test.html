@@ -141,7 +141,7 @@
                 <b>怎么读结果：</b><br />
                 · 全部失败且耗时接近 8s → 网络层不通（DNS 污染/阻断），与代码无关；<br />
                 · 返回 200 + <code>{"ok":true}</code> → 该地址可用，把它填进 <code>utils/api.js</code> 的 <code>apiBase</code> 首位；<br />
-                · 返回 4xx/5xx → 请求已到达 Worker，属于服务端/密钥问题。
+                · 返回 4xx/5xx → 请求已到达 Worker，属于服务端问题。
             </div>
         </div>
     </div>
