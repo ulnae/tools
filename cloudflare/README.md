@@ -5,7 +5,7 @@
 `https://ulnae.localhost.cc`（Netlify 反代 → `tools-api.yyh3531.workers.dev` → Worker → D1）。
 
 本文只讲 `cloudflare/` 下的文件分别是干什么的、什么时候该用、怎么用。
-页面侧怎么调用接口见根目录 `README.md`。
+页面侧怎么调用接口见根目录 `README.md`；中间那层反代的来龙去脉见 `../netlify-proxy/README.md`。
 
 ---
 
