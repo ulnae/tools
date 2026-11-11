@@ -1,0 +1,27 @@
+name = "tools-api"
+main = "src/worker.js"
+compatibility_date = "2026-11-01"
+
+[vars]
+# 允许跨域的前端来源（GitHub Pages 站点）
+ALLOW_ORIGIN = "https://ulnae.github.io"
+
+# 走 Netlify 反代时置 true：真实访客 IP 改从 X-Forwarded-For 第 1 位读取；
+# 不走反代（直连 workers.dev / CF 自定义域）时务必保持 false 或删除本行
+TRUST_PROXY = "true"
+
+# D1 数据库绑定：database_id 在执行
+#   wrangler d1 create tools-data
+# 后替换为命令输出的真实 id
+[[d1_databases]]
+binding = "DB"
+database_name = "tools-data"
+database_id = "7c32e926-07a4-43b7-a2cb-c8317197bcaf"
+
+# Workers 原生限流绑定（beta 配置语法；若部署报错可整段注释，
+# worker.js 内已做容错，注释掉不影响功能，仅失去限流）
+[[unsafe.bindings]]
+name = "RATE_LIMITER"
+type = "ratelimit"
+namespace_id = "1001"
+simple = { limit = 30, period = 60 }

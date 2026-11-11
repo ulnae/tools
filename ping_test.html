@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>接口连通性诊断 · tools-api</title>
+    <style>
+        :root {
+            --bg: #f5f5f7;
+            --card: #ffffff;
+            --ink: #1d1d1f;
+            --muted: #6e6e73;
+            --line: rgba(0, 0, 0, .1);
+            --ok: #1a7f37;
+            --bad: #c0392b;
+            --brand: #f6821f;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            margin: 0;
+            padding: 20px 16px 40px;
+            background: var(--bg);
+            color: var(--ink);
+            font: 14px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif;
+        }
+
+        .wrap { max-width: 720px; margin: 0 auto; }
+
+        h1 { font-size: 18px; font-weight: 600; margin: 0 0 4px; }
+
+        .sub { color: var(--muted); font-size: 13px; margin-bottom: 16px; }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 12px;
+        }
+
+        .row { display: flex; gap: 8px; align-items: center; }
+
+        input[type=text] {
+            flex: 1;
+            min-width: 0;
+            padding: 9px 11px;
+            border: 1px solid var(--line);
+            border-radius: 9px;
+            font: inherit;
+            font-size: 13px;
+            background: #fbfbfd;
+        }
+
+        button {
+            padding: 9px 14px;
+            border: 0;
+            border-radius: 9px;
+            background: var(--brand);
+            color: #fff;
+            font: inherit;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        button:disabled { opacity: .5; cursor: default; }
+
+        button.ghost { background: #ececf0; color: var(--ink); }
+
+        .item {
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+            padding: 11px 0;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .item:last-child { border-bottom: 0; }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-top: 8px;
+            flex: none;
+            background: #c7c7cc;
+        }
+
+        .dot.ok { background: var(--ok); }
+
+        .dot.bad { background: var(--bad); }
+
+        .url { font-family: ui-monospace, Menlo, monospace; font-size: 12px; word-break: break-all; }
+
+        .meta { color: var(--muted); font-size: 12px; margin-top: 2px; font-family: ui-monospace, Menlo, monospace; }
+
+        .tag {
+            display: inline-block;
+            padding: 1px 7px;
+            border-radius: 999px;
+            font-size: 11px;
+            margin-left: 6px;
+        }
+
+        .tag.ok { background: #e7f6ec; color: var(--ok); }
+
+        .tag.bad { background: #fdecea; color: var(--bad); }
+
+        .hint { font-size: 12.5px; color: var(--muted); margin-top: 10px; }
+
+        .hint b { color: var(--ink); }
+
+        code { font-family: ui-monospace, Menlo, monospace; font-size: 12px; background: #f2f2f7; padding: 1px 5px; border-radius: 5px; }
+    </style>
+</head>
+
+<body>
+    <div class="wrap">
+        <h1>接口连通性诊断</h1>
+        <div class="sub">逐地址探测 <code>/api/health</code>，判断是「域名被污染」还是「服务端问题」。手机上打开同样可用。</div>
+
+        <div class="card">
+            <div class="row">
+                <input id="base" type="text" placeholder="https://api.你的域名.com" />
+                <button id="add">加入测试</button>
+                <button id="run" class="ghost">重测</button>
+            </div>
+            <div class="hint" id="state">准备就绪</div>
+        </div>
+
+        <div class="card" id="list">
+            <div class="item"><span class="dot"></span><div><div class="url">等待测试…</div></div></div>
+        </div>
+
+        <div class="card">
+            <div class="hint">
+                <b>怎么读结果：</b><br />
+                · 全部失败且耗时接近 8s → 网络层不通（DNS 污染/阻断），与代码无关；<br />
+                · 返回 200 + <code>{"ok":true}</code> → 该地址可用，把它填进 <code>utils/api.js</code> 的 <code>apiBase</code> 首位；<br />
+                · 返回 4xx/5xx → 请求已到达 Worker，属于服务端/密钥问题。
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const KEY = 'cf_api_bases';
+        const DEFAULT = [
+            'https://ulnae.localhost.cc',
+            'https://tools-api.yyh3531.workers.dev'
+        ];
+        const TIMEOUT = 8000;
+
+        const $ = id => document.getElementById(id);
+        const loadExtra = () => {
+            try { return JSON.parse(sessionStorage.getItem(KEY) || '[]'); } catch (_) { return []; }
+        };
+        const saveExtra = list => {
+            try { sessionStorage.setItem(KEY, JSON.stringify(list)); } catch (_) { }
+        };
+
+        const bases = () => {
+            const all = DEFAULT.concat(loadExtra());
+            return [...new Set(all.map(s => String(s).replace(/\/+$/, '')).filter(Boolean))];
+        };
+
+        async function probe(base) {
+            const ctrl = new AbortController();
+            const timer = setTimeout(() => ctrl.abort(), TIMEOUT);
+            const t0 = performance.now();
+            try {
+                const res = await fetch(base + '/api/health', { signal: ctrl.signal, cache: 'no-store' });
+                const ms = Math.round(performance.now() - t0);
+                const text = await res.text().catch(() => '');
+                return { base, ok: res.ok, status: res.status, ms, body: text.slice(0, 160) };
+            } catch (e) {
+                const ms = Math.round(performance.now() - t0);
+                return { base, ok: false, status: 0, ms, body: /abort/i.test(e.message) ? '超时（网络层无响应）' : ('网络错误：' + e.message) };
+            } finally {
+                clearTimeout(timer);
+            }
+        }
+
+        function render(results) {
+            $('list').innerHTML = results.map(r => `
+        <div class="item">
+          <span class="dot ${r.ok ? 'ok' : 'bad'}"></span>
+          <div style="flex:1;min-width:0">
+            <div class="url">${r.base}${r.ok ? '<span class="tag ok">可达</span>' : '<span class="tag bad">失败</span>'}</div>
+            <div class="meta">${r.ms}ms · ${r.status ? 'HTTP ' + r.status : '无响应'}${r.body ? ' · ' + r.body.replace(/</g, '&lt;') : ''}</div>
+          </div>
+        </div>`).join('');
+
+            const okCount = results.filter(r => r.ok).length;
+            $('state').innerHTML = okCount
+                ? `有 <b>${okCount}</b> 个地址可用，把可用地址填进 api.js 的 apiBase 首位。`
+                : '全部失败：请确认设备是否联网，以及该域名在当前网络是否被阻断（可换 4G/WiFi 对比）。';
+        }
+
+        async function run() {
+            const list = bases();
+            $('run').disabled = true;
+            $('state').textContent = '测试中…';
+            const results = [];
+            render(list.map(b => ({ base: b, ok: false, status: 0, ms: 0, body: '测试中…' })));
+            for (const b of list) {
+                const r = await probe(b);
+                results.push(r);
+                render(results.concat(list.slice(results.length).map(x => ({ base: x, ok: false, status: 0, ms: 0, body: '等待中…' }))));
+            }
+            render(results);
+            $('run').disabled = false;
+        }
+
+        $('add').onclick = () => {
+            const v = $('base').value.trim();
+            if (!v) return;
+            const url = /^https?:\/\//.test(v) ? v.replace(/\/+$/, '') : 'https://' + v.replace(/\/+$/, '');
+            const extra = loadExtra();
+            if (!extra.includes(url)) { extra.push(url); saveExtra(extra); }
+            $('base').value = '';
+            run();
+        };
+
+        $('run').onclick = run;
+        window.addEventListener('online', () => $('state').textContent = '网络已恢复，点击「重测」');
+        window.addEventListener('offline', () => $('state').textContent = '设备当前离线');
+
+        /* 等待测试：5s 给 DNS/连接足够暴露问题，同时避免误判 */
+        setTimeout(run, 300);
+    </script>
+</body>
+
+</html>

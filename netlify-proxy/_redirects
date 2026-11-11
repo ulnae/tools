@@ -1,0 +1,4 @@
+/* Netlify 反向代理 —— 把 /api/* 透明转发到 Cloudflare Worker。
+   200! 表示强制代理（即使存在同名静态文件也走代理），并保留
+   POST body / 自定义头 / 响应头（含 Worker 返回的 CORS 头）。 */
+/api/*  https://tools-api.yyh3531.workers.dev/api/:splat  200!
