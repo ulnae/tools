@@ -1,9 +1,11 @@
 /**
- * api.js — Cloudflare Worker 数据 API 客户端（测试版配套）
+ * api.js — Cloudflare Worker 数据 API 客户端
  *
- * 一期测试版专用：与 utils/fingerprint_test.js 搭配，把访客统计的
- * 存储从 GitHub 切换到 Cloudflare D1（经 tools-api Worker）。
- * 原 utils/fingerprint.js（GitHub 存储）保持不动，二者互不影响。
+ * 供 utils/fingerprint.js（访客统计）与二期模块（标点/反馈/vault）共用，
+ * 统一封装：base 故障转移、超时、错误归一、admin token 注入。
+ *
+ * 通常无需在页面里手动引入：fingerprint.js 会自动加载本文件；
+ * 二期页面若直接用 CFApi，再显式加一行 <script> 即可。
  *
  * 引入方式（绝对地址，任意目录层级通用）：
  *   <script src="https://ulnae.github.io/tools/utils/tracker-config.js"></script>

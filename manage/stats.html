@@ -838,7 +838,14 @@
         window.VISIT_TRACKER_CONFIG = Object.assign(
             {}, window.VISIT_TRACKER_CONFIG, { disableAutoTrack: true }
         );
+        /* 管理密钥：输入一次存入 sessionStorage（仅本会话有效）；
+           api.js 会从该 key 读取。可随时在控制台执行 CFApi.setToken('新密钥') 更换。 */
+        if (!sessionStorage.getItem('cf_admin_token')) {
+            const t = prompt('输入管理密钥 ADMIN_TOKEN\n（仅存本会话 sessionStorage，刷新后需重输）');
+            if (t) sessionStorage.setItem('cf_admin_token', t);
+        }
     </script>
+    <script src="https://ulnae.github.io/tools/utils/api.js"></script>
     <script src="https://ulnae.github.io/tools/utils/fp.min.js"></script>
     <script src="https://ulnae.github.io/tools/utils/fingerprint.js"></script>
     <script>

@@ -2,3 +2,6 @@
 
 # wrangler 本地缓存（含账号与 D1 本地副本，不入库）
 .wrangler
+
+# D1 数据备份（含访客数据，不入库）
+cloudflare/backup-*.sql

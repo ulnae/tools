@@ -434,17 +434,48 @@ async function importData(request, env, cors) {
         return n;
     };
 
-    if (Array.isArray(b.users)) out.users = await run(b.users, u => db.prepare(
-        'INSERT OR IGNORE INTO users (id, fp, created, updated, conf, ua, screen, dpr, lang, tz, ip, country, city) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)'
-    ).bind(u.id, u.fp, u.created || now, u.updated || u.created || now,
-        u.conf == null ? null : Number(u.conf), u.ua || '', u.screen || '',
-        u.dpr == null ? null : Number(u.dpr), u.lang || '', u.tz || '',
-        u.ip || '', u.country || '', u.city || ''));
+    if (Array.isArray(b.users)) {
+        /* 按 fp 归并：D1 里可能已有同指纹用户（正式切换后、迁移前产生的新记录）。
+           users.fp 有 UNIQUE 约束，直接 INSERT OR IGNORE 会静默丢弃老记录，
+           而老记录的 visits 会挂在已不存在的 user_id 上变成孤儿。这里先建
+           旧 id → 现 id 的映射，visits 一并改写。 */
+        const rows = (await db.prepare('SELECT id, fp, created FROM users').all()).results || [];
+        const fpToId = new Map(rows.map(r => [r.fp, r]));
+        const idMap = {};
+        const fresh = [];
+        const earlier = [];
+        for (const u of b.users) {
+            const hit = fpToId.get(u.fp);
+            if (hit) {
+                idMap[u.id] = hit.id;
+                /* 老记录可能创建更早：保留更早的 created，否则统计页会把它当成新用户 */
+                if ((u.created || now) < (hit.created || now)) {
+                    earlier.push(db.prepare('UPDATE users SET created = ? WHERE id = ?')
+                        .bind(u.created || now, hit.id));
+                }
+            } else { idMap[u.id] = u.id; fresh.push(u); }
+        }
+        if (earlier.length) {
+            for (const part of chunk(earlier, 40)) await db.batch(part);
+        }
+        out.users = await run(fresh, u => db.prepare(
+            'INSERT OR IGNORE INTO users (id, fp, created, updated, conf, ua, screen, dpr, lang, tz, ip, country, city) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)'
+        ).bind(u.id, u.fp, u.created || now, u.updated || u.created || now,
+            u.conf == null ? null : Number(u.conf), u.ua || '', u.screen || '',
+            u.dpr == null ? null : Number(u.dpr), u.lang || '', u.tz || '',
+            u.ip || '', u.country || '', u.city || ''));
+        out.usersMerged = b.users.length - fresh.length;
 
-    if (Array.isArray(b.visits)) out.visits = await run(b.visits, v => db.prepare(
-        'INSERT OR IGNORE INTO visits (id, user_id, ts, day, page, path, title, ref) VALUES (?,?,?,?,?,?,?,?)'
-    ).bind(v.id, v.user_id, v.ts || now, v.day || dayOf(v.ts || now),
-        v.page || '', v.path || '', v.title || '', v.ref || ''));
+        if (Array.isArray(b.visits)) out.visits = await run(b.visits, v => db.prepare(
+            'INSERT OR IGNORE INTO visits (id, user_id, ts, day, page, path, title, ref) VALUES (?,?,?,?,?,?,?,?)'
+        ).bind(v.id, idMap[v.user_id] || v.user_id, v.ts || now, v.day || dayOf(v.ts || now),
+            v.page || '', v.path || '', v.title || '', v.ref || ''));
+    } else if (Array.isArray(b.visits)) {
+        out.visits = await run(b.visits, v => db.prepare(
+            'INSERT OR IGNORE INTO visits (id, user_id, ts, day, page, path, title, ref) VALUES (?,?,?,?,?,?,?,?)'
+        ).bind(v.id, v.user_id, v.ts || now, v.day || dayOf(v.ts || now),
+            v.page || '', v.path || '', v.title || '', v.ref || ''));
+    }
 
     if (Array.isArray(b.markerTypes)) out.markerTypes = await run(b.markerTypes, t => db.prepare(
         'INSERT OR IGNORE INTO marker_types (id, name, color, sort, created) VALUES (?,?,?,?,?)'

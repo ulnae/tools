@@ -9,16 +9,31 @@
  *
  * 用法（bash）：
  *   GH_TOKEN=ghp_xxx \
- *   CF_BASE=https://tools-api.<你的子域>.workers.dev \
+ *   CF_BASE=https://ulnae.localhost.cc \
  *   ADMIN_TOKEN=<与 Worker secret 相同> \
  *   node scripts/migrate-github-to-cf.js
  *
  * 幂等：worker 端全部 INSERT OR IGNORE / OR REPLACE，可重复执行。
+ * 同一指纹的老用户若在 D1 里已存在（切换后新产生的记录），会按 fp 归并到
+ * 同一条记录，并把 visits 改挂到现存 id，同时保留更早的 created。
  */
+
+const crypto = require('crypto');
 
 const OWNER = 'ulnae';
 const REPO = 'tools';
 const BRANCH = { stats: 'stats', marker: 'marker', feedback: 'feedback' };
+
+/* 存量 geojson 的 feature 没有 id（标识只在 properties 里），而 marker_points
+   以 id 为主键。这里用「类型 + 坐标 + 标题 + 创建时间」生成确定性 id：
+   同一份数据每次跑都得到同样的 id，保证迁移幂等且不会互相覆盖。 */
+function pointId(typeId, f) {
+    const c = (f.geometry && f.geometry.coordinates) || [];
+    const p = f.properties || {};
+    return crypto.createHash('sha1')
+        .update([typeId, c[0], c[1], p.title || '', p.created_at || ''].join('|'))
+        .digest('hex').slice(0, 16);
+}
 
 const GH_HEADERS = {
     Authorization: `Bearer ${process.env.GH_TOKEN || ''}`,
@@ -62,14 +77,19 @@ async function collectStats() {
 }
 
 async function collectMarker() {
-    const types = (await ghJson('data/types.json', BRANCH.marker)) || [];
+    const rawTypes = (await ghJson('data/types.json', BRANCH.marker)) || [];
+    /* 存量用 created_at / updated_at，D1 用 created：这里归一，避免全落成导入时间 */
+    const types = rawTypes.map(t => Object.assign({}, t, {
+        created: t.created_at || t.created,
+        updated: t.updated_at || t.updated
+    }));
     const points = [];
     for (const t of types) {
         try {
             const fc = await ghJson(`data/${t.id}.geojson`, BRANCH.marker);
             const feats = (fc && Array.isArray(fc.features)) ? fc.features : [];
             feats.forEach(f => points.push({
-                id: f.id || (f.properties && f.properties.id) || '',
+                id: f.id || (f.properties && f.properties.id) || pointId(t.id, f),
                 type_id: t.id,
                 lng: f.geometry && f.geometry.coordinates ? f.geometry.coordinates[0] : null,
                 lat: f.geometry && f.geometry.coordinates ? f.geometry.coordinates[1] : null,
