@@ -1,7 +1,7 @@
 /**
  * tools-api — Cloudflare Worker（tools 站点统一数据 API，替代 GitHub Contents API 存储）
  *
- * 部署（见项目根 README 或迁移步骤文档）：
+ * 部署（详见同目录 README.md）：
  *   wrangler d1 create tools-data              → 把输出的 database_id 填入 wrangler.toml
  *   wrangler d1 execute tools-data --remote --file=schema.sql
  *   wrangler deploy
@@ -493,7 +493,7 @@ async function importData(request, env, cors) {
     };
 
     if (Array.isArray(b.users)) {
-        /* 按 fp 归并：D1 里可能已有同指纹用户（正式切换后、迁移前产生的新记录）。
+        /* 按 fp 归并：库里可能已有同指纹用户（同一设备已先来过、又被导入一次）。
            users.fp 有 UNIQUE 约束，直接 INSERT OR IGNORE 会静默丢弃老记录，
            而老记录的 visits 会挂在已不存在的 user_id 上变成孤儿。这里先建
            旧 id → 现 id 的映射，visits 一并改写。 */

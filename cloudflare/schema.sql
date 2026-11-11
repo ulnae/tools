@@ -36,8 +36,7 @@ CREATE TABLE IF NOT EXISTS visits (
 CREATE INDEX IF NOT EXISTS idx_visits_user ON visits(user_id, ts DESC);
 CREATE INDEX IF NOT EXISTS idx_visits_day  ON visits(day);
 
--- 标点类型（对应 data/types.json 的数组元素；按 created 顺序展示）
--- 原 sort 字段已删除：页面从未提供排序功能，值恒为 0，纯冗余。
+-- 标点类型（对应 data/types.json 的数组元素；按 created 顺序展示，无需排序字段）
 CREATE TABLE IF NOT EXISTS marker_types (
   id      TEXT PRIMARY KEY,
   name    TEXT NOT NULL,
@@ -46,9 +45,8 @@ CREATE TABLE IF NOT EXISTS marker_types (
 );
 
 -- 标点（对应 data/{typeId}.geojson 的 Feature）
--- 原 props 字段存整段 properties JSON，实际只有 title / description 两个业务字段，
--- 而 type 与 created_at 早已由 type_id、created 列表示，故改为独立列存放，
--- 不再有 JSON 解析成本，也能直接 WHERE / ORDER BY。
+-- title / description 独立成列，可直接 WHERE / ORDER BY；
+-- 类型与创建时间分别由 type_id、created 表示，不重复存。
 CREATE TABLE IF NOT EXISTS marker_points (
   id          TEXT PRIMARY KEY,
   type_id     TEXT NOT NULL,
@@ -72,9 +70,7 @@ CREATE TABLE IF NOT EXISTS feedback (
 );
 
 -- 密文笔记：一行一条（对应 data/secrets.json 的数组元素，客户端加密）
--- 旧版是「整包 blob 单行」，已由 migrate-vault-rows.sql 拆分为行级存储。
--- 一条一条存的好处：新增/编辑/删除互不干扰，不再需要「整包读-整包写」，
--- 多设备同时操作不同条目不会互相覆盖；同一条并发编辑用 updated_at 做条件更新。
+-- 同一条并发编辑用 updated_at 做条件更新，不同条目互不干扰。
 CREATE TABLE IF NOT EXISTS vault (
   id         TEXT PRIMARY KEY,
   title      TEXT NOT NULL DEFAULT '',
