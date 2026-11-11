@@ -20,8 +20,10 @@
  *     PATCH  /api/marker/points/:id          更新标点 { coordinates, properties }
  *     DELETE /api/marker/points/:id          删除标点
  *     POST   /api/feedback                   提交反馈 { type, content, contact, source }
- *     GET    /api/vault                      读密文包
- *     PUT    /api/vault                      写密文包 { blob }
+ *     GET    /api/vault                      列出密文条目
+ *     POST   /api/vault                      新增一条密文 { id?, title, ciphertext }
+ *     PATCH  /api/vault/:id                  更新一条（baseUpdatedAt 不匹配返回 409）
+ *     DELETE /api/vault/:id                  删除一条
  *   管理（Header: Authorization: Bearer <ADMIN_TOKEN>）：
  *     GET    /api/admin/stats                全站聚合（总量/按天/按页面/按地区）
  *     GET    /api/admin/users?limit=&offset= 用户列表（含访问次数）
@@ -121,7 +123,7 @@ async function route(request, env, ctx) {
 
     if (method === 'POST' && path === '/api/feedback') return addFeedback(request, env, cors);
 
-    if (path === '/api/vault' && (method === 'GET' || method === 'PUT')) return vault(request, env, method, cors);
+    if (path === '/api/vault' || path.startsWith('/api/vault/')) return vault(request, env, ctx);
 
     if (path.startsWith('/api/admin/')) {
         if (!isAdmin(request, env)) return fail('未授权', 401, cors);
@@ -317,20 +319,67 @@ async function addFeedback(request, env, cors) {
     return json({ ok: true, id: row.id }, 200, cors);
 }
 
-/* ==================== 密文包 ==================== */
+/* ==================== 密文笔记（行级） ==================== */
 
-async function vault(request, env, method, cors) {
-    if (method === 'GET') {
-        const row = await env.DB.prepare("SELECT blob, updated FROM vault WHERE id = 'main'").first();
-        return json({ blob: row ? row.blob : '', updated: row ? row.updated : 0 }, 200, cors);
+/**
+ * GET    /api/vault          列出全部条目（密文，客户端解密）
+ * POST   /api/vault          新增一条 { id?, title?, ciphertext, createdAt? }，同 id 幂等
+ * PATCH  /api/vault/:id      更新一条 { title?, ciphertext?, baseUpdatedAt? }
+ *                            baseUpdatedAt 与服务端不一致时返回 409（并发保护）
+ * DELETE /api/vault/:id      删除一条
+ */
+async function vault(request, env, { path, method, cors }) {
+    const db = env.DB;
+    const sub = path.slice('/api/vault'.length).replace(/^\//, '');
+    const id = sub ? decodeURIComponent(sub) : '';
+
+    if (method === 'GET' && !id) {
+        const { results } = await db.prepare(
+            'SELECT id, title, ciphertext, created_at, updated_at FROM vault ORDER BY created_at ASC, id ASC'
+        ).all();
+        return json({
+            items: (results || []).map(r => ({
+                id: r.id, title: r.title || '', ciphertext: r.ciphertext,
+                createdAt: r.created_at, updatedAt: r.updated_at
+            }))
+        }, 200, cors);
     }
-    const b = await readJson(request);
-    if (!b || typeof b.blob !== 'string') return fail('缺少 blob', 400, cors);
-    const now = Date.now();
-    await env.DB.prepare(
-        "INSERT INTO vault (id, blob, updated) VALUES ('main', ?, ?) ON CONFLICT(id) DO UPDATE SET blob = excluded.blob, updated = excluded.updated"
-    ).bind(b.blob, now).run();
-    return json({ ok: true, updated: now }, 200, cors);
+
+    if (method === 'POST' && !id) {
+        const b = await readJson(request);
+        if (!b || typeof b.ciphertext !== 'string' || !b.ciphertext) return fail('缺少 ciphertext', 400, cors);
+        const now = Date.now();
+        const newId = b.id ? String(b.id) : crypto.randomUUID();
+        const created = Number(b.createdAt) || now;
+        const r = await db.prepare(
+            'INSERT INTO vault (id, title, ciphertext, created_at, updated_at) VALUES (?,?,?,?,?) ON CONFLICT(id) DO NOTHING'
+        ).bind(newId, String(b.title || ''), b.ciphertext, created, now).run();
+        return json({ ok: true, id: newId, created: ((r.meta && r.meta.changes) || 0) > 0 }, 200, cors);
+    }
+
+    if (method === 'PATCH' && id) {
+        const b = (await readJson(request)) || {};
+        const row = await db.prepare('SELECT title, ciphertext, updated_at FROM vault WHERE id = ?').bind(id).first();
+        if (!row) return fail('记录不存在', 404, cors);
+        /* 乐观锁：客户端读到的是哪个版本就必须基于哪个版本提交 */
+        if (b.baseUpdatedAt !== undefined && b.baseUpdatedAt !== null &&
+            Number(b.baseUpdatedAt) !== Number(row.updated_at)) {
+            return fail('该条记录已在其他设备上被修改，请刷新页面后再操作', 409, cors);
+        }
+        const title = b.title === undefined ? row.title : String(b.title);
+        const ciphertext = b.ciphertext === undefined ? row.ciphertext : String(b.ciphertext);
+        const now = Date.now();
+        await db.prepare('UPDATE vault SET title = ?, ciphertext = ?, updated_at = ? WHERE id = ?')
+            .bind(title, ciphertext, now, id).run();
+        return json({ ok: true, id, updatedAt: now }, 200, cors);
+    }
+
+    if (method === 'DELETE' && id) {
+        const r = await db.prepare('DELETE FROM vault WHERE id = ?').bind(id).run();
+        return json({ ok: true, id, deleted: ((r.meta && r.meta.changes) || 0) > 0 }, 200, cors);
+    }
+
+    return fail('不支持的方法', 405, cors);
 }
 
 /* ==================== 管理端 ==================== */
@@ -489,6 +538,11 @@ async function importData(request, env, cors) {
     if (Array.isArray(b.feedback)) out.feedback = await run(b.feedback, f => db.prepare(
         'INSERT OR IGNORE INTO feedback (id, type, content, contact, source, created_at) VALUES (?,?,?,?,?,?)'
     ).bind(f.id, f.type || '', f.content || '', f.contact || '', f.source || '', f.created_at || now));
+
+    if (Array.isArray(b.vault)) out.vault = await run(b.vault.filter(v => v && v.id && v.ciphertext), v => db.prepare(
+        'INSERT OR IGNORE INTO vault (id, title, ciphertext, created_at, updated_at) VALUES (?,?,?,?,?)'
+    ).bind(v.id, v.title || '', v.ciphertext,
+        v.createdAt || v.created_at || now, v.updatedAt || v.updated_at || v.createdAt || now));
 
     return json({ ok: true, imported: out }, 200, cors);
 }

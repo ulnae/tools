@@ -67,9 +67,15 @@ CREATE TABLE IF NOT EXISTS feedback (
   created_at INTEGER NOT NULL
 );
 
--- 密文笔记整包（对应 data/secrets.json，单行 blob，客户端加密）
+-- 密文笔记：一行一条（对应 data/secrets.json 的数组元素，客户端加密）
+-- 旧版是「整包 blob 单行」，已由 migrate-vault-rows.sql 拆分为行级存储。
+-- 一条一条存的好处：新增/编辑/删除互不干扰，不再需要「整包读-整包写」，
+-- 多设备同时操作不同条目不会互相覆盖；同一条并发编辑用 updated_at 做条件更新。
 CREATE TABLE IF NOT EXISTS vault (
-  id      TEXT PRIMARY KEY,
-  blob    TEXT NOT NULL,
-  updated INTEGER
+  id         TEXT PRIMARY KEY,
+  title      TEXT NOT NULL DEFAULT '',
+  ciphertext TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
 );
+CREATE INDEX IF NOT EXISTS idx_vault_updated ON vault(updated_at DESC);

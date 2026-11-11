@@ -664,8 +664,10 @@
                     }
                 }
                 async function writeItems(nextItems, message) {
-                    await Store.updateFile(DATA_FILE, () => nextItems, message, 4, DATA_BRANCH);
-                    items.value = nextItems;
+                    /* 用服务端返回的数据回填：updatedAt 由服务端生成，
+                       页面拿旧的自己算会破坏下一次编辑的并发基准 */
+                    const { content } = await Store.updateFile(DATA_FILE, () => nextItems, message, 4, DATA_BRANCH);
+                    items.value = content;
                 }
 
                 /* ---------- 解锁 ---------- */
@@ -748,9 +750,11 @@
                         const ts = nowTS();
                         let next;
                         if (isEdit) {
-                            next = items.value.map((i) => i.id === editingId.value ? { ...i, title, ciphertext, updatedAt: ts } : i);
+                            /* 不在这里写 updatedAt：原值要留给服务端做并发基准，
+                               更新后的新版本由服务端返回（见 writeItems） */
+                            next = items.value.map((i) => i.id === editingId.value ? { ...i, title, ciphertext } : i);
                         } else {
-                            next = [...items.value, { id: newId(), title, ciphertext, createdAt: ts, updatedAt: ts }];
+                            next = [...items.value, { id: newId(), title, ciphertext, createdAt: ts }];
                         }
 
                         await writeItems(next, isEdit ? `update secret: ${title}` : `add secret: ${title}`);

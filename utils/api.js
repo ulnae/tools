@@ -206,9 +206,23 @@
         feedbackList() { return request('/api/admin/feedback', { auth: true }); },
         deleteFeedback(ids) { return request('/api/admin/feedback/delete', { method: 'POST', body: { ids }, auth: true }); },
 
-        /* ---------- 密文包（二期用） ---------- */
+        /* ---------- 密文笔记（行级：一条密文一条记录） ---------- */
 
-        getVault() { return request('/api/vault'); },
-        putVault(blob) { return request('/api/vault', { method: 'PUT', body: { blob } }); }
+        /* 列表：{ items: [{ id, title, ciphertext, createdAt, updatedAt }] } */
+        vaultItems() { return request('/api/vault'); },
+
+        /* 新增：同 id 幂等（重复提交不会产生第二条） */
+        addVaultItem(item) { return request('/api/vault', { method: 'POST', body: item }); },
+
+        /* 更新：带 baseUpdatedAt 时服务端做条件更新，被别处改过会抛 409 */
+        updateVaultItem(id, patch, baseUpdatedAt) {
+            const body = Object.assign({}, patch);
+            if (baseUpdatedAt !== undefined && baseUpdatedAt !== null) body.baseUpdatedAt = baseUpdatedAt;
+            return request('/api/vault/' + encodeURIComponent(id), { method: 'PATCH', body });
+        },
+
+        deleteVaultItem(id) {
+            return request('/api/vault/' + encodeURIComponent(id), { method: 'DELETE' });
+        }
     };
 })();

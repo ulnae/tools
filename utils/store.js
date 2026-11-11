@@ -16,7 +16,7 @@
  *   data/types.json       → marker_types 表（数组）
  *   data/{typeId}.geojson → marker_points 表（FeatureCollection）
  *   data/feedback.json    → feedback 表（数组，需要 ADMIN_TOKEN）
- *   data/secrets.json     → vault 表（整包密文数组）
+ *   data/secrets.json     → vault 表（一行一条密文）
  *
  * 写入采用「内容比对 → 增量提交」：updateFile 先读服务端最新内容，跑页面给的
  * mutate，再把新旧内容的差异转成 POST / PATCH / DELETE 调用，最后回读一次
@@ -83,12 +83,6 @@ window.Store = (function () {
 
     /* ==================== 读 ==================== */
 
-    /* vault 乐观锁：vaultLastUpdated 是最近一次读到的服务端版本，
-       vaultBaseUpdated 是「页面当前看到的那份」对应的版本。两者不等就说明
-       页面读取之后又被别处改过，此时保存会覆盖别人的修改。 */
-    let vaultLastUpdated = 0;
-    let vaultBaseUpdated = null;
-
     async function read(path) {
         const k = resolvePath(path);
         const A = await api();
@@ -116,12 +110,16 @@ window.Store = (function () {
             return Array.isArray(r) ? r : ((r && r.feedback) || []);
         }
 
-        /* vault：整包密文放在一行 blob 里，页面拿到的是数组 */
-        const v = await A.getVault();
-        vaultLastUpdated = Number((v && v.updated) || 0);
-        const raw = (v && typeof v.blob === 'string') ? v.blob : '';
-        if (!raw) return [];
-        try { return JSON.parse(raw); } catch (_) { return []; }
+        /* vault：行级存储，一条密文一行，这里拼成页面需要的数组 */
+        const r = await A.vaultItems();
+        const list = Array.isArray(r) ? r : ((r && r.items) || []);
+        return list.map(x => ({
+            id: x.id,
+            title: x.title || '',
+            ciphertext: x.ciphertext || '',
+            createdAt: Number(x.createdAt || x.created_at || 0),
+            updatedAt: Number(x.updatedAt || x.updated_at || 0)
+        }));
     }
 
     /* ==================== 写：差异比对 ==================== */
@@ -244,17 +242,48 @@ window.Store = (function () {
     }
 
     /**
-     * vault 是整包覆盖写，没有 GitHub 那样的 sha 冲突检测：
-     * 两台设备各自读到 4 条，A 新增第 5 条写回，B 再写回就会把 A 的覆盖掉。
-     * 这里用 updated 版本号判断：页面读到的是 vaultBaseUpdated，写入前读到的是
-     * vaultLastUpdated，不一致说明期间被别处改过，直接中止。
+     * vault 行级增量写入：新增 POST、改内容 PATCH、消失的 DELETE。
+     * 单条存储后不同条目的操作互不影响；同一条并发编辑靠 baseUpdatedAt 条件更新，
+     * 服务端发现版本不一致会返回 409，store 层面表现为抛出「已在其他设备上被修改」。
      */
     async function commitVault(cur, next) {
-        if (vaultBaseUpdated !== null && vaultLastUpdated !== vaultBaseUpdated) {
-            throw new Error('密文数据已在其他设备上被修改，请刷新页面后再操作（本次未写入）');
-        }
         const A = await api();
-        return A.putVault(JSON.stringify(next));
+        cur = Array.isArray(cur) ? cur : [];
+        next = Array.isArray(next) ? next : [];
+        const curMap = new Map(cur.map(x => [x.id, x]));
+        const nextMap = new Map(next.map(x => [x.id, x]));
+
+        for (const item of next) {
+            if (!item || !item.id) continue;
+            const old = curMap.get(item.id);
+            if (!old) {
+                await A.addVaultItem({
+                    id: item.id,
+                    title: item.title || '',
+                    ciphertext: item.ciphertext || '',
+                    createdAt: item.createdAt || item.created_at || Date.now()
+                });
+            } else if ((old.title || '') !== (item.title || '') ||
+                       (old.ciphertext || '') !== (item.ciphertext || '')) {
+                /* 基准必须是「页面看到的那份」的版本（item.updatedAt），
+                   不能用 old.updatedAt —— old 是刚刚重新读到的，永远是最新版本，
+                   拿它当基准等于没有并发保护。 */
+                await A.updateVaultItem(item.id, {
+                    title: item.title || '',
+                    ciphertext: item.ciphertext || ''
+                }, item.updatedAt);
+            }
+        }
+
+        const removed = [...curMap.keys()].filter(id => !nextMap.has(id));
+        for (const id of removed) {
+            try {
+                await A.deleteVaultItem(id);
+            } catch (e) {
+                /* 已被其他设备删掉：目标状态已达成，不视为失败 */
+                if (!/404|不存在/.test(e && e.message || '')) throw e;
+            }
+        }
     }
 
     async function commit(path, cur, next) {
@@ -274,26 +303,17 @@ window.Store = (function () {
 
     async function getFile(path) {
         const content = await read(path);
-        /* 记录页面当前看到的是哪个版本，供后续写入做乐观锁比对 */
-        if (resolvePath(path).kind === 'vault') vaultBaseUpdated = vaultLastUpdated;
         return { content, sha: 'cf' };
     }
 
     async function putFile(path, obj) {
-        const isVault = resolvePath(path).kind === 'vault';
         const cur = await read(path);
-        if (isVault && vaultBaseUpdated === null) vaultBaseUpdated = vaultLastUpdated;
         await commit(path, cur, obj);
-        const content = await read(path);
-        if (isVault) vaultBaseUpdated = vaultLastUpdated;
-        return { content, sha: 'cf' };
+        return { content: await read(path), sha: 'cf' };
     }
 
     async function updateFile(path, mutate, message, maxAttempts, branch) {
-        const isVault = resolvePath(path).kind === 'vault';
         const cur = await read(path);
-        /* 页面若没先 getFile（例如直接用 updateFile 读改写），以本次读到的版本为基准 */
-        if (isVault && vaultBaseUpdated === null) vaultBaseUpdated = vaultLastUpdated;
         /* 页面的 mutate 多为原地修改（c.features.push / data.splice）：
            直接传 cur 会把"旧内容"一起改掉，导致差异比对永远为空（新增和删除都失效）。
            这里传副本，cur 保持原样用于比对。 */
@@ -303,9 +323,7 @@ window.Store = (function () {
         }
         await commit(path, cur, next);
         /* 回读：新建记录的服务端 id、被服务端裁剪的字段都以实际库为准 */
-        const content = await read(path);
-        if (isVault) vaultBaseUpdated = vaultLastUpdated;
-        return { content, sha: 'cf', skipped: false };
+        return { content: await read(path), sha: 'cf', skipped: false };
     }
 
     async function deleteFile(path) {

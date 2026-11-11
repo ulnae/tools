@@ -102,7 +102,7 @@ async function collectMarker() {
     return { markerTypes: types, markerPoints: points.filter(p => isFinite(p.lng) && isFinite(p.lat)) };
 }
 
-/* ---------- 密文笔记（整包，单行 blob） ---------- */
+/* ---------- 密文笔记（行级：一条密文一条记录） ---------- */
 
 async function migrateVault() {
     const raw = await ghJson('data/secrets.json', BRANCH.vault);
@@ -111,20 +111,44 @@ async function migrateVault() {
 
     const base = process.env.CF_BASE.replace(/\/+$/, '');
     const cur = await fetch(`${base}/api/vault`).then(r => r.json()).catch(() => ({}));
-    const blob = (cur && typeof cur.blob === 'string') ? cur.blob.trim() : '';
-    const hasData = blob && blob !== '[]';
-    if (hasData && !process.env.FORCE_VAULT) {
-        console.log(`vault: D1 已有数据（${blob.length} 字节），跳过以免覆盖；如需强制覆盖请设 FORCE_VAULT=1`);
-        return;
-    }
+    const existing = new Map(((cur && cur.items) || []).map(x => [x.id, x]));
 
-    const res = await fetch(`${base}/api/vault`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ blob: JSON.stringify(items) })
-    });
-    if (!res.ok) throw new Error(`vault 写入失败: ${res.status}`);
-    console.log(`vault: 已导入 ${items.length} 条`);
+    let added = 0, updated = 0, skipped = 0;
+    for (const it of items) {
+        if (!it || !it.id || !it.ciphertext) { skipped++; continue; }
+        const hit = existing.get(it.id);
+
+        if (!hit) {
+            const res = await fetch(`${base}/api/vault`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: it.id,
+                    title: it.title || '',
+                    ciphertext: it.ciphertext,
+                    createdAt: it.createdAt || it.created_at || Date.now()
+                })
+            });
+            if (!res.ok) throw new Error(`vault 新增失败 ${it.id}: ${res.status}`);
+            added++;
+        } else if (process.env.FORCE_VAULT &&
+                   (hit.title !== (it.title || '') || hit.ciphertext !== it.ciphertext)) {
+            const res = await fetch(`${base}/api/vault/${encodeURIComponent(it.id)}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    title: it.title || '',
+                    ciphertext: it.ciphertext,
+                    baseUpdatedAt: hit.updatedAt
+                })
+            });
+            if (!res.ok) throw new Error(`vault 更新失败 ${it.id}: ${res.status}`);
+            updated++;
+        } else {
+            skipped++;
+        }
+    }
+    console.log(`vault: 新增 ${added} 条，更新 ${updated} 条，跳过 ${skipped} 条（已存在）`);
 }
 
 /* ---------- 导入 ---------- */
