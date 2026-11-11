@@ -1,7 +1,16 @@
-/* store.js 真实环境验证（Node 侧打桩 DOM，直连线上 Worker 与 D1） */
+/* store.js 真实环境验证：Node 里打桩 DOM，加载真实的 api.js / store.js，
+   直连线上 Worker + D1，跑一遍「读 → 改 → 回读」的完整链路。
+   跑完会把自己造的标点/反馈删掉，vault 只做原样回写。
+
+   用法：node scripts/verify-store.js */
 const fs = require('fs');
+const path = require('path');
 const vm = require('vm');
 
+const UTILS = path.join(__dirname, '..', 'utils');
+const read = f => fs.readFileSync(path.join(UTILS, f), 'utf8');
+
+/* store.js 里有 sessionStorage / document.currentScript 的引用，Node 下先打桩 */
 global.window = global;
 global.sessionStorage = {
     _d: {},
@@ -16,8 +25,8 @@ global.document = {
 };
 
 const ctx = vm.createContext(global);
-vm.runInContext(fs.readFileSync('F:/demo/tools/utils/api.js', 'utf8'), ctx);
-vm.runInContext(fs.readFileSync('F:/demo/tools/utils/store.js', 'utf8'), ctx);
+vm.runInContext(read('api.js'), ctx);
+vm.runInContext(read('store.js'), ctx);
 
 const Store = window.Store;
 const CFApi = window.CFApi;
@@ -37,7 +46,7 @@ const assert = (name, ok, extra = '') => console.log((ok ? 'PASS ' : 'FAIL ') + 
     console.log(`类型「${types.content[0].name}」标点数: ${fc0.features.length}`);
 
     const t0 = Date.now();
-    const same = await Store.updateFile(`data/${typeId}.geojson`, c => c, 'noop', 4, 'marker');
+    const same = await Store.updateFile(`data/${typeId}.geojson`, c => c);
     assert('无修改回写不产生写入', same.content.features.length === fc0.features.length,
         `${Date.now() - t0}ms, 条数 ${same.content.features.length}`);
 
@@ -50,7 +59,7 @@ const assert = (name, ok, extra = '') => console.log((ok ? 'PASS ' : 'FAIL ') + 
             properties: { title: marker, description: '临时验证', type: typeId, created_at: Date.now() }
         });
         return c;
-    }, 'add', 4, 'marker');
+    });
     const newFeat = added.content.features.find(f => f.properties && f.properties.title === marker);
     assert('新增标点并拿到服务端 id', !!newFeat && !!newFeat.id, newFeat && newFeat.id);
 
@@ -58,7 +67,7 @@ const assert = (name, ok, extra = '') => console.log((ok ? 'PASS ' : 'FAIL ') + 
     const del = await Store.updateFile(`data/${typeId}.geojson`, c => {
         c.features = c.features.filter(f => !(f.properties && f.properties.title === marker));
         return c;
-    }, 'del', 4, 'marker');
+    });
     assert('删除标点后条数复原', del.content.features.length === fc0.features.length,
         `${del.content.features.length} vs ${fc0.features.length}`);
 
@@ -74,7 +83,7 @@ const assert = (name, ok, extra = '') => console.log((ok ? 'PASS ' : 'FAIL ') + 
     /* ---------- vault：读 + 原样回写 ---------- */
     const v0 = (await Store.getFile('data/secrets.json')).content;
     assert('读取 vault 数组', Array.isArray(v0), `条数 ${v0.length}`);
-    const v1 = await Store.updateFile('data/secrets.json', () => v0, 'noop', 4, 'vault');
+    const v1 = await Store.updateFile('data/secrets.json', () => v0);
     assert('vault 回写后仍可解析', Array.isArray(v1.content) && v1.content.length === v0.length);
 
     console.log('验证结束');
