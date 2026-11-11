@@ -78,7 +78,7 @@ wrangler d1 execute tools-recover --remote --file=backup-20261111.sql
 
 ---
 
-## 四、当前线上状态（2026-11-11 17:20 核对）
+## 四、当前线上状态（2026-11-11 17:26 核对）
 
 ```
 表                    行数   说明
@@ -88,14 +88,9 @@ marker_types            5    美食 / 风景 / 钓点 / 避雷 / 游玩
 marker_points          36    标点
 feedback                1    反馈
 vault                   4    密文条目（VPN / 454645645 / Token / 电影网址）
-vault_blob_backup       1    早期版本的遗留表，可删
 ```
 
-`vault_blob_backup` 是不再使用的历史表，确认行级 `vault` 数据无误后可清掉：
-
-```bash
-wrangler d1 execute tools-data --remote --command="DROP TABLE vault_blob_backup"
-```
+6 张表与 `schema.sql` 完全一致，无多余的历史表。
 
 **注意**：`users` / `visits` 现在是 0，而当天早些时候是 3 / 28。
 全站唯一能把这两张表清空的代码路径是 `POST /api/admin/clear`，
@@ -139,10 +134,11 @@ wrangler d1 execute tools-data --local --file=schema.sql
 
 ## 六、维护建议
 
-1. **清理遗留表**：`DROP TABLE vault_blob_backup`
-2. **定期导出备份**：结构稳定后一个月一次 `d1 export` 足够；改动结构前必须导一次
-3. **改结构的两处同步**：`schema.sql`（事实来源）+ 线上 `ALTER`，缺一个就会出现
+1. **定期导出备份**：结构稳定后一个月一次 `d1 export` 足够；改动结构前必须导一次
+2. **改结构的两处同步**：`schema.sql`（事实来源）+ 线上 `ALTER`，缺一个就会出现
    「新库能建、老库对不上」
+3. **保持库表与 schema.sql 一致**：库里出现 `schema.sql` 之外的表时，多半是历史遗留，
+   确认无用就 `DROP`，别让它一直躺在 `sqlite_master` 里误导后来的人
 4. **给管理写接口加护栏**：`/api/admin/clear`、`POST /api/admin/feedback/delete`、
    `DELETE /api/admin/users/:id` 目前无任何校验。最小成本的收口是校验 `Origin`
    是否为 `https://ulnae.github.io`，能挡掉跨站调用和爬虫，不影响自己的页面
