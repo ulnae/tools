@@ -3,8 +3,7 @@
  *
  * 存储链路：浏览器 → ulnae.localhost.cc（Netlify 反代）→ Cloudflare Worker → D1
  *   - 指纹计算逻辑与旧版完全一致（FingerprintJS v4.6.2），同一设备的 visitorId 不变，
- *     因此历史用户迁移后可继续命中同一条记录；
- *   - 旧版的 GitHub Contents API 写入（utils/github.js）已不再使用。
+ *     因此历史用户迁移后可继续命中同一条记录。
  *
  * 引入方式（绝对地址，任意目录层级通用）：
  *   <script src="https://ulnae.github.io/tools/utils/tracker-config.js"></script>
@@ -21,9 +20,6 @@
  *   await VisitTracker.removeVisit(id, vid)   // 删除该用户的一条访问
  *   await VisitTracker.removeUser(id)         // 删除用户
  *   await VisitTracker.clearAll()             // 清空全部统计
- *
- * 管理端操作需 ADMIN_TOKEN：优先 VISIT_TRACKER_CONFIG.adminToken，
- * 其次 sessionStorage 的 cf_admin_token（由 manage/stats.html 引导输入）。
  */
 (function () {
     'use strict';

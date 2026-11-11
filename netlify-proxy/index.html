@@ -63,7 +63,7 @@
             var ms = Math.round(performance.now() - t0);
             line('HTTP ' + r.status + '  耗时 ' + ms + 'ms', r.ok ? 'ok' : 'bad');
             line('响应: ' + JSON.stringify(j));
-            line(r.ok ? '✔ 上报成功（CORS 预检也通过了）——测试数据可在 stats_test.html 删除'
+            line(r.ok ? '✔ 上报成功（CORS 预检也通过了）——测试数据可在 manage/stats.html 删除'
                       : '✘ 上报失败', r.ok ? 'ok' : 'bad');
         } catch (e) {
             line('✘ 失败: ' + (e && e.message), 'bad');

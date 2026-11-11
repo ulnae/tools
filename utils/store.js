@@ -1,21 +1,15 @@
 /**
  * store.js — 数据存储层（Cloudflare D1，经 tools-api Worker）
  *
- * 与旧版 utils/github.js 保持**完全相同的调用契约**，页面只需把
- *   <script src=".../utils/github.js"></script>
- * 换成
- *   <script src=".../utils/store.js"></script>
- * 并把标识符 GitHub. 改为 Store.，业务逻辑一行不用动：
+ * 页面只需三件事：
+ *   await Store.init();
+ *   const { content } = await Store.getFile('data/types.json');     // content 为解析后的 JSON
+ *   await Store.updateFile('data/types.json', list => { ...; return list; });
  *
- *   await Store.init();                                  // 等待依赖就绪
- *   const { content, sha } = await Store.getFile(path);  // content 为解析后的 JSON
- *   await Store.updateFile(path, mutate, msg, 4, branch);// mutate(latest) → 新对象 / null
- *   await Store.deleteFile(path, msg, branch);           // 返回布尔
- *
- * 路径语义沿用旧约定（页面里用 Store.CONFIG.DATA_DIR 拼路径）：
+ * 路径语义（页面用 Store.CONFIG.DATA_DIR 拼路径）：
  *   data/types.json       → marker_types 表（数组）
  *   data/{typeId}.geojson → marker_points 表（FeatureCollection）
- *   data/feedback.json    → feedback 表（数组，需要 ADMIN_TOKEN）
+ *   data/feedback.json    → feedback 表（数组）
  *   data/secrets.json     → vault 表（一行一条密文）
  *
  * 写入采用「内容比对 → 增量提交」：updateFile 先读服务端最新内容，跑页面给的
@@ -23,8 +17,8 @@
  * 把服务端真实结果（含新建记录的 id）返回给页面。这样页面里原有的
  * 「局部改一个点」逻辑不需要知道后端是表结构。
  *
- * 新增记录时页面**不要自己造 id**：POST 不带 id，由服务端 randomUUID 发号，
- * 页面从 updateFile 返回的 content 里取回真实 id（新建的那条就是库里多的那条）。
+ * 新增记录时页面**不要自己造 id**：POST 不带 id，由服务端发号，
+ * 页面从 updateFile 返回的 content 里取回真实 id。
  */
 window.Store = (function () {
     'use strict';
@@ -32,14 +26,10 @@ window.Store = (function () {
     const SELF_SRC = (document.currentScript && document.currentScript.src) || '';
 
     const CONFIG = {
-        /* 仅保留页面会用到的路径常量，语义与 github.js 一致 */
         DATA_DIR: 'data',
         TYPES_FILE: 'data/types.json',
         FEEDBACK_FILE: 'data/feedback.json',
-        SECRETS_FILE: 'data/secrets.json',
-        MARKER_BRANCH: 'marker',
-        VAULT_BRANCH: 'vault',
-        FEEDBACK_BRANCH: 'feedback'
+        SECRETS_FILE: 'data/secrets.json'
     };
 
     /* ==================== 依赖：api.js ==================== */
@@ -93,7 +83,7 @@ window.Store = (function () {
         if (k.kind === 'types') {
             const r = await A.markerTypes();
             const list = Array.isArray(r) ? r : ((r && r.types) || []);
-            /* 存量字段是 created_at，D1 是 created：统一回 created_at 给页面 */
+            /* D1 列名是 created：统一回 created_at 给页面 */
             return list.map(t => ({
                 id: t.id,
                 name: t.name || '',
@@ -130,7 +120,7 @@ window.Store = (function () {
 
     const coordOf = f => (f && f.geometry && f.geometry.coordinates) || [];
 
-    /* 内容指纹：存量 geojson 没有 id，用「坐标 + 标题 + 创建时间」认出同一个点 */
+    /* 内容指纹：用来认出「同一个点」（新建的 feature 没有 id） */
     function featureKey(f) {
         const c = coordOf(f);
         const p = (f && f.properties) || {};
@@ -153,8 +143,7 @@ window.Store = (function () {
         const nextIds = new Set();
 
         for (const t of next) {
-            /* 没有 id（或 id 不在库里）＝ 页面新建的：交给服务端发号，
-               真实 id 由调用方回读拿（updateFile 的返回 content 已是最新） */
+            /* 没有 id（或 id 不在库里）＝ 页面新建的：交给服务端发号 */
             const old = t.id ? curMap.get(t.id) : null;
             if (!old) {
                 await A.addMarkerType({ name: t.name || '', color: t.color || '' });
@@ -300,7 +289,7 @@ window.Store = (function () {
         return commitVault(cur, next);
     }
 
-    /* ==================== 对外接口（与 github.js 同形） ==================== */
+    /* ==================== 对外接口 ==================== */
 
     async function init() {
         await loadApi();
@@ -308,28 +297,21 @@ window.Store = (function () {
     }
 
     async function getFile(path) {
-        const content = await read(path);
-        return { content, sha: 'cf' };
+        return { content: await read(path) };
     }
 
-    async function putFile(path, obj) {
-        const cur = await read(path);
-        await commit(path, cur, obj);
-        return { content: await read(path), sha: 'cf' };
-    }
-
-    async function updateFile(path, mutate, message, maxAttempts, branch) {
+    async function updateFile(path, mutate) {
         const cur = await read(path);
         /* 页面的 mutate 多为原地修改（c.features.push / data.splice）：
            直接传 cur 会把"旧内容"一起改掉，导致差异比对永远为空（新增和删除都失效）。
            这里传副本，cur 保持原样用于比对。 */
-        const next = await mutate(clone(cur), 'cf');
+        const next = await mutate(clone(cur));
         if (next === null || next === undefined) {
-            return { content: cur, sha: 'cf', skipped: true };
+            return { content: cur, skipped: true };
         }
         await commit(path, cur, next);
         /* 回读：新建记录的服务端 id、被服务端裁剪的字段都以实际库为准 */
-        return { content: await read(path), sha: 'cf', skipped: false };
+        return { content: await read(path), skipped: false };
     }
 
     async function deleteFile(path) {
@@ -350,7 +332,7 @@ window.Store = (function () {
         return false;
     }
 
-    /* 反馈是公开提交，不需要先读全量（列表接口要 ADMIN_TOKEN） */
+    /* 反馈是公开提交，不需要先读全量列表 */
     async function appendFeedback(item) {
         const A = await api();
         return A.addFeedback({
@@ -361,16 +343,5 @@ window.Store = (function () {
         });
     }
 
-    return {
-        CONFIG,
-        init,
-        loadApi,
-        getFile,
-        putFile,
-        updateFile,
-        deleteFile,
-        appendFeedback,
-        /* 便于调试：控制台 Store.read('data/xxx.geojson') */
-        read
-    };
+    return { CONFIG, init, getFile, updateFile, deleteFile, appendFeedback };
 })();

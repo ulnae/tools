@@ -14,7 +14,7 @@
     <script src="https://ulnae.github.io/tools/utils/tailwindcss.js"></script>
     <script src="https://ulnae.github.io/tools/utils/dayjs.min.js"></script>
     <script src="https://ulnae.github.io/tools/utils/vue.global.prod.js"></script>
-    <script src="https://ulnae.github.io/tools/utils/github.js"></script>
+    <script src="https://ulnae.github.io/tools/utils/store.js"></script>
 
     <script>
         tailwind.config = {
@@ -625,10 +625,7 @@
             return div.innerHTML;
         };
 
-        const now = () => dayjs().format('YYYY/MM/DD HH:mm');
-
-        /* created_at 一律为毫秒时间戳 */
-        const formatDateTime = ts => (typeof ts === 'number' && ts > 0)
+        /* created_at 一律为毫秒时间戳 */        const formatDateTime = ts => (typeof ts === 'number' && ts > 0)
             ? dayjs(ts).format('YYYY/MM/DD HH:mm')
             : '';
 
@@ -833,7 +830,7 @@
                     setStatus('loading', '加载中...');
 
                     try {
-                        const { content } = await GitHub.getFile(GitHub.CONFIG.FEEDBACK_FILE, GitHub.CONFIG.FEEDBACK_BRANCH);
+                        const { content } = await Store.getFile(Store.CONFIG.FEEDBACK_FILE);
                         feedback.value = normalizeFeedback(content).filter(x => x && x.id);
                         selected.clear();
                         syncSelectedSize();
@@ -854,13 +851,13 @@
 
                 async function deleteByIds(ids) {
                     const idSet = new Set(ids);
-                    const res = await GitHub.updateFile(GitHub.CONFIG.FEEDBACK_FILE, (content) => {
+                    const res = await Store.updateFile(Store.CONFIG.FEEDBACK_FILE, (content) => {
                         const list = normalizeFeedback(content);
                         const before = list.length;
                         const next = list.filter(x => !(x && idSet.has(x.id)));
                         if (next.length === before) return null;
                         return next;
-                    }, `删除意见反馈 ${ids.length} 条 - ${now()}`, 4, GitHub.CONFIG.FEEDBACK_BRANCH);
+                    });
 
                     ids.forEach(id => selected.delete(id));
                     syncSelectedSize();
@@ -947,7 +944,7 @@
                     document.addEventListener('keydown', onKeydown);
 
                     try {
-                        await GitHub.init();
+                        await Store.init();
                     } catch (e) {
                         console.error(e);
                         setStatus('err', 'Token 解密失败');

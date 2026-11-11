@@ -68,7 +68,7 @@
             },
         };
     </script>
-    <script src="https://ulnae.github.io/tools/utils/github.js"></script>
+    <script src="https://ulnae.github.io/tools/utils/store.js"></script>
 
     <style>
         [v-cloak] { display: none !important; }
@@ -500,8 +500,7 @@
         /* ============================== 应用 ============================== */
         const app = createApp({
             setup() {
-                const DATA_FILE = GitHub.CONFIG.SECRETS_FILE;
-                const DATA_BRANCH = GitHub.CONFIG.VAULT_BRANCH;
+                const DATA_FILE = Store.CONFIG.SECRETS_FILE;
 
                 const items = ref([]);
                 const loading = ref(true);
@@ -583,7 +582,6 @@
                 const fmtEditTime = fmtDateTime;
 
                 const isEdited = (item) => !!(item && item.updatedAt && item.createdAt && item.updatedAt !== item.createdAt);
-                const newId = () => crypto.randomUUID();
 
                 const sortedItems = computed(() =>
                     [...items.value].sort((a, b) => (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0))
@@ -654,8 +652,8 @@
                     loading.value = true;
                     loadError.value = '';
                     try {
-                        await GitHub.init();
-                        const { content } = await GitHub.getFile(DATA_FILE, DATA_BRANCH);
+                        await Store.init();
+                        const { content } = await Store.getFile(DATA_FILE);
                         items.value = Array.isArray(content) ? content : [];
                     } catch (e) {
                         loadError.value = e.message || '网络错误';
@@ -663,9 +661,11 @@
                         loading.value = false;
                     }
                 }
-                async function writeItems(nextItems, message) {
-                    await GitHub.updateFile(DATA_FILE, () => nextItems, message, 4, DATA_BRANCH);
-                    items.value = nextItems;
+                async function writeItems(nextItems) {
+                    /* 用服务端返回的数据回填：updatedAt 由服务端生成，
+                       页面拿旧的自己算会破坏下一次编辑的并发基准 */
+                    const { content } = await Store.updateFile(DATA_FILE, () => nextItems);
+                    items.value = content;
                 }
 
                 /* ---------- 解锁 ---------- */
@@ -748,12 +748,15 @@
                         const ts = nowTS();
                         let next;
                         if (isEdit) {
-                            next = items.value.map((i) => i.id === editingId.value ? { ...i, title, ciphertext, updatedAt: ts } : i);
+                            /* 不在这里写 updatedAt：原值要留给服务端做并发基准，
+                               更新后的新版本由服务端返回（见 writeItems） */
+                            next = items.value.map((i) => i.id === editingId.value ? { ...i, title, ciphertext } : i);
                         } else {
-                            next = [...items.value, { id: newId(), title, ciphertext, createdAt: ts, updatedAt: ts }];
+                            /* 新条目不带 id：由服务端生成，保存后 writeItems 回读带回真实 id */
+                            next = [...items.value, { title, ciphertext, createdAt: ts }];
                         }
 
-                        await writeItems(next, isEdit ? `update secret: ${title}` : `add secret: ${title}`);
+                        await writeItems(next);
 
                         const wasEditingView = isEdit && unlockTarget.value && unlockTarget.value.id === editingId.value;
                         closeEditor();
@@ -782,7 +785,7 @@
                     deleting.value = true;
                     try {
                         const next = items.value.filter((i) => i.id !== target.id);
-                        await writeItems(next, `delete secret: ${target.title}`);
+                        await writeItems(next);
                         closeUnlock();
                         showToast(`已删除「${target.title}」`, 'success');
                     } catch (e) {

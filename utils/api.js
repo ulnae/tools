@@ -2,7 +2,7 @@
  * api.js — Cloudflare Worker 数据 API 客户端
  *
  * 供 utils/fingerprint.js（访客统计）与二期模块（标点/反馈/vault）共用，
- * 统一封装：base 故障转移、超时、错误归一、admin token 注入。
+ * 统一封装：base 故障转移、超时、错误归一。
  *
  * 通常无需在页面里手动引入：fingerprint.js 会自动加载本文件；
  * 二期页面若直接用 CFApi，再显式加一行 <script> 即可。
@@ -13,9 +13,6 @@
  *
  * 配置（可选，通过 VISIT_TRACKER_CONFIG 覆盖）：
  *   apiBase     Worker 地址，默认指向当前已部署实例
- *   adminToken  管理密钥；未配置时从 sessionStorage 的 cf_admin_token 读取
- *
- * 后续二期（标点/反馈/vault 迁移）复用本文件，方法已预留。
  */
 (function () {
     'use strict';
@@ -26,25 +23,11 @@
            （tools-api...workers.dev 直连在国内 TCP 阶段就会超时，已移除，
              留作兜底只会让主地址异常时白等 8 秒。） */
         apiBase: ['https://ulnae.localhost.cc'],
-        tokenKey: 'cf_admin_token',
         baseKey: 'cf_api_base',
         timeout: 8000
     };
     if (window.VISIT_TRACKER_CONFIG && typeof window.VISIT_TRACKER_CONFIG === 'object') {
         if (window.VISIT_TRACKER_CONFIG.apiBase) CFG.apiBase = window.VISIT_TRACKER_CONFIG.apiBase;
-        if (window.VISIT_TRACKER_CONFIG.adminToken) CFG.adminToken = window.VISIT_TRACKER_CONFIG.adminToken;
-    }
-
-    function getToken() {
-        if (CFG.adminToken) return CFG.adminToken;
-        try { return sessionStorage.getItem(CFG.tokenKey) || ''; } catch (_) { return ''; }
-    }
-
-    function setToken(t) {
-        try {
-            if (t) sessionStorage.setItem(CFG.tokenKey, t);
-            else sessionStorage.removeItem(CFG.tokenKey);
-        } catch (_) { /* 隐私模式下静默失败 */ }
     }
 
     /* 解析候选地址：内置配置 + 会话内追加（CFApi.addBase），上次成功的排最前 */
@@ -79,7 +62,6 @@
         const ctrl = new AbortController();
         const timer = setTimeout(() => ctrl.abort(), CFG.timeout);
         const headers = { 'Content-Type': 'application/json' };
-        if (opts.auth) headers.Authorization = 'Bearer ' + getToken();
 
         try {
             const res = await fetch(base + path, {
@@ -109,7 +91,7 @@
 
     /**
      * 统一请求：多地址故障转移、超时 8s、JSON 编解码、错误归一。
-     * opts: { method, body, auth }
+     * opts: { method, body }
      */
     async function request(path, opts = {}) {
         const list = baseList();
@@ -158,36 +140,35 @@
                 sessionStorage.setItem('cf_api_bases', JSON.stringify(list));
             } catch (_) { /* ignore */ }
         },
-        getToken, setToken,
 
         /* ---------- 诊断 ---------- */
         diagnose,
         health() { return request('/api/health'); },
 
-        /* ---------- 访客统计（公开写 / 管理读） ---------- */
+        /* ---------- 访客统计（读写均公开） ---------- */
 
         /** 上报一次访问：payload 含 fp/conf/ua/screen/dpr/lang/tz/page/path/title/ref */
         track(payload) { return request('/api/track', { method: 'POST', body: payload }); },
 
         /** 全站聚合：{ users, visits, activeWeek, byDay, byPage, byGeo } */
-        stats() { return request('/api/admin/stats', { auth: true }); },
+        stats() { return request('/api/admin/stats'); },
 
         /** 用户列表（含 visitCount），limit 最大 500 */
         users(limit = 500, offset = 0) {
-            return request(`/api/admin/users?limit=${limit}&offset=${offset}`, { auth: true });
+            return request(`/api/admin/users?limit=${limit}&offset=${offset}`);
         },
 
         /** 单用户访问明细：{ visits: [...] } */
-        userVisits(id) { return request(`/api/admin/users/${encodeURIComponent(id)}/visits`, { auth: true }); },
+        userVisits(id) { return request(`/api/admin/users/${encodeURIComponent(id)}/visits`); },
 
         /** 删除用户（连同其访问明细） */
-        removeUser(id) { return request(`/api/admin/users/${encodeURIComponent(id)}`, { method: 'DELETE', auth: true }); },
+        removeUser(id) { return request(`/api/admin/users/${encodeURIComponent(id)}`, { method: 'DELETE' }); },
 
         /** 删除单条访问 */
-        removeVisit(visitId) { return request(`/api/admin/visits/${encodeURIComponent(visitId)}`, { method: 'DELETE', auth: true }); },
+        removeVisit(visitId) { return request(`/api/admin/visits/${encodeURIComponent(visitId)}`, { method: 'DELETE' }); },
 
         /** 清空全部统计 */
-        clearAll() { return request('/api/admin/clear', { method: 'POST', auth: true }); },
+        clearAll() { return request('/api/admin/clear', { method: 'POST' }); },
 
         /* ---------- 标点（二期用，Worker 端已就绪） ---------- */
 
@@ -204,8 +185,8 @@
         /* ---------- 反馈（二期用） ---------- */
 
         addFeedback(f) { return request('/api/feedback', { method: 'POST', body: f }); },
-        feedbackList() { return request('/api/admin/feedback', { auth: true }); },
-        deleteFeedback(ids) { return request('/api/admin/feedback/delete', { method: 'POST', body: { ids }, auth: true }); },
+        feedbackList() { return request('/api/admin/feedback'); },
+        deleteFeedback(ids) { return request('/api/admin/feedback/delete', { method: 'POST', body: { ids } }); },
 
         /* ---------- 密文笔记（行级：一条密文一条记录） ---------- */
 

@@ -2,12 +2,9 @@
 const fs = require('fs');
 const vm = require('vm');
 
-const ADMIN = fs.readFileSync('F:/demo/tools/cloudflare/.wrangler/admin_token.txt', 'utf8').trim();
-
-const store = {};
 global.window = global;
 global.sessionStorage = {
-    _d: { cf_admin_token: ADMIN },
+    _d: {},
     getItem(k) { return this._d[k] == null ? null : this._d[k]; },
     setItem(k, v) { this._d[k] = String(v); },
     removeItem(k) { delete this._d[k]; }

@@ -4,7 +4,6 @@
  * 部署（见项目根 README 或迁移步骤文档）：
  *   wrangler d1 create tools-data              → 把输出的 database_id 填入 wrangler.toml
  *   wrangler d1 execute tools-data --remote --file=schema.sql
- *   wrangler secret put ADMIN_TOKEN            → 输入一个随机长串（管理端鉴权）
  *   wrangler deploy
  *
  * 端点：
@@ -24,7 +23,7 @@
  *     POST   /api/vault                      新增一条密文 { title, ciphertext, createdAt? }（id 由服务端生成）
  *     PATCH  /api/vault/:id                  更新一条（baseUpdatedAt 不匹配返回 409）
  *     DELETE /api/vault/:id                  删除一条
- *   管理（Header: Authorization: Bearer <ADMIN_TOKEN>）：
+ *   管理（与公开端点一样不带鉴权，页面直接调用）：
  *     GET    /api/admin/stats                全站聚合（总量/按天/按页面/按地区）
  *     GET    /api/admin/users?limit=&offset= 用户列表（含访问次数）
  *     GET    /api/admin/users/:id/visits     单用户访问明细
@@ -52,11 +51,6 @@ const dayOf = ts => new Date(ts).toISOString().slice(0, 10);
 
 async function readJson(request) {
     try { return await request.json(); } catch (_) { return null; }
-}
-
-function isAdmin(request, env) {
-    const auth = request.headers.get('Authorization') || '';
-    return Boolean(env.ADMIN_TOKEN) && auth === 'Bearer ' + env.ADMIN_TOKEN;
 }
 
 /* 取真实客户端 IP：
@@ -95,7 +89,7 @@ export default {
             return new Response(null, { status: 204, headers: {
                 ...cors,
                 'Access-Control-Allow-Methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+                'Access-Control-Allow-Headers': 'Content-Type',
                 'Access-Control-Max-Age': '86400'
             } });
         }
@@ -124,10 +118,7 @@ async function route(request, env, ctx) {
 
     if (path === '/api/vault' || path.startsWith('/api/vault/')) return vault(request, env, ctx);
 
-    if (path.startsWith('/api/admin/')) {
-        if (!isAdmin(request, env)) return fail('未授权', 401, cors);
-        return admin(request, env, ctx);
-    }
+    if (path.startsWith('/api/admin/')) return admin(request, env, ctx);
 
     return fail('not found', 404, cors);
 }

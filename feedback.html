@@ -12,7 +12,7 @@
     <script src="https://ulnae.github.io/tools/utils/tailwindcss.js"></script>
     <script src="https://ulnae.github.io/tools/utils/dayjs.min.js"></script>
     <script src="https://ulnae.github.io/tools/utils/vue.global.prod.js"></script>
-    <script src="https://ulnae.github.io/tools/utils/github.js"></script>
+    <script src="https://ulnae.github.io/tools/utils/store.js"></script>
     <style>
         :root {
             color-scheme: light;
@@ -459,9 +459,8 @@
 
                     submitting.value = true;
 
+                    /* 不带 id：由服务端发号，客户端造 id 只会被丢弃 */
                     const item = {
-                        id: (crypto.randomUUID ? crypto.randomUUID()
-                            : `${Date.now()}-${Math.random().toString(16).slice(2)}`),
                         type: type.value,
                         content: text,
                         contact: contactVal,
@@ -470,11 +469,8 @@
                     };
 
                     try {
-                        await GitHub.updateFile(GitHub.CONFIG.FEEDBACK_FILE, (c) => {
-                            const data = normalizeFeedback(c);
-                            data.push(item);
-                            return data;
-                        }, `新增意见反馈（${item.type}） - ${now()}`, 4, GitHub.CONFIG.FEEDBACK_BRANCH);
+                        /* 反馈是公开提交：直接追加，不需要先读全量列表 */
+                        await Store.appendFeedback(item);
 
                         content.value = '';
                         contact.value = '';
@@ -507,7 +503,7 @@
                     if (source.value) console.log('反馈来源：', source.value);
 
                     try {
-                        await GitHub.init();
+                        await Store.init();
                         ready.value = true;
                         setStatus('ok', '已连接');
                     } catch (e) {

@@ -11,7 +11,7 @@
         href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23007AFF'/%3E%3Cpath d='M16 6c-3.9 0-7 3.1-7 7 0 5.3 7 13 7 13s7-7.7 7-13c0-3.9-3.1-7-7-7z' fill='%23fff'/%3E%3Ccircle cx='16' cy='13' r='2.6' fill='%23007AFF'/%3E%3C/svg%3E">
     <script src="https://ulnae.github.io/tools/utils/tailwindcss.js"></script>
     <script src="https://ulnae.github.io/tools/utils/vue.global.prod.js"></script>
-    <script src="https://ulnae.github.io/tools/utils/github.js"></script>
+    <script src="https://ulnae.github.io/tools/utils/store.js"></script>
     <style>
         /* ============================================================
            主题变量：浅色（日间）
@@ -789,7 +789,7 @@
         /* ============================================================
            通用工具
            ============================================================ */
-        const markerFilePath = typeId => `${GitHub.CONFIG.DATA_DIR}/${typeId}.geojson`;
+        const markerFilePath = typeId => `${Store.CONFIG.DATA_DIR}/${typeId}.geojson`;
 
         const emptyFC = () => ({ type: 'FeatureCollection', features: [] });
 
@@ -1047,9 +1047,9 @@
                     return fc;
                 }
 
-                function ingestGeojson(typeId, geojson, sha) {
+                function ingestGeojson(typeId, geojson) {
                     const fc = processGeojson(geojson, typeId);
-                    typeData[typeId] = { geojson: fc, sha };
+                    typeData[typeId] = { geojson: fc };
                     loadedTypes[typeId] = true;
                     return fc;
                 }
@@ -1062,8 +1062,8 @@
                     loadingTypes[typeId] = true;
                     const p = (async () => {
                         try {
-                            const { content, sha } = await GitHub.getFile(markerFilePath(typeId), GitHub.CONFIG.MARKER_BRANCH);
-                            ingestGeojson(typeId, content, sha);
+                            const { content } = await Store.getFile(markerFilePath(typeId));
+                            ingestGeojson(typeId, content);
                         } finally {
                             delete loadingTypes[typeId];
                             delete typeLoadPromises[typeId];
@@ -1114,7 +1114,7 @@
                     setStatus('loading', '加载中...');
 
                     try {
-                        const { content } = await GitHub.getFile(GitHub.CONFIG.TYPES_FILE, GitHub.CONFIG.MARKER_BRANCH);
+                        const { content } = await Store.getFile(Store.CONFIG.TYPES_FILE);
                         typesData.value = normalizeTypes(content);
 
                         Object.keys(typeData).forEach(k => delete typeData[k]);
@@ -1208,35 +1208,33 @@
                         }
                     };
 
-                    const stamp = new Date().toLocaleString('zh-CN');
-
                     try {
                         if (typeId === oldTypeId) {
-                            const res = await GitHub.updateFile(markerFilePath(typeId), (content) => {
+                            const res = await Store.updateFile(markerFilePath(typeId), (content) => {
                                 const fc = normalizeFC(content);
                                 const idx = fc.features.findIndex(f => sameFeature(f, original));
                                 if (idx === -1) throw new Error('该标点已不存在，可能已被其他人删除');
                                 fc.features[idx] = newFeature;
                                 return fc;
-                            }, `更新标点「${title}」 - ${stamp}`, 4, GitHub.CONFIG.MARKER_BRANCH);
+                            });
 
-                            if (!res.skipped) ingestGeojson(typeId, res.content, res.sha);
+                            if (!res.skipped) ingestGeojson(typeId, res.content);
                         } else {
-                            const res1 = await GitHub.updateFile(markerFilePath(typeId), (content) => {
+                            const res1 = await Store.updateFile(markerFilePath(typeId), (content) => {
                                 const fc = normalizeFC(content);
                                 fc.features.push(newFeature);
                                 return fc;
-                            }, `移动标点「${title}」至新类型 - ${stamp}`, 4, GitHub.CONFIG.MARKER_BRANCH);
-                            if (!res1.skipped) ingestGeojson(typeId, res1.content, res1.sha);
+                            });
+                            if (!res1.skipped) ingestGeojson(typeId, res1.content);
 
-                            const res2 = await GitHub.updateFile(markerFilePath(oldTypeId), (content) => {
+                            const res2 = await Store.updateFile(markerFilePath(oldTypeId), (content) => {
                                 const fc = normalizeFC(content);
                                 const idx = fc.features.findIndex(f => sameFeature(f, original));
                                 if (idx === -1) return null;
                                 fc.features.splice(idx, 1);
                                 return fc;
-                            }, `从原类型移除标点「${title}」 - ${stamp}`, 4, GitHub.CONFIG.MARKER_BRANCH);
-                            if (!res2.skipped) ingestGeojson(oldTypeId, res2.content, res2.sha);
+                            });
+                            if (!res2.skipped) ingestGeojson(oldTypeId, res2.content);
                         }
 
                         closeMarkerModal();
@@ -1255,15 +1253,15 @@
                     if (!confirm(`确定要删除标点「${title}」吗？\n\n此操作不可撤销。`)) return;
 
                     try {
-                        const res = await GitHub.updateFile(markerFilePath(row.typeId), (content) => {
+                        const res = await Store.updateFile(markerFilePath(row.typeId), (content) => {
                             const fc = normalizeFC(content);
                             const idx = fc.features.findIndex(f => sameFeature(f, row.feature));
                             if (idx === -1) throw new Error('该标点已不存在，可能已被其他人删除');
                             fc.features.splice(idx, 1);
                             return fc;
-                        }, `删除标点「${title}」 - ${new Date().toLocaleString('zh-CN')}`, 4, GitHub.CONFIG.MARKER_BRANCH);
+                        });
 
-                        if (!res.skipped) ingestGeojson(row.typeId, res.content, res.sha);
+                        if (!res.skipped) ingestGeojson(row.typeId, res.content);
                         toast('标点已删除', 'success');
                     } catch (e) {
                         console.error(e);
@@ -1328,7 +1326,7 @@
 
                     try {
                         /* types.json 直接为数组 */
-                        const res = await GitHub.updateFile(GitHub.CONFIG.TYPES_FILE, (content) => {
+                        const res = await Store.updateFile(Store.CONFIG.TYPES_FILE, (content) => {
                             const data = normalizeTypes(content);
                             const t = data.find(x => x.id === typeId);
                             if (!t) throw new Error('该类型已不存在，可能已被其他人删除');
@@ -1347,7 +1345,7 @@
                             /* 更新时间使用毫秒时间戳 */
                             t.updated_at = Date.now();
                             return data;
-                        }, `更新类型「${name}」 - ${new Date().toLocaleString('zh-CN')}`, 4, GitHub.CONFIG.MARKER_BRANCH);
+                        });
 
                         if (!res.skipped) typesData.value = normalizeTypes(res.content);
 
@@ -1373,23 +1371,18 @@
 
                     if (!confirm(msg)) return;
 
-                    const stamp = new Date().toLocaleString('zh-CN');
-
                     try {
-                        await GitHub.updateFile(GitHub.CONFIG.TYPES_FILE, (content) => {
+                        await Store.updateFile(Store.CONFIG.TYPES_FILE, (content) => {
                             const data = normalizeTypes(content);
                             const idx = data.findIndex(x => x.id === typeId);
                             if (idx === -1) return null;
                             data.splice(idx, 1);
                             return data;
-                        }, `删除类型「${t.name}」 - ${stamp}`, 4, GitHub.CONFIG.MARKER_BRANCH);
+                        });
 
                         let fileDeleted = false;
                         try {
-                            fileDeleted = await GitHub.deleteFile(
-                                markerFilePath(typeId),
-                                `删除类型数据文件 ${typeId}.geojson - ${stamp}`, GitHub.CONFIG.MARKER_BRANCH
-                            );
+                            fileDeleted = await Store.deleteFile(markerFilePath(typeId));
                         } catch (err) {
                             console.error('删除数据文件失败:', err);
                             toast('类型已移除，但数据文件删除失败：' + err.message, 'error');
@@ -1426,7 +1419,7 @@
                     document.addEventListener('keydown', onKeydown);
 
                     try {
-                        await GitHub.init();
+                        await Store.init();
                     } catch (e) {
                         console.error(e);
                         setStatus('err', 'Token 解密失败');
