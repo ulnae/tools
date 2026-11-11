@@ -22,7 +22,7 @@ const crypto = require('crypto');
 
 const OWNER = 'ulnae';
 const REPO = 'tools';
-const BRANCH = { stats: 'stats', marker: 'marker', feedback: 'feedback' };
+const BRANCH = { stats: 'stats', marker: 'marker', feedback: 'feedback', vault: 'vault' };
 
 /* 存量 geojson 的 feature 没有 id（标识只在 properties 里），而 marker_points
    以 id 为主键。这里用「类型 + 坐标 + 标题 + 创建时间」生成确定性 id：
@@ -102,6 +102,31 @@ async function collectMarker() {
     return { markerTypes: types, markerPoints: points.filter(p => isFinite(p.lng) && isFinite(p.lat)) };
 }
 
+/* ---------- 密文笔记（整包，单行 blob） ---------- */
+
+async function migrateVault() {
+    const raw = await ghJson('data/secrets.json', BRANCH.vault);
+    const items = Array.isArray(raw) ? raw : ((raw && raw.items) || []);
+    if (!items.length) { console.log('vault: GitHub 上无数据，跳过'); return; }
+
+    const base = process.env.CF_BASE.replace(/\/+$/, '');
+    const cur = await fetch(`${base}/api/vault`).then(r => r.json()).catch(() => ({}));
+    const blob = (cur && typeof cur.blob === 'string') ? cur.blob.trim() : '';
+    const hasData = blob && blob !== '[]';
+    if (hasData && !process.env.FORCE_VAULT) {
+        console.log(`vault: D1 已有数据（${blob.length} 字节），跳过以免覆盖；如需强制覆盖请设 FORCE_VAULT=1`);
+        return;
+    }
+
+    const res = await fetch(`${base}/api/vault`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ blob: JSON.stringify(items) })
+    });
+    if (!res.ok) throw new Error(`vault 写入失败: ${res.status}`);
+    console.log(`vault: 已导入 ${items.length} 条`);
+}
+
 /* ---------- 导入 ---------- */
 
 (async () => {
@@ -132,5 +157,9 @@ async function collectMarker() {
         process.exit(1);
     }
     console.log('导入完成:', JSON.stringify(body.imported));
+
+    /* vault 走公开端点（整包覆盖写），与其他模块分开处理，且默认不覆盖已有数据 */
+    await migrateVault();
+
     console.log('验证：curl "' + process.env.CF_BASE + '/api/admin/stats" -H "Authorization: Bearer $ADMIN_TOKEN"');
 })();
