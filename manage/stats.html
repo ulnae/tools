@@ -502,6 +502,38 @@
             box-shadow: inset 2px 0 0 var(--c-accent);
         }
 
+        /* 单元格内容不换行；超出宽度省略号裁剪，悬浮 title 显示全部 */
+        .cell {
+            display: inline-block;
+            vertical-align: bottom;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            line-height: 1.4;
+        }
+
+        /* 操作列固定在右侧，横向滚动时不随内容移动 */
+        .col-action {
+            position: sticky;
+            right: 0;
+            background: var(--c-modal);
+            box-shadow: -10px 0 10px -8px rgba(0, 0, 0, .16);
+        }
+
+        thead th.col-action {
+            z-index: 7;
+            background-color: var(--c-thead);
+        }
+
+        tbody td.col-action {
+            z-index: 2;
+        }
+
+        .user-row:hover td.col-action {
+            background: var(--c-modal);
+        }
+
         .scroll-area {
             overflow: auto;
             overscroll-behavior: contain;
@@ -632,32 +664,38 @@
                 </div>
 
                 <div class="scroll-area" style="max-height:60vh;min-height:160px">
-                    <table class="w-full text-[13px] min-w-[820px]">
+                    <table class="text-[13px] min-w-[1280px]">
                         <thead>
                             <tr class="text-muted text-[12px]">
-                                <th class="text-left font-semibold px-3 py-2.5 w-[210px]">用户 ID</th>
-                                <th class="text-left font-semibold px-3 py-2.5 w-[130px]">浏览器指纹</th>
-                                <th class="text-left font-semibold px-3 py-2.5 w-[150px]">首次访问</th>
-                                <th class="text-left font-semibold px-3 py-2.5 w-[150px]">最近访问</th>
-                                <th class="text-left font-semibold px-3 py-2.5 w-[80px]">访问</th>
-                                <th class="text-left font-semibold px-3 py-2.5">环境</th>
-                                <th class="text-left font-semibold px-3 py-2.5 w-[130px]">操作</th>
+                                <th class="text-left font-semibold px-3 py-2.5 w-[268px]">用户 ID</th>
+                                <th class="text-left font-semibold px-3 py-2.5 w-[248px]">浏览器指纹</th>
+                                <th class="text-left font-semibold px-3 py-2.5 w-[140px]">首次访问</th>
+                                <th class="text-left font-semibold px-3 py-2.5 w-[140px]">最近访问</th>
+                                <th class="text-left font-semibold px-3 py-2.5 w-[72px]">访问次数</th>
+                                <th class="text-left font-semibold px-3 py-2.5 w-[104px]">屏幕</th>
+                                <th class="text-left font-semibold px-3 py-2.5 w-[64px]">DPR</th>
+                                <th class="text-left font-semibold px-3 py-2.5 w-[72px]">语言</th>
+                                <th class="text-left font-semibold px-3 py-2.5 w-[136px]">时区</th>
+                                <th class="text-left font-semibold px-3 py-2.5 w-[76px]">置信度</th>
+                                <th class="text-left font-semibold px-3 py-2.5">User-Agent</th>
+                                <th class="text-left font-semibold px-3 py-2.5 w-[128px] col-action">操作</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr v-if="!filteredUsers.length">
-                                <td colspan="7" class="py-16 text-center text-faint text-[13px]">
+                                <td colspan="12" class="py-16 text-center text-faint text-[13px]">
                                     {{ loading ? '加载中…' : (users.length === 0 ? '暂无用户记录' : '没有符合条件的用户') }}
                                 </td>
                             </tr>
                             <tr v-for="u in filteredUsers" :key="u.id" class="user-row border-b border-line"
                                 :class="{ 'is-active': u.id === selectedId }" @click="selectUser(u)">
                                 <td class="px-3 py-2.5">
-                                    <span class="src-tag mono" :title="u.id + '（点击复制）'"
+                                    <span class="src-tag mono cell max-w-[220px]" :title="u.id + '（点击复制）'"
                                         @click.stop="copy(u.id)">{{ u.id }}</span>
                                 </td>
                                 <td class="px-3 py-2.5">
-                                    <span class="text-[11.5px] text-faint2 mono" :title="u.fp">{{ shortFp(u.fp) }}</span>
+                                    <span class="text-[11.5px] text-faint2 mono cell max-w-[200px]" :title="u.fp">{{
+                                        u.fp || '—' }}</span>
                                 </td>
                                 <td class="px-3 py-2.5 text-muted tabular-nums whitespace-nowrap text-[12px]">
                                     {{ fmtTs(u.created) }}
@@ -665,13 +703,27 @@
                                 <td class="px-3 py-2.5 text-muted tabular-nums whitespace-nowrap text-[12px]">
                                     {{ fmtTs(u.file && u.file.updated) }}
                                 </td>
-                                <td class="px-3 py-2.5 text-ink font-semibold tabular-nums">
-                                    {{ u.file ? u.file.total : '—' }}
+                                <td class="px-3 py-2.5 text-ink font-semibold tabular-nums whitespace-nowrap">
+                                    {{ u.file ? u.file.visits.length : '—' }}
                                 </td>
-                                <td class="px-3 py-2.5 text-[11.5px] text-muted whitespace-nowrap">
-                                    {{ u.screen || '—' }}<span v-if="u.lang"> · {{ u.lang }}</span>
+                                <td class="px-3 py-2.5 text-[11.5px] text-muted whitespace-nowrap"
+                                    :title="u.screen || ''">{{ u.screen || '—' }}</td>
+                                <td class="px-3 py-2.5 text-[11.5px] text-muted tabular-nums whitespace-nowrap">
+                                    {{ u.dpr || '—' }}
                                 </td>
-                                <td class="px-3 py-2.5 whitespace-nowrap">
+                                <td class="px-3 py-2.5 text-[11.5px] text-muted whitespace-nowrap"
+                                    :title="u.lang || ''">{{ u.lang || '—' }}</td>
+                                <td class="px-3 py-2.5 text-[11.5px] text-muted whitespace-nowrap"
+                                    :title="u.tz || ''">{{ u.tz || '—' }}</td>
+                                <td class="px-3 py-2.5 text-[11.5px] tabular-nums whitespace-nowrap"
+                                    :class="u.conf == null ? 'text-faint' : 'text-muted'"
+                                    :title="u.conf == null ? '未知' : (u.conf * 100).toFixed(1) + '%'">
+                                    {{ fmtConf(u.conf) }}
+                                </td>
+                                <td class="px-3 py-2.5 text-[11.5px] text-muted">
+                                    <span class="cell max-w-[320px]" :title="u.ua">{{ u.ua || '—' }}</span>
+                                </td>
+                                <td class="px-3 py-2.5 whitespace-nowrap col-action">
                                     <button class="btn-mini btn-soft" @click.stop="selectUser(u)">明细</button>
                                     <button class="btn-mini btn-danger ml-1.5" :disabled="loading"
                                         @click.stop="removeUser(u)">删除</button>
@@ -689,8 +741,7 @@
                         访问明细 · <span class="mono text-[12px] text-sub">{{ currentUser.id }}</span>
                     </h2>
                     <span class="text-[12px] text-muted whitespace-nowrap">
-                        共 <b class="text-ink tabular-nums">{{ detailTotal }}</b> 次，保留最近
-                        <b class="text-ink tabular-nums">{{ detailRows0.length }}</b> 条
+                        共 <b class="text-ink tabular-nums">{{ detailRows0.length }}</b> 条明细
                     </span>
                     <div class="ml-auto flex items-center gap-2">
                         <button class="btn-mini btn-soft" :disabled="fileLoading" @click="reloadUser(currentUser)">
@@ -848,10 +899,9 @@
                     ? dayjs(ts).format('YYYY/MM/DD HH:mm')
                     : '—';
 
-                const shortFp = v => {
-                    const s = String(v || '');
-                    return s.length > 14 ? s.slice(0, 8) + '…' + s.slice(-4) : (s || '—');
-                };
+                const fmtConf = c => (typeof c === 'number' && isFinite(c))
+                    ? (c * 100).toFixed(0) + '%'
+                    : '—';
 
                 async function copy(text) {
                     try {
@@ -938,19 +988,27 @@
                     });
                 });
 
-                /* ---------- 汇总 ---------- */
-                const totalPV = computed(() =>
-                    users.value.reduce((n, u) => n + ((u.file && u.file.total) || 0), 0)
-                );
+                /* ---------- 汇总（全部由各用户 visits 数组解析得出） ---------- */
+                const allVisits = computed(() => {
+                    const out = [];
+                    users.value.forEach(u => {
+                        ((u.file && u.file.visits) || []).forEach(v => out.push(v));
+                    });
+                    return out;
+                });
+
+                const dayOf = v => v.day || dayjs(v.ts).format('YYYY-MM-DD');
+
+                const totalPV = computed(() => allVisits.value.length);
+
                 const todayCount = computed(() => {
                     const key = dayjs().format('YYYY-MM-DD');
-                    return users.value.reduce((n, u) => n + (((u.file && u.file.days) || {})[key] || 0), 0);
+                    return allVisits.value.filter(v => dayOf(v) === key).length;
                 });
+
                 const pageSet = computed(() => {
                     const set = new Set();
-                    users.value.forEach(u => {
-                        if (u.file) Object.keys(u.file.pages || {}).forEach(p => set.add(p));
-                    });
+                    allVisits.value.forEach(v => { if (v.page) set.add(v.page); });
                     return set;
                 });
 
@@ -966,14 +1024,16 @@
 
                 /* ---------- 14 天趋势 ---------- */
                 const daySeries = computed(() => {
+                    const bucket = {};
+                    allVisits.value.forEach(v => {
+                        const k = dayOf(v);
+                        bucket[k] = (bucket[k] || 0) + 1;
+                    });
                     const out = [];
                     for (let i = 13; i >= 0; i--) {
                         const d = dayjs().subtract(i, 'day');
                         const key = d.format('YYYY-MM-DD');
-                        const count = users.value.reduce(
-                            (n, u) => n + (((u.file && u.file.days) || {})[key] || 0), 0
-                        );
-                        out.push({ key, label: d.format('MM/DD'), short: d.format('D'), count });
+                        out.push({ key, label: d.format('MM/DD'), short: d.format('D'), count: bucket[key] || 0 });
                     }
                     return out;
                 });
@@ -988,9 +1048,8 @@
                 /* ---------- 页面排行 ---------- */
                 const pageRanking = computed(() => {
                     const agg = {};
-                    users.value.forEach(u => {
-                        const pages = (u.file && u.file.pages) || {};
-                        Object.keys(pages).forEach(p => { agg[p] = (agg[p] || 0) + (pages[p] || 0); });
+                    allVisits.value.forEach(v => {
+                        if (v.page) agg[v.page] = (agg[v.page] || 0) + 1;
                     });
                     return Object.keys(agg)
                         .map(p => ({ page: p, n: agg[p] }))
@@ -1009,10 +1068,7 @@
                     return (u && u.file && u.file.visits) ? u.file.visits : [];
                 });
 
-                const detailTotal = computed(() => {
-                    const u = currentUser.value;
-                    return (u && u.file && u.file.total) || 0;
-                });
+                const detailTotal = computed(() => detailRows0.value.length);
 
                 const detailTotalPages = computed(() =>
                     Math.max(1, Math.ceil(detailRows0.value.length / detailSize.value))
@@ -1115,7 +1171,7 @@
 
                 async function removeUser(u) {
                     if (!u || !tracker()) return;
-                    if (!confirm(`确定删除用户 ${u.id}？\n会同时删除该用户的全部访问数据（${(u.file && u.file.total) || 0} 次），不可撤销。`)) return;
+                    if (!confirm(`确定删除用户 ${u.id}？\n会同时删除该用户的全部访问数据（${(u.file && u.file.visits.length) || 0} 条），不可撤销。`)) return;
 
                     loading.value = true;
                     try {
@@ -1161,7 +1217,7 @@
                         rows.push([
                             u.id || '', u.fp || '', fmtTs(u.created),
                             fmtTs(u.file && u.file.updated),
-                            (u.file && u.file.total) || 0,
+                            (u.file && u.file.visits.length) || 0,
                             u.screen || '', u.lang || '', u.tz || '', u.ua || ''
                         ]);
                     });
@@ -1188,7 +1244,7 @@
                     currentUser, detailRows0, detailTotal, detailTotalPages, detailPageRows,
                     detailPage, detailSize, detailStart, detailSelected,
                     allDetailSelected, toggleDetailOne, toggleAllDetail,
-                    fmtTs, shortFp, copy,
+                    fmtTs, fmtConf, copy,
                     selectUser, reloadUser, removeVisit, removeSelectedVisits,
                     removeUser, clearAll, loadAll, exportCsv
                 };

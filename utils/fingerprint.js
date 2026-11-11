@@ -8,9 +8,11 @@
  *
  * 数据全部存放在仓库（默认 stats 分支），**不使用 localStorage**：
  *   data/users.json        用户索引
- *                          { updated, users: [ { id, fp, created, ua, screen, lang, tz } ] }
+ *                          { updated, users: [ { id, fp, created, conf, ua, screen, dpr, lang, tz } ] }
  *   data/visits/{id}.json  单个用户的访问数据
- *                          { id, fp, created, updated, total, pages, days, visits: [...] }
+ *                          { id, fp, created, updated, visits: [ { id, ts, day, page, path, title, ref } ] }
+ *                          只存明细数组，total / pages / days 等统计指标
+ *                          由统计页（manage/stats.html）从 visits 数组解析得出。
  *
  * 执行流程：
  *   1. 计算浏览器指纹并输出到控制台；
@@ -47,8 +49,7 @@
         visitsDir: 'data/visits',         // 单用户数据目录，文件名即用户 id
         ghModule: '',                     // github.js 地址，留空 = 自动按同目录加载
 
-        maxVisits: 200,                   // 单个用户保留的访问明细条数（total/pages/days 仍累计全部）
-        keepDays: 90,                     // 按天统计的保留天数
+        maxVisits: 500,                   // 单个用户保留的访问明细条数（超出后丢弃最旧的明细）
         debug: true
     };
 
@@ -150,9 +151,6 @@
             fp: f.fp || fp || '',
             created: Number(f.created) || Date.now(),
             updated: Number(f.updated) || 0,
-            total: Number(f.total) || 0,
-            pages: (f.pages && typeof f.pages === 'object') ? f.pages : {},
-            days: (f.days && typeof f.days === 'object') ? f.days : {},
             visits: Array.isArray(f.visits) ? f.visits : []
         };
     }
@@ -224,11 +222,6 @@
     }
 
     /* ==================== 5. 单用户访问数据 ==================== */
-    function trimDays(days) {
-        const cutoff = dayKey(new Date(Date.now() - CFG.keepDays * 864e5));
-        Object.keys(days).forEach(d => { if (d < cutoff) delete days[d]; });
-    }
-
     async function appendVisit(user, visit) {
         const gh = await requireGithub();
         const path = userFilePath(user.id);
@@ -239,10 +232,6 @@
 
             f.visits.unshift(visit);
             f.visits = f.visits.slice(0, CFG.maxVisits);
-            f.total += 1;
-            f.pages[visit.page] = (f.pages[visit.page] || 0) + 1;
-            f.days[visit.day] = (f.days[visit.day] || 0) + 1;
-            trimDays(f.days);
             f.updated = visit.ts;
             f.fp = f.fp || user.fp;
             return f;
@@ -289,27 +278,17 @@
             return normalizeUserFile(content, id);
         },
 
-        /* 删除某用户的一条访问记录（同步修正 total / pages / days） */
+        /* 删除某用户的一条访问记录（明细数组直接过滤） */
         async removeVisit(userId, visitId) {
             if (!userId || !visitId) return false;
             const gh = await requireGithub();
 
             const res = await gh.updateFile(userFilePath(userId), latest => {
                 const f = normalizeUserFile(latest, userId);
-                const target = f.visits.find(v => v.id === visitId);
-                if (!target) return null;
+                if (!f.visits.some(v => v.id === visitId)) return null;
 
                 f.visits = f.visits.filter(v => v.id !== visitId);
-                f.total = Math.max(0, f.total - 1);
-
-                if (target.page && f.pages[target.page]) {
-                    f.pages[target.page] -= 1;
-                    if (f.pages[target.page] <= 0) delete f.pages[target.page];
-                }
-                if (target.day && f.days[target.day]) {
-                    f.days[target.day] -= 1;
-                    if (!f.days[target.day]) delete f.days[target.day];
-                }
+                f.updated = f.visits.length ? f.visits[0].ts : f.created;
                 return f;
             }, `删除访问记录 ${userId} · ${visitId}`, 4, CFG.ghBranch);
 
