@@ -36,24 +36,28 @@ CREATE TABLE IF NOT EXISTS visits (
 CREATE INDEX IF NOT EXISTS idx_visits_user ON visits(user_id, ts DESC);
 CREATE INDEX IF NOT EXISTS idx_visits_day  ON visits(day);
 
--- 标点类型（对应 data/types.json 的数组元素）
+-- 标点类型（对应 data/types.json 的数组元素；按 created 顺序展示）
+-- 原 sort 字段已删除：页面从未提供排序功能，值恒为 0，纯冗余。
 CREATE TABLE IF NOT EXISTS marker_types (
   id      TEXT PRIMARY KEY,
   name    TEXT NOT NULL,
   color   TEXT,
-  sort    INTEGER DEFAULT 0,
   created INTEGER
 );
 
--- 标点（对应 data/{typeId}.geojson 的 Feature，props 存 properties JSON）
+-- 标点（对应 data/{typeId}.geojson 的 Feature）
+-- 原 props 字段存整段 properties JSON，实际只有 title / description 两个业务字段，
+-- 而 type 与 created_at 早已由 type_id、created 列表示，故改为独立列存放，
+-- 不再有 JSON 解析成本，也能直接 WHERE / ORDER BY。
 CREATE TABLE IF NOT EXISTS marker_points (
-  id      TEXT PRIMARY KEY,
-  type_id TEXT NOT NULL,
-  lng     REAL NOT NULL,
-  lat     REAL NOT NULL,
-  props   TEXT,
-  created INTEGER,
-  updated INTEGER
+  id          TEXT PRIMARY KEY,
+  type_id     TEXT NOT NULL,
+  lng         REAL NOT NULL,
+  lat         REAL NOT NULL,
+  title       TEXT NOT NULL DEFAULT '',
+  description TEXT NOT NULL DEFAULT '',
+  created     INTEGER,
+  updated     INTEGER
 );
 CREATE INDEX IF NOT EXISTS idx_points_type ON marker_points(type_id);
 

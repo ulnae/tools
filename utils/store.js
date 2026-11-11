@@ -22,6 +22,9 @@
  * mutate，再把新旧内容的差异转成 POST / PATCH / DELETE 调用，最后回读一次
  * 把服务端真实结果（含新建记录的 id）返回给页面。这样页面里原有的
  * 「局部改一个点」逻辑不需要知道后端是表结构。
+ *
+ * 新增记录时页面**不要自己造 id**：POST 不带 id，由服务端 randomUUID 发号，
+ * 页面从 updateFile 返回的 content 里取回真实 id（新建的那条就是库里多的那条）。
  */
 window.Store = (function () {
     'use strict';
@@ -95,7 +98,6 @@ window.Store = (function () {
                 id: t.id,
                 name: t.name || '',
                 color: t.color || '',
-                sort: Number(t.sort || 0),
                 created_at: t.created_at || t.created || 0
             }));
         }
@@ -147,24 +149,24 @@ window.Store = (function () {
         const A = await api();
         cur = Array.isArray(cur) ? cur : [];
         next = Array.isArray(next) ? next : [];
-        const curMap = new Map(cur.map(t => [t.id, t]));
-        const nextMap = new Map(next.map(t => [t.id, t]));
+        const curMap = new Map(cur.filter(t => t && t.id).map(t => [t.id, t]));
+        const nextIds = new Set();
 
         for (const t of next) {
-            const old = curMap.get(t.id);
+            /* 没有 id（或 id 不在库里）＝ 页面新建的：交给服务端发号，
+               真实 id 由调用方回读拿（updateFile 的返回 content 已是最新） */
+            const old = t.id ? curMap.get(t.id) : null;
             if (!old) {
-                await A.addMarkerType({
-                    id: t.id, name: t.name || '', color: t.color || '', sort: Number(t.sort || 0)
-                });
-            } else if (old.name !== t.name || (old.color || '') !== (t.color || '') ||
-                       Number(old.sort || 0) !== Number(t.sort || 0)) {
-                await A.updateMarkerType(t.id, {
-                    name: t.name || '', color: t.color || '', sort: Number(t.sort || 0)
-                });
+                await A.addMarkerType({ name: t.name || '', color: t.color || '' });
+                continue;
+            }
+            nextIds.add(t.id);
+            if (old.name !== t.name || (old.color || '') !== (t.color || '')) {
+                await A.updateMarkerType(t.id, { name: t.name || '', color: t.color || '' });
             }
         }
-        for (const t of cur) {
-            if (!nextMap.has(t.id)) await A.deleteMarkerType(t.id);
+        for (const t of curMap.values()) {
+            if (!nextIds.has(t.id)) await A.deleteMarkerType(t.id);
         }
     }
 
@@ -191,29 +193,33 @@ window.Store = (function () {
             if (!hit) {
                 toAdd.push(f);
             } else if (!sameFeature(hit, f)) {
+                const p = f.properties || {};
                 toPatch.push({
                     id: hit.id,
                     coordinates: coordOf(f),
-                    properties: Object.assign({}, f.properties, { type: typeId })
+                    title: p.title || '',
+                    description: p.description || ''
                 });
             }
         }
 
         if (toAdd.length) {
-            /* 不传 id：让服务端生成。跨类型「移动标点」时若带上旧 id，
-               紧接着删除旧类型会把刚插入的行一起删掉。 */
+            /* 不传 id：由服务端生成（跨类型「移动标点」时若带上旧 id，
+               紧接着删除旧类型会把刚插入的行一起删掉）。 */
             await A.addMarkerPoints({
-                type: 'FeatureCollection',
+                typeId,
                 features: toAdd.map(f => ({
-                    type: 'Feature',
                     geometry: f.geometry,
-                    properties: Object.assign({}, f.properties, { type: typeId })
+                    title: (f.properties && f.properties.title) || '',
+                    description: (f.properties && f.properties.description) || ''
                 }))
             });
         }
 
         for (const p of toPatch) {
-            await A.updateMarkerPoint(p.id, { coordinates: p.coordinates, properties: p.properties });
+            await A.updateMarkerPoint(p.id, {
+                coordinates: p.coordinates, title: p.title, description: p.description
+            });
         }
 
         const removed = curFeats.filter(cf => cf.id && !used.has(cf.id));
@@ -250,15 +256,15 @@ window.Store = (function () {
         const A = await api();
         cur = Array.isArray(cur) ? cur : [];
         next = Array.isArray(next) ? next : [];
-        const curMap = new Map(cur.map(x => [x.id, x]));
-        const nextMap = new Map(next.map(x => [x.id, x]));
+        const curMap = new Map(cur.filter(x => x && x.id).map(x => [x.id, x]));
+        const nextIds = new Set(next.filter(x => x && x.id).map(x => x.id));
 
         for (const item of next) {
-            if (!item || !item.id) continue;
-            const old = curMap.get(item.id);
+            if (!item) continue;
+            const old = item.id ? curMap.get(item.id) : null;
             if (!old) {
+                /* 新建：不带 id，由服务端生成（真实 id 由 updateFile 回读带回页面） */
                 await A.addVaultItem({
-                    id: item.id,
                     title: item.title || '',
                     ciphertext: item.ciphertext || '',
                     createdAt: item.createdAt || item.created_at || Date.now()
@@ -275,7 +281,7 @@ window.Store = (function () {
             }
         }
 
-        const removed = [...curMap.keys()].filter(id => !nextMap.has(id));
+        const removed = [...curMap.keys()].filter(id => !nextIds.has(id));
         for (const id of removed) {
             try {
                 await A.deleteVaultItem(id);

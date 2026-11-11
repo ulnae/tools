@@ -11,17 +11,17 @@
  *   公开：
  *     GET    /api/health                     连通性探测（国内可达性实测用）
  *     POST   /api/track                      访客统计上报（服务端取 IP/地理，入库即脱敏）
- *     GET    /api/marker/types               标点类型列表
- *     POST   /api/marker/types               新增类型
+ *     GET    /api/marker/types               标点类型列表（按创建时间）
+ *     POST   /api/marker/types               新增类型（id 由服务端生成）
  *     PATCH  /api/marker/types/:id           更新类型
  *     DELETE /api/marker/types/:id           删除类型（连同其下标点）
  *     GET    /api/marker/points?type_id=     某类型标点（返回 FeatureCollection）
- *     POST   /api/marker/points              新增标点（Feature / FeatureCollection / 数组）
- *     PATCH  /api/marker/points/:id          更新标点 { coordinates, properties }
+ *     POST   /api/marker/points              新增标点（Feature / FeatureCollection / 数组 / 扁平对象，id 由服务端生成）
+ *     PATCH  /api/marker/points/:id          更新标点 { coordinates, title, description }
  *     DELETE /api/marker/points/:id          删除标点
  *     POST   /api/feedback                   提交反馈 { type, content, contact, source }
  *     GET    /api/vault                      列出密文条目
- *     POST   /api/vault                      新增一条密文 { id?, title, ciphertext }
+ *     POST   /api/vault                      新增一条密文 { title, ciphertext, createdAt? }（id 由服务端生成）
  *     PATCH  /api/vault/:id                  更新一条（baseUpdatedAt 不匹配返回 409）
  *     DELETE /api/vault/:id                  删除一条
  *   管理（Header: Authorization: Bearer <ADMIN_TOKEN>）：
@@ -49,7 +49,6 @@ function maskIp(ip) {
 }
 
 const dayOf = ts => new Date(ts).toISOString().slice(0, 10);
-const safeJson = s => { try { return JSON.parse(s) || {}; } catch (_) { return {}; } };
 
 async function readJson(request) {
     try { return await request.json(); } catch (_) { return null; }
@@ -185,25 +184,29 @@ async function track(request, env, cors) {
 
 /* ==================== 标点 ==================== */
 
-/* 接受 FeatureCollection / 单个 Feature / 数组，统一转为行 */
+/* 接受 FeatureCollection / 单个 Feature / 数组，统一转为行。
+   也接受扁平的 { typeId, lng, lat, title, description }（store.js 走这条）。
+   id 一律由调用方之外的 POST 逻辑生成（忽略客户端传入的 id）；created 未给则用服务端时间。 */
 function toFeatures(body) {
     if (!body) return [];
-    const list = body.features || (body.type === 'Feature' ? [body] : (Array.isArray(body) ? body : []));
+    const flat = !body.features && body.type !== 'Feature' && !Array.isArray(body) ? [body] : null;
+    const list = flat || body.features || (body.type === 'Feature' ? [body] : (Array.isArray(body) ? body : []));
     return list.map(f => {
         const props = Object.assign({}, f.properties || {});
-        const typeId = props.type || body.typeId || '';
-        const coord = (f.geometry && f.geometry.coordinates) || [];
+        const coord = (f.geometry && f.geometry.coordinates) || [f.lng, f.lat];
         return {
-            id: f.id || props.id || '',
-            type_id: typeId,
+            type_id: String(props.type || f.typeId || body.typeId || ''),
             lng: Number(coord[0]),
             lat: Number(coord[1]),
-            properties: Object.assign(props, { type: typeId }),
-            created: props.created
+            title: String(f.title != null ? f.title : (props.title || '')).slice(0, 200),
+            description: String(f.description != null ? f.description : (props.description || '')).slice(0, 2000),
+            created: Number(f.created != null ? f.created : (props.created_at || props.created)) || 0
         };
     }).filter(f => f.type_id && isFinite(f.lng) && isFinite(f.lat));
 }
 
+/* 行 → GeoJSON Feature。properties 仍按原契约输出（title/description/type/created_at/updated_at），
+   页面无需感知后端是列存储还是 JSON。 */
 function toFeatureCollection(rows) {
     return {
         type: 'FeatureCollection',
@@ -211,7 +214,13 @@ function toFeatureCollection(rows) {
             type: 'Feature',
             id: r.id,
             geometry: { type: 'Point', coordinates: [r.lng, r.lat] },
-            properties: Object.assign(safeJson(r.props), { type: r.type_id, created: r.created })
+            properties: {
+                title: r.title || '',
+                description: r.description || '',
+                type: r.type_id,
+                created_at: r.created || 0,
+                updated_at: r.updated || 0
+            }
         }))
     };
 }
@@ -223,33 +232,34 @@ async function marker(request, env, { url, path, method, cors }) {
 
     if (kind === 'types') {
         if (method === 'GET' && !id) {
-            const { results } = await db.prepare('SELECT * FROM marker_types ORDER BY sort, created').all();
+            /* created 相同（批量导入）时用 rowid 兜底，保证顺序稳定且与写入顺序一致 */
+            const { results } = await db.prepare('SELECT * FROM marker_types ORDER BY created, rowid').all();
             return json({ types: results }, 200, cors);
         }
         if (method === 'POST' && !id) {
             const b = await readJson(request);
             if (!b || !b.name) return fail('缺少类型名称', 400, cors);
+            /* id 一律由服务端生成：客户端生成的 id 无法保证不冲突，也无法保证重试幂等 */
             const row = {
-                id: b.id || crypto.randomUUID(),
-                name: String(b.name),
+                id: crypto.randomUUID(),
+                name: String(b.name).slice(0, 100),
                 color: String(b.color || '#378ADD'),
-                sort: Number(b.sort || 0),
                 created: Date.now()
             };
-            await db.prepare('INSERT OR IGNORE INTO marker_types (id, name, color, sort, created) VALUES (?,?,?,?,?)')
-                .bind(row.id, row.name, row.color, row.sort, row.created).run();
+            await db.prepare('INSERT INTO marker_types (id, name, color, created) VALUES (?,?,?,?)')
+                .bind(row.id, row.name, row.color, row.created).run();
             return json(row, 200, cors);
         }
         if (method === 'PATCH' && id) {
             const b = await readJson(request);
             const sets = [], args = [];
-            for (const k of ['name', 'color', 'sort']) {
-                if (b && b[k] !== undefined) { sets.push(`${k} = ?`); args.push(k === 'sort' ? Number(b[k]) : String(b[k])); }
+            for (const k of ['name', 'color']) {
+                if (b && b[k] !== undefined) { sets.push(`${k} = ?`); args.push(String(b[k])); }
             }
             if (!sets.length) return fail('无可更新字段', 400, cors);
             args.push(id);
             await db.prepare(`UPDATE marker_types SET ${sets.join(', ')} WHERE id = ?`).bind(...args).run();
-            return json({ ok: true }, 200, cors);
+            return json({ ok: true, id }, 200, cors);
         }
         if (method === 'DELETE' && id) {
             await db.batch([
@@ -264,7 +274,7 @@ async function marker(request, env, { url, path, method, cors }) {
         if (method === 'GET' && !id) {
             const typeId = url.searchParams.get('type_id');
             if (!typeId) return fail('缺少 type_id', 400, cors);
-            const { results } = await db.prepare('SELECT * FROM marker_points WHERE type_id = ? ORDER BY created')
+            const { results } = await db.prepare('SELECT * FROM marker_points WHERE type_id = ? ORDER BY created, rowid')
                 .bind(typeId).all();
             return json(toFeatureCollection(results), 200, cors);
         }
@@ -273,24 +283,31 @@ async function marker(request, env, { url, path, method, cors }) {
             const feats = toFeatures(b);
             if (!feats.length) return fail('缺少有效 Feature 数据', 400, cors);
             const now = Date.now();
-            await db.batch(feats.map(f => db.prepare(
-                'INSERT OR REPLACE INTO marker_points (id, type_id, lng, lat, props, created, updated) VALUES (?,?,?,?,?,?,?)'
-            ).bind(f.id || crypto.randomUUID(), f.type_id, f.lng, f.lat,
-                JSON.stringify(f.properties), f.created || now, now)));
-            return json({ ok: true, count: feats.length }, 200, cors);
+            const ids = feats.map(() => crypto.randomUUID());
+            await db.batch(feats.map((f, i) => db.prepare(
+                'INSERT INTO marker_points (id, type_id, lng, lat, title, description, created, updated) VALUES (?,?,?,?,?,?,?,?)'
+            ).bind(ids[i], f.type_id, f.lng, f.lat, f.title, f.description, f.created || now, now)));
+            return json({ ok: true, count: feats.length, ids }, 200, cors);
         }
         if (method === 'PATCH' && id) {
-            const b = await readJson(request);
+            const b = (await readJson(request)) || {};
+            /* 兼容两种入参：扁平 { title, description }（store.js 用）
+               与旧 GeoJSON 风格的 { properties: { title, description } } */
+            const p = b.properties || {};
+            const title = b.title !== undefined ? b.title : p.title;
+            const desc = b.description !== undefined ? b.description : p.description;
             const sets = [], args = [];
-            if (b && Array.isArray(b.coordinates) && isFinite(Number(b.coordinates[0]))) {
+            if (Array.isArray(b.coordinates) && isFinite(Number(b.coordinates[0]))) {
                 sets.push('lng = ?', 'lat = ?');
                 args.push(Number(b.coordinates[0]), Number(b.coordinates[1]));
             }
-            if (b && b.properties) { sets.push('props = ?'); args.push(JSON.stringify(b.properties)); }
+            if (title !== undefined) { sets.push('title = ?'); args.push(String(title).slice(0, 200)); }
+            if (desc !== undefined) { sets.push('description = ?'); args.push(String(desc).slice(0, 2000)); }
             if (!sets.length) return fail('无可更新字段', 400, cors);
             sets.push('updated = ?'); args.push(Date.now(), id);
-            await db.prepare(`UPDATE marker_points SET ${sets.join(', ')} WHERE id = ?`).bind(...args).run();
-            return json({ ok: true }, 200, cors);
+            const r = await db.prepare(`UPDATE marker_points SET ${sets.join(', ')} WHERE id = ?`).bind(...args).run();
+            /* 目标行已被别处删除时不算失败：调用方的意图（该点不存在）已达成 */
+            return json({ ok: true, id, changed: ((r.meta && r.meta.changes) || 0) > 0 }, 200, cors);
         }
         if (method === 'DELETE' && id) {
             await db.prepare('DELETE FROM marker_points WHERE id = ?').bind(id).run();
@@ -349,12 +366,13 @@ async function vault(request, env, { path, method, cors }) {
         const b = await readJson(request);
         if (!b || typeof b.ciphertext !== 'string' || !b.ciphertext) return fail('缺少 ciphertext', 400, cors);
         const now = Date.now();
-        const newId = b.id ? String(b.id) : crypto.randomUUID();
+        /* id 由服务端生成：客户端不再自己造 id，避免两台设备同时新建时撞号 */
+        const newId = crypto.randomUUID();
         const created = Number(b.createdAt) || now;
-        const r = await db.prepare(
-            'INSERT INTO vault (id, title, ciphertext, created_at, updated_at) VALUES (?,?,?,?,?) ON CONFLICT(id) DO NOTHING'
-        ).bind(newId, String(b.title || ''), b.ciphertext, created, now).run();
-        return json({ ok: true, id: newId, created: ((r.meta && r.meta.changes) || 0) > 0 }, 200, cors);
+        await db.prepare(
+            'INSERT INTO vault (id, title, ciphertext, created_at, updated_at) VALUES (?,?,?,?,?)'
+        ).bind(newId, String(b.title || '').slice(0, 200), b.ciphertext, created, now).run();
+        return json({ ok: true, id: newId, createdAt: created, updatedAt: now }, 200, cors);
     }
 
     if (method === 'PATCH' && id) {
@@ -526,14 +544,20 @@ async function importData(request, env, cors) {
             v.page || '', v.path || '', v.title || '', v.ref || ''));
     }
 
+    /* 导入是迁移通道（不是页面新增）：这里必须保留原始 id，才能重复执行幂等 */
     if (Array.isArray(b.markerTypes)) out.markerTypes = await run(b.markerTypes, t => db.prepare(
-        'INSERT OR IGNORE INTO marker_types (id, name, color, sort, created) VALUES (?,?,?,?,?)'
-    ).bind(t.id, t.name || '', t.color || '', Number(t.sort || 0), t.created || now));
+        'INSERT OR REPLACE INTO marker_types (id, name, color, created) VALUES (?,?,?,?)'
+    ).bind(t.id, t.name || '', t.color || '', t.created || now));
 
-    if (Array.isArray(b.markerPoints)) out.markerPoints = await run(b.markerPoints, p => db.prepare(
-        'INSERT OR REPLACE INTO marker_points (id, type_id, lng, lat, props, created, updated) VALUES (?,?,?,?,?,?,?)'
-    ).bind(p.id, p.type_id, Number(p.lng), Number(p.lat), JSON.stringify(p.props || {}),
-        p.created || now, p.updated || now));
+    if (Array.isArray(b.markerPoints)) out.markerPoints = await run(b.markerPoints, p => {
+        const pr = p.props || p.properties || {};
+        return db.prepare(
+            'INSERT OR REPLACE INTO marker_points (id, type_id, lng, lat, title, description, created, updated) VALUES (?,?,?,?,?,?,?,?)'
+        ).bind(p.id, p.type_id, Number(p.lng), Number(p.lat),
+            String(p.title != null ? p.title : (pr.title || '')),
+            String(p.description != null ? p.description : (pr.description || '')),
+            p.created || now, p.updated || now);
+    });
 
     if (Array.isArray(b.feedback)) out.feedback = await run(b.feedback, f => db.prepare(
         'INSERT OR IGNORE INTO feedback (id, type, content, contact, source, created_at) VALUES (?,?,?,?,?,?)'

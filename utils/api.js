@@ -192,6 +192,7 @@
         /* ---------- 标点（二期用，Worker 端已就绪） ---------- */
 
         markerTypes() { return request('/api/marker/types'); },
+        /* 新增一律由服务端发号：不要传 id，返回体里带真实 id */
         addMarkerType(t) { return request('/api/marker/types', { method: 'POST', body: t }); },
         updateMarkerType(id, patch) { return request(`/api/marker/types/${encodeURIComponent(id)}`, { method: 'PATCH', body: patch }); },
         deleteMarkerType(id) { return request(`/api/marker/types/${encodeURIComponent(id)}`, { method: 'DELETE' }); },
@@ -211,7 +212,7 @@
         /* 列表：{ items: [{ id, title, ciphertext, createdAt, updatedAt }] } */
         vaultItems() { return request('/api/vault'); },
 
-        /* 新增：同 id 幂等（重复提交不会产生第二条） */
+        /* 新增：不传 id，服务端生号，返回 { id, createdAt, updatedAt } */
         addVaultItem(item) { return request('/api/vault', { method: 'POST', body: item }); },
 
         /* 更新：带 baseUpdatedAt 时服务端做条件更新，被别处改过会抛 409 */

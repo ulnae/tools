@@ -88,13 +88,19 @@ async function collectMarker() {
         try {
             const fc = await ghJson(`data/${t.id}.geojson`, BRANCH.marker);
             const feats = (fc && Array.isArray(fc.features)) ? fc.features : [];
-            feats.forEach(f => points.push({
-                id: f.id || (f.properties && f.properties.id) || pointId(t.id, f),
-                type_id: t.id,
-                lng: f.geometry && f.geometry.coordinates ? f.geometry.coordinates[0] : null,
-                lat: f.geometry && f.geometry.coordinates ? f.geometry.coordinates[1] : null,
-                props: Object.assign({}, f.properties, { type: t.id })
-            }));
+            feats.forEach(f => {
+                const p = f.properties || {};
+                points.push({
+                    id: f.id || p.id || pointId(t.id, f),
+                    type_id: t.id,
+                    lng: f.geometry && f.geometry.coordinates ? f.geometry.coordinates[0] : null,
+                    lat: f.geometry && f.geometry.coordinates ? f.geometry.coordinates[1] : null,
+                    /* 与 D1 列一一对应：type / created_at 已由 type_id / created 列表示，不再重复 */
+                    title: p.title || '',
+                    description: p.description || '',
+                    created: p.created_at || p.created || Date.now()
+                });
+            });
         } catch (e) {
             console.warn(`跳过类型 ${t.id}: ${e.message}`);
         }

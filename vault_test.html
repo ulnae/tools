@@ -583,7 +583,6 @@
                 const fmtEditTime = fmtDateTime;
 
                 const isEdited = (item) => !!(item && item.updatedAt && item.createdAt && item.updatedAt !== item.createdAt);
-                const newId = () => crypto.randomUUID();
 
                 const sortedItems = computed(() =>
                     [...items.value].sort((a, b) => (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0))
@@ -754,7 +753,8 @@
                                更新后的新版本由服务端返回（见 writeItems） */
                             next = items.value.map((i) => i.id === editingId.value ? { ...i, title, ciphertext } : i);
                         } else {
-                            next = [...items.value, { id: newId(), title, ciphertext, createdAt: ts }];
+                            /* 新条目不带 id：由服务端生成，保存后 writeItems 回读带回真实 id */
+                            next = [...items.value, { title, ciphertext, createdAt: ts }];
                         }
 
                         await writeItems(next, isEdit ? `update secret: ${title}` : `add secret: ${title}`);

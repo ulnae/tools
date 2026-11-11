@@ -459,9 +459,8 @@
 
                     submitting.value = true;
 
+                    /* 不带 id：由服务端发号，客户端造 id 只会被丢弃 */
                     const item = {
-                        id: (crypto.randomUUID ? crypto.randomUUID()
-                            : `${Date.now()}-${Math.random().toString(16).slice(2)}`),
                         type: type.value,
                         content: text,
                         contact: contactVal,
