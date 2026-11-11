@@ -900,8 +900,8 @@
                     try {
                         await Store.init();
                     } catch {
-                        setStatus('err', 'Token 解密失败');
-                        showToast('Token 解密失败，无法读写数据', 'error');
+                        setStatus('err', '初始化失败');
+                        showToast('初始化失败，无法读写数据', 'error');
                         return;
                     }
 

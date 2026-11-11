@@ -1422,8 +1422,8 @@
                         await Store.init();
                     } catch (e) {
                         console.error(e);
-                        setStatus('err', 'Token 解密失败');
-                        toast('Token 解密失败，无法读写数据', 'error');
+                        setStatus('err', '初始化失败');
+                        toast('初始化失败，无法读写数据', 'error');
                         return;
                     }
 

@@ -819,8 +819,8 @@
             </section>
 
             <p class="text-[11.5px] text-faint text-center pb-2 leading-relaxed">
-                数据来源：仓库 <span class="mono">data/users.json</span> 用户索引 +
-                <span class="mono">data/visits/{id}.json</span> 个人访问数据（{{ branchName }} 分支，不使用本地存储）
+                数据来源：D1 数据库 <span class="mono">users</span> 用户表 +
+                <span class="mono">visits</span> 访问明细表（Cloudflare Worker 直连，不使用本地存储）
             </p>
         </main>
 
@@ -871,7 +871,6 @@
                 const detailPage = ref(1);
                 const detailSize = ref(20);
                 const detailSelected = ref([]);
-                const branchName = (window.VISIT_TRACKER_CONFIG || {}).ghBranch || 'stats';
 
                 const toasts = ref([]);
                 let toastSeq = 0;
@@ -1239,7 +1238,7 @@
 
                 return {
                     users, loading, fileLoading, statusText, statusDotClass,
-                    keyword, filteredUsers, selectedId, branchName,
+                    keyword, filteredUsers, selectedId,
                     toasts, TOAST_BG,
                     cards, daySeries, maxDayCount, barHeight, pageRanking, rankWidth,
                     currentUser, detailRows0, detailTotal, detailTotalPages, detailPageRows,

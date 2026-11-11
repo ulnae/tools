@@ -413,7 +413,7 @@
                 const done = ref(false);
                 const submitting = ref(false);
                 const ready = ref(false);
-                const tokenFailed = ref(false);
+                const initFailed = ref(false);
 
                 const statusState = ref('loading');
                 const statusText = ref('初始化中...');
@@ -424,7 +424,7 @@
                 let toastSeq = 0;
 
                 const statusDotClass = computed(() => `dot dot-${statusState.value}`);
-                const submitDisabled = computed(() => submitting.value || tokenFailed.value);
+                const submitDisabled = computed(() => submitting.value || initFailed.value);
 
                 function setStatus(state, text) {
                     statusState.value = state;
@@ -508,9 +508,9 @@
                         setStatus('ok', '已连接');
                     } catch (e) {
                         console.error(e);
-                        setStatus('err', 'Token 解密失败');
-                        toast('Token 解密失败，暂时无法提交反馈', 'error');
-                        tokenFailed.value = true;
+                        setStatus('err', '初始化失败');
+                        toast('初始化失败，暂时无法提交反馈', 'error');
+                        initFailed.value = true;
                         return;
                     }
 
