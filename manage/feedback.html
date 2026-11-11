@@ -833,7 +833,7 @@
                     setStatus('loading', '加载中...');
 
                     try {
-                        const { content } = await GitHub.getFile(GitHub.CONFIG.FEEDBACK_FILE);
+                        const { content } = await GitHub.getFile(GitHub.CONFIG.FEEDBACK_FILE, GitHub.CONFIG.FEEDBACK_BRANCH);
                         feedback.value = normalizeFeedback(content).filter(x => x && x.id);
                         selected.clear();
                         syncSelectedSize();
@@ -860,7 +860,7 @@
                         const next = list.filter(x => !(x && idSet.has(x.id)));
                         if (next.length === before) return null;
                         return next;
-                    }, `删除意见反馈 ${ids.length} 条 - ${now()}`);
+                    }, `删除意见反馈 ${ids.length} 条 - ${now()}`, 4, GitHub.CONFIG.FEEDBACK_BRANCH);
 
                     ids.forEach(id => selected.delete(id));
                     syncSelectedSize();

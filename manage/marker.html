@@ -1062,7 +1062,7 @@
                     loadingTypes[typeId] = true;
                     const p = (async () => {
                         try {
-                            const { content, sha } = await GitHub.getFile(markerFilePath(typeId));
+                            const { content, sha } = await GitHub.getFile(markerFilePath(typeId), GitHub.CONFIG.MARKER_BRANCH);
                             ingestGeojson(typeId, content, sha);
                         } finally {
                             delete loadingTypes[typeId];
@@ -1114,7 +1114,7 @@
                     setStatus('loading', '加载中...');
 
                     try {
-                        const { content } = await GitHub.getFile(GitHub.CONFIG.TYPES_FILE);
+                        const { content } = await GitHub.getFile(GitHub.CONFIG.TYPES_FILE, GitHub.CONFIG.MARKER_BRANCH);
                         typesData.value = normalizeTypes(content);
 
                         Object.keys(typeData).forEach(k => delete typeData[k]);
@@ -1218,7 +1218,7 @@
                                 if (idx === -1) throw new Error('该标点已不存在，可能已被其他人删除');
                                 fc.features[idx] = newFeature;
                                 return fc;
-                            }, `更新标点「${title}」 - ${stamp}`);
+                            }, `更新标点「${title}」 - ${stamp}`, 4, GitHub.CONFIG.MARKER_BRANCH);
 
                             if (!res.skipped) ingestGeojson(typeId, res.content, res.sha);
                         } else {
@@ -1226,7 +1226,7 @@
                                 const fc = normalizeFC(content);
                                 fc.features.push(newFeature);
                                 return fc;
-                            }, `移动标点「${title}」至新类型 - ${stamp}`);
+                            }, `移动标点「${title}」至新类型 - ${stamp}`, 4, GitHub.CONFIG.MARKER_BRANCH);
                             if (!res1.skipped) ingestGeojson(typeId, res1.content, res1.sha);
 
                             const res2 = await GitHub.updateFile(markerFilePath(oldTypeId), (content) => {
@@ -1235,7 +1235,7 @@
                                 if (idx === -1) return null;
                                 fc.features.splice(idx, 1);
                                 return fc;
-                            }, `从原类型移除标点「${title}」 - ${stamp}`);
+                            }, `从原类型移除标点「${title}」 - ${stamp}`, 4, GitHub.CONFIG.MARKER_BRANCH);
                             if (!res2.skipped) ingestGeojson(oldTypeId, res2.content, res2.sha);
                         }
 
@@ -1261,7 +1261,7 @@
                             if (idx === -1) throw new Error('该标点已不存在，可能已被其他人删除');
                             fc.features.splice(idx, 1);
                             return fc;
-                        }, `删除标点「${title}」 - ${new Date().toLocaleString('zh-CN')}`);
+                        }, `删除标点「${title}」 - ${new Date().toLocaleString('zh-CN')}`, 4, GitHub.CONFIG.MARKER_BRANCH);
 
                         if (!res.skipped) ingestGeojson(row.typeId, res.content, res.sha);
                         toast('标点已删除', 'success');
@@ -1347,7 +1347,7 @@
                             /* 更新时间使用毫秒时间戳 */
                             t.updated_at = Date.now();
                             return data;
-                        }, `更新类型「${name}」 - ${new Date().toLocaleString('zh-CN')}`);
+                        }, `更新类型「${name}」 - ${new Date().toLocaleString('zh-CN')}`, 4, GitHub.CONFIG.MARKER_BRANCH);
 
                         if (!res.skipped) typesData.value = normalizeTypes(res.content);
 
@@ -1382,13 +1382,13 @@
                             if (idx === -1) return null;
                             data.splice(idx, 1);
                             return data;
-                        }, `删除类型「${t.name}」 - ${stamp}`);
+                        }, `删除类型「${t.name}」 - ${stamp}`, 4, GitHub.CONFIG.MARKER_BRANCH);
 
                         let fileDeleted = false;
                         try {
                             fileDeleted = await GitHub.deleteFile(
                                 markerFilePath(typeId),
-                                `删除类型数据文件 ${typeId}.geojson - ${stamp}`
+                                `删除类型数据文件 ${typeId}.geojson - ${stamp}`, GitHub.CONFIG.MARKER_BRANCH
                             );
                         } catch (err) {
                             console.error('删除数据文件失败:', err);

@@ -474,7 +474,7 @@
                             const data = normalizeFeedback(c);
                             data.push(item);
                             return data;
-                        }, `新增意见反馈（${item.type}） - ${now()}`);
+                        }, `新增意见反馈（${item.type}） - ${now()}`, 4, GitHub.CONFIG.FEEDBACK_BRANCH);
 
                         content.value = '';
                         contact.value = '';

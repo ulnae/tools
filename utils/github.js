@@ -16,6 +16,12 @@ window.GitHub = (function () {
         REPO: 'tools',
         BRANCH: 'master',
 
+        /* 数据分支：数据读写都落在各自分支，避免污染 master 提交历史。
+           数据路径保持 data/xxx 不变，只是存储位置换成分支。 */
+        MARKER_BRANCH: 'marker',
+        VAULT_BRANCH: 'vault',
+        FEEDBACK_BRANCH: 'feedback',
+
         DATA_DIR: 'data',
         TYPES_FILE: 'data/types.json',
         FEEDBACK_FILE: 'data/feedback.json',

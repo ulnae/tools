@@ -501,6 +501,7 @@
         const app = createApp({
             setup() {
                 const DATA_FILE = GitHub.CONFIG.SECRETS_FILE;
+                const DATA_BRANCH = GitHub.CONFIG.VAULT_BRANCH;
 
                 const items = ref([]);
                 const loading = ref(true);
@@ -654,7 +655,7 @@
                     loadError.value = '';
                     try {
                         await GitHub.init();
-                        const { content } = await GitHub.getFile(DATA_FILE);
+                        const { content } = await GitHub.getFile(DATA_FILE, DATA_BRANCH);
                         items.value = Array.isArray(content) ? content : [];
                     } catch (e) {
                         loadError.value = e.message || '网络错误';
@@ -663,7 +664,7 @@
                     }
                 }
                 async function writeItems(nextItems, message) {
-                    await GitHub.updateFile(DATA_FILE, () => nextItems, message);
+                    await GitHub.updateFile(DATA_FILE, () => nextItems, message, 4, DATA_BRANCH);
                     items.value = nextItems;
                 }
 

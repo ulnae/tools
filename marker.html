@@ -574,7 +574,7 @@
 
                 /* ---------- 数据加载 ---------- */
                 async function loadTypes() {
-                    const { content } = await GitHub.getFile(GitHub.CONFIG.TYPES_FILE);
+                    const { content } = await GitHub.getFile(GitHub.CONFIG.TYPES_FILE, GitHub.CONFIG.MARKER_BRANCH);
                     typesList.value = normalizeTypes(content);
                 }
 
@@ -582,7 +582,7 @@
                     if (typeLoadPromises[typeId]) return typeLoadPromises[typeId];
                     return typeLoadPromises[typeId] = (async () => {
                         try {
-                            const { content, sha } = await GitHub.getFile(markerFilePath(typeId));
+                            const { content, sha } = await GitHub.getFile(markerFilePath(typeId), GitHub.CONFIG.MARKER_BRANCH);
                             const geojson = normalizeFC(content);
                             geojson.features.forEach(f => {
                                 if (!f.properties) f.properties = {};
@@ -725,7 +725,7 @@
                     const res = await GitHub.updateFile(markerFilePath(typeId), c => {
                         if (c && Array.isArray(c.features)) return null;
                         return emptyFC();
-                    }, `初始化类型数据文件 ${typeId}.geojson - ${new Date().toLocaleString('zh-CN')}`);
+                    }, `初始化类型数据文件 ${typeId}.geojson - ${new Date().toLocaleString('zh-CN')}`, 4, GitHub.CONFIG.MARKER_BRANCH);
                     typeData[typeId] = { geojson: normalizeFC(res.content), sha: res.sha };
                 }
 
@@ -748,7 +748,7 @@
                             if (data.some(t => (t.color || '').toLowerCase() === color)) throw new Error('该颜色已被其他类型使用，请更换');
                             data.push(newType);
                             return data;
-                        }, `新增类型「${name}」 - ${new Date().toLocaleString('zh-CN')}`);
+                        }, `新增类型「${name}」 - ${new Date().toLocaleString('zh-CN')}`, 4, GitHub.CONFIG.MARKER_BRANCH);
 
                         typesList.value = normalizeTypes(res.content);
                         await ensureTypeDataFile(newType.id);
@@ -817,7 +817,7 @@
                         const fc = normalizeFC(c);
                         fc.features.push(feature);
                         return fc;
-                    }, `新增标点「${feature.properties.title}」 - ${new Date().toLocaleString('zh-CN')}`);
+                    }, `新增标点「${feature.properties.title}」 - ${new Date().toLocaleString('zh-CN')}`, 4, GitHub.CONFIG.MARKER_BRANCH);
                     const geojson = normalizeFC(res.content);
                     geojson.features.forEach(f => {
                         if (!f.properties) f.properties = {};
