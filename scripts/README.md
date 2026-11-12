@@ -50,37 +50,44 @@ GH_TOKEN=github_pat_xxx node scripts/push-via-api.js
 
 ---
 
-## 二、`verify-store.js` —— 存储层冒烟测试
+## 二、`verify-api.js` —— 接口冒烟测试
 
-**验证对象**：`utils/api.js` + `utils/store.js` 这一对，跑的是**真实链路**
+**验证对象**：`utils/api.js`，跑的是**真实链路**
 （`ulnae.localhost.cc` 反代 → Worker → D1），不是 mock。
 
-**做法**：Node 里给 `window` / `sessionStorage` / `document` 打桩，把两个文件 `vm.runInContext`
-进去，然后按页面真实用法调 `Store.getFile / updateFile / appendFeedback`。
+**做法**：Node 里把全局对象当 `window`，`vm.runInContext` 加载 `utils/api.js`，
+然后按页面真实用法调 `Api.markerTypes / markerPoints / feedback / vault`。
 所以它验的是「页面会怎么用」，而不只是「接口能不能通」。
 
 ```bash
-node scripts/verify-store.js
+node scripts/verify-api.js
 ```
 
-**8 项检查**：
+**15 项检查**：
 
 | 检查 | 说明 |
 |---|---|
 | 读取类型列表 | 类型数量与名称 |
-| 无修改回写不产生写入 | 内容没变时不应产生任何 POST/PATCH，这是幂等性的底线 |
-| 新增标点并拿到服务端 id | 页面不传 id，id 必须由服务端生成并在回读结果里返回 |
+| 读取标点列表 | 返回标准 FeatureCollection |
+| 新增标点并拿到服务端 id | 页面不传 id，id 必须由服务端生成并在回读结果里出现 |
+| 更新标点生效 | 坐标与标题都按 PATCH 落库 |
 | 删除标点后条数复原 | 删除路径生效且不误伤 |
-| 反馈写入并可读回 | `appendFeedback` 走公开端点 |
-| 反馈删除生效 | 清理 |
-| 读取 vault 数组 | 行级存储拼回数组 |
-| vault 回写后仍可解析 | 原样回写不破坏数据 |
+| 新增类型拿到服务端 id | 类型同样由服务端发号 |
+| 新类型下标点可写入 | 新类型立刻可用，不需要先「建文件」 |
+| 删除类型连带删除其下标点 | 服务端是一个 batch 删两张表 |
+| 类型已从列表移除 | 删除后列表同步 |
+| 反馈写入并可读回 | 走公开提交端点 |
+| 反馈删除生效 | 批量删除接口 |
+| 读取 vault 列表 | 行级存储按 createdAt 返回 |
+| 过期版本号写入被拒绝（409） | 乐观锁生效，并发覆盖会被挡下 |
+| vault 更新生效 | 正确版本号可以写，且返回新的 updatedAt |
+| vault 删除生效 | 单条删除 |
 
-**副作用**：会往线上写数据，但会自己清干净——造的标点和反馈会被删掉，vault 只做原样回写
-（内容不变 → 不产生写入）。
+**副作用**：会往线上写数据，但会自己清干净——造的标点、反馈、vault 条目都会删掉，
+不会留下垃圾，也不会改动已有记录。
 
-**什么时候该跑**：改完 `utils/store.js`、`utils/api.js`、`cloudflare/src/worker.js`，
-或动过 D1 表结构之后。**部署页面之前跑一次**，比在浏览器里点半天快得多。
+**什么时候该跑**：改完 `utils/api.js`、`cloudflare/src/worker.js`，或动过 D1 表结构之后。
+**部署页面之前跑一次**，比在浏览器里点半天快得多。
 
 **前提**：Node 18+（内置 `fetch`）；能访问 `ulnae.localhost.cc`。
 
@@ -91,18 +98,17 @@ node scripts/verify-store.js
 | 我遇到的情况 | 用哪个 |
 |---|---|
 | `git push` 报 502 / 连接超时 | `push-via-api.js` |
-| 改完存储层，想确认没把页面搞坏 | `verify-store.js` |
+| 改完接口层，想确认没把页面搞坏 | `verify-api.js` |
 | 怀疑接口挂了、想区分是 Worker 还是反代的问题 | 都不是，用 `ping_test.html` |
 | 想查/改数据库里的数据 | 都不是，用 `wrangler d1 execute`（见 `cloudflare/README.md`） |
 
 ---
 
-## 四、另有两组临时测试脚本
+## 四、还有一个临时测试脚本
 
-`cloudflare/.wrangler/` 下还有两个同类脚本，验证的是更细的点：
+`cloudflare/.wrangler/test-v2.js` —— 接口结构层验证：类型无 `sort` 字段、
+标点 `props` 已拆列、客户端传入的 id 被忽略、PATCH 接受扁平入参。
 
-- `test-v2.js` —— 接口结构层：类型无 `sort`、标点无 `props`、客户端 id 被忽略、PATCH 扁平入参
-- `test-server-id.js` —— store 层：新增类型/标点/vault 时服务端发号的完整链路
-
-它们**没有纳入版本管理**（`.wrangler/` 在 `.gitignore` 里），属于一次性验证留档，
+它**没有纳入版本管理**（`.wrangler/` 在 `.gitignore` 里），属于一次性验证留档，
 重装环境就没了。如果想长期保留，可以搬进本目录并按 `verify-*.js` 的方式改成相对路径。
+

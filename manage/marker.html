@@ -11,7 +11,7 @@
         href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23007AFF'/%3E%3Cpath d='M16 6c-3.9 0-7 3.1-7 7 0 5.3 7 13 7 13s7-7.7 7-13c0-3.9-3.1-7-7-7z' fill='%23fff'/%3E%3Ccircle cx='16' cy='13' r='2.6' fill='%23007AFF'/%3E%3C/svg%3E">
     <script src="https://ulnae.github.io/tools/utils/tailwindcss.js"></script>
     <script src="https://ulnae.github.io/tools/utils/vue.global.prod.js"></script>
-    <script src="https://ulnae.github.io/tools/utils/store.js"></script>
+    <script src="https://ulnae.github.io/tools/utils/api.js"></script>
     <style>
         /* ============================================================
            主题变量：浅色（日间）
@@ -585,7 +585,7 @@
                             共 <b class="text-[color:var(--text-1)] tabular-nums">{{ allTypes.length }}</b> 个
                         </span>
                         <span class="ml-auto text-[11.5px] text-[color:var(--text-4)] hidden sm:block">
-                            删除类型会同时删除对应的 geojson 数据文件
+                            删除类型会同时删除该类型下的所有标点
                         </span>
                     </div>
 
@@ -787,22 +787,8 @@
         ];
 
         /* ============================================================
-           通用工具
+           通用工具（数据接口见 ./utils/api.js 的 Api.*）
            ============================================================ */
-        const markerFilePath = typeId => `${Store.CONFIG.DATA_DIR}/${typeId}.geojson`;
-
-        const emptyFC = () => ({ type: 'FeatureCollection', features: [] });
-
-        function normalizeFC(content) {
-            if (content && content.type === 'FeatureCollection' && Array.isArray(content.features)) return content;
-            return emptyFC();
-        }
-
-        /* types.json 直接为数组 */
-        function normalizeTypes(content) {
-            return Array.isArray(content) ? content : [];
-        }
-
         function normalizeHex(v) {
             v = (v || '').trim();
             if (!v) return null;
@@ -841,15 +827,6 @@
             const lng = Number(c[0]), lat = Number(c[1]);
             if (!isFinite(lng) || !isFinite(lat)) return '—';
             return `${lng.toFixed(6)}, ${lat.toFixed(6)}`;
-        }
-
-        function sameFeature(a, b) {
-            const pa = a.properties || {}, pb = b.properties || {};
-            const ca = (a.geometry && a.geometry.coordinates) || [];
-            const cb = (b.geometry && b.geometry.coordinates) || [];
-            return (pa.title || '') === (pb.title || '')
-                && toTs(pa.created_at) === toTs(pb.created_at)
-                && ca[0] === cb[0] && ca[1] === cb[1];
         }
 
         function paginate(list, page, size) {
@@ -1038,13 +1015,12 @@
                    geojson 按需加载
                    ============================================================ */
                 function processGeojson(geojson, typeId) {
-                    const fc = normalizeFC(geojson);
-                    fc.features.forEach(f => {
+                    geojson.features.forEach(f => {
                         if (!f.properties) f.properties = {};
                         if (!f.geometry) f.geometry = { type: 'Point', coordinates: [] };
                         f.properties.type = typeId;
                     });
-                    return fc;
+                    return geojson;
                 }
 
                 function ingestGeojson(typeId, geojson) {
@@ -1062,8 +1038,7 @@
                     loadingTypes[typeId] = true;
                     const p = (async () => {
                         try {
-                            const { content } = await Store.getFile(markerFilePath(typeId));
-                            ingestGeojson(typeId, content);
+                            ingestGeojson(typeId, await Api.markerPoints.list(typeId));
                         } finally {
                             delete loadingTypes[typeId];
                             delete typeLoadPromises[typeId];
@@ -1107,15 +1082,14 @@
                 }
 
                 /* ============================================================
-                   全量刷新（只加载 types.json）
+                   全量刷新（只加载类型列表）
                    ============================================================ */
                 async function refreshAll(silent = true) {
                     loading.value = true;
                     setStatus('loading', '加载中...');
 
                     try {
-                        const { content } = await Store.getFile(Store.CONFIG.TYPES_FILE);
-                        typesData.value = normalizeTypes(content);
+                        typesData.value = await Api.markerTypes.list();
 
                         Object.keys(typeData).forEach(k => delete typeData[k]);
                         Object.keys(loadedTypes).forEach(k => delete loadedTypes[k]);
@@ -1192,49 +1166,25 @@
 
                     savingMarker.value = true;
 
-                    const oldTypeId = editingOldTypeId.value;
                     const original = editingFeature.value;
-
-                    const newFeature = {
-                        type: 'Feature',
-                        geometry: { type: 'Point', coordinates: [lng, lat] },
-                        properties: {
-                            ...(original.properties || {}),
-                            title,
-                            description: desc,
-                            type: typeId,
-                            /* 更新时间使用毫秒时间戳 */
-                            updated_at: Date.now()
-                        }
-                    };
+                    const pointId = original.id;
+                    const oldTypeId = editingOldTypeId.value;
 
                     try {
                         if (typeId === oldTypeId) {
-                            const res = await Store.updateFile(markerFilePath(typeId), (content) => {
-                                const fc = normalizeFC(content);
-                                const idx = fc.features.findIndex(f => sameFeature(f, original));
-                                if (idx === -1) throw new Error('该标点已不存在，可能已被其他人删除');
-                                fc.features[idx] = newFeature;
-                                return fc;
-                            });
-
-                            if (!res.skipped) ingestGeojson(typeId, res.content);
+                            await Api.markerPoints.update(pointId, { lng, lat, title, description: desc });
+                            ingestGeojson(typeId, await Api.markerPoints.list(typeId));
                         } else {
-                            const res1 = await Store.updateFile(markerFilePath(typeId), (content) => {
-                                const fc = normalizeFC(content);
-                                fc.features.push(newFeature);
-                                return fc;
+                            /* 换类型：服务端不支持改 type_id，新建一条再删旧条 */
+                            await Api.markerPoints.create(typeId, {
+                                lng, lat, title, description: desc,
+                                createdAt: (original.properties && original.properties.created_at) || Date.now()
                             });
-                            if (!res1.skipped) ingestGeojson(typeId, res1.content);
-
-                            const res2 = await Store.updateFile(markerFilePath(oldTypeId), (content) => {
-                                const fc = normalizeFC(content);
-                                const idx = fc.features.findIndex(f => sameFeature(f, original));
-                                if (idx === -1) return null;
-                                fc.features.splice(idx, 1);
-                                return fc;
-                            });
-                            if (!res2.skipped) ingestGeojson(oldTypeId, res2.content);
+                            await Api.markerPoints.remove(pointId);
+                            ingestGeojson(typeId, await Api.markerPoints.list(typeId));
+                            if (loadedTypes[oldTypeId]) {
+                                ingestGeojson(oldTypeId, await Api.markerPoints.list(oldTypeId));
+                            }
                         }
 
                         closeMarkerModal();
@@ -1253,15 +1203,12 @@
                     if (!confirm(`确定要删除标点「${title}」吗？\n\n此操作不可撤销。`)) return;
 
                     try {
-                        const res = await Store.updateFile(markerFilePath(row.typeId), (content) => {
-                            const fc = normalizeFC(content);
-                            const idx = fc.features.findIndex(f => sameFeature(f, row.feature));
-                            if (idx === -1) throw new Error('该标点已不存在，可能已被其他人删除');
-                            fc.features.splice(idx, 1);
-                            return fc;
-                        });
-
-                        if (!res.skipped) ingestGeojson(row.typeId, res.content);
+                        await Api.markerPoints.remove(row.feature.id);
+                        const fc = typeData[row.typeId] && typeData[row.typeId].geojson;
+                        if (fc) {
+                            const idx = fc.features.findIndex(f => f.id === row.feature.id);
+                            if (idx > -1) fc.features.splice(idx, 1);
+                        }
                         toast('标点已删除', 'success');
                     } catch (e) {
                         console.error(e);
@@ -1325,29 +1272,16 @@
                     savingType.value = true;
 
                     try {
-                        /* types.json 直接为数组 */
-                        const res = await Store.updateFile(Store.CONFIG.TYPES_FILE, (content) => {
-                            const data = normalizeTypes(content);
-                            const t = data.find(x => x.id === typeId);
-                            if (!t) throw new Error('该类型已不存在，可能已被其他人删除');
+                        const others = allTypes.value.filter(x => x.id !== typeId);
+                        if (!allTypes.value.some(x => x.id === typeId)) throw new Error('该类型已不存在，可能已被其他人删除');
+                        if (others.some(x => (x.name || '').toLowerCase() === name.toLowerCase())) throw new Error('类型名称已存在');
+                        if (others.some(x => (x.color || '').toLowerCase() === color)) throw new Error('该颜色已被其他类型使用，请更换');
 
-                            if (data.some(x => x.id !== typeId &&
-                                (x.name || '').toLowerCase() === name.toLowerCase())) {
-                                throw new Error('类型名称已存在');
-                            }
-                            if (data.some(x => x.id !== typeId &&
-                                (x.color || '').toLowerCase() === color)) {
-                                throw new Error('该颜色已被其他类型使用，请更换');
-                            }
+                        await Api.markerTypes.update(typeId, { name, color });
 
-                            t.name = name;
-                            t.color = color;
-                            /* 更新时间使用毫秒时间戳 */
-                            t.updated_at = Date.now();
-                            return data;
-                        });
-
-                        if (!res.skipped) typesData.value = normalizeTypes(res.content);
+                        const t = allTypes.value.find(x => x.id === typeId);
+                        t.name = name;
+                        t.color = color;
 
                         closeTypeModal();
                         toast('类型已更新', 'success');
@@ -1364,29 +1298,14 @@
                     if (!t) return toast('类型不存在', 'error');
 
                     const count = featuresOf(typeId).length;
-                    const loaded = !!loadedTypes[typeId];
-                    const msg = loaded && count > 0
-                        ? `类型「${t.name}」下还有 ${count} 个标点。\n\n删除该类型会同时删除对应的 geojson 数据文件（其中所有标点将一并丢失）。\n\n确定继续吗？`
-                        : `确定要删除类型「${t.name}」及其数据文件 ${typeId}.geojson 吗？`;
-
+                    const msg = loadedTypes[typeId] && count > 0
+                        ? `类型「${t.name}」下还有 ${count} 个标点。\n\n删除该类型会同时删除其下所有标点。\n\n确定继续吗？`
+                        : `确定要删除类型「${t.name}」吗？`;
                     if (!confirm(msg)) return;
 
                     try {
-                        await Store.updateFile(Store.CONFIG.TYPES_FILE, (content) => {
-                            const data = normalizeTypes(content);
-                            const idx = data.findIndex(x => x.id === typeId);
-                            if (idx === -1) return null;
-                            data.splice(idx, 1);
-                            return data;
-                        });
-
-                        let fileDeleted = false;
-                        try {
-                            fileDeleted = await Store.deleteFile(markerFilePath(typeId));
-                        } catch (err) {
-                            console.error('删除数据文件失败:', err);
-                            toast('类型已移除，但数据文件删除失败：' + err.message, 'error');
-                        }
+                        /* 服务端会把该类型下的标点一起删掉 */
+                        await Api.markerTypes.remove(typeId);
 
                         if (filterTypeId.value === typeId) filterTypeId.value = '';
                         delete typeData[typeId];
@@ -1396,7 +1315,7 @@
 
                         typesData.value = typesData.value.filter(x => x.id !== typeId);
 
-                        toast(fileDeleted ? '类型与数据文件已删除' : '类型已删除', 'success');
+                        toast('类型及其标点已删除', 'success');
                     } catch (e) {
                         console.error(e);
                         toast(e.message || '删除失败', 'error');
@@ -1417,15 +1336,6 @@
                    ============================================================ */
                 onMounted(async () => {
                     document.addEventListener('keydown', onKeydown);
-
-                    try {
-                        await Store.init();
-                    } catch (e) {
-                        console.error(e);
-                        setStatus('err', '初始化失败');
-                        toast('初始化失败，无法读写数据', 'error');
-                        return;
-                    }
 
                     await refreshAll();
                 });

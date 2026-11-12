@@ -92,7 +92,7 @@ async function route(request, env, ctx) {
 /* ==================== 标点 ==================== */
 
 /* 接受 FeatureCollection / 单个 Feature / 数组，统一转为行。
-   也接受扁平的 { typeId, lng, lat, title, description }（store.js 走这条）。
+   也接受扁平的 { typeId, lng, lat, title, description }（utils/api.js 走这条）。
    id 一律由调用方之外的 POST 逻辑生成（忽略客户端传入的 id）；created 未给则用服务端时间。 */
 function toFeatures(body) {
     if (!body) return [];
@@ -198,7 +198,7 @@ async function marker(request, env, { url, path, method, cors }) {
         }
         if (method === 'PATCH' && id) {
             const b = (await readJson(request)) || {};
-            /* 兼容两种入参：扁平 { title, description }（store.js 用）
+            /* 兼容两种入参：扁平 { title, description }（utils/api.js 用）
                与旧 GeoJSON 风格的 { properties: { title, description } } */
             const p = b.properties || {};
             const title = b.title !== undefined ? b.title : p.title;

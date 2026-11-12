@@ -68,7 +68,7 @@
             },
         };
     </script>
-    <script src="https://ulnae.github.io/tools/utils/store.js"></script>
+    <script src="https://ulnae.github.io/tools/utils/api.js"></script>
 
     <style>
         [v-cloak] { display: none !important; }
@@ -289,11 +289,11 @@
                     <div class="flex items-center gap-x-3 gap-y-1 flex-wrap text-xs text-fg-2 leading-snug">
                         <span class="inline-flex items-center gap-1 min-w-0" title="创建时间">
                             <icon name="calendar" :size="12" class="text-fg-3 shrink-0"></icon>
-                            <span class="truncate">{{ fmtDate(item.createdAt) }}</span>
+                            <span class="truncate">{{ fmtDateTime(item.createdAt) }}</span>
                         </span>
                         <span v-if="isEdited(item)" class="inline-flex items-center gap-1 min-w-0" title="修改时间">
                             <icon name="clock" :size="12" class="text-fg-3 shrink-0"></icon>
-                            <span class="truncate">{{ fmtEditTime(item.updatedAt) }}</span>
+                            <span class="truncate">{{ fmtDateTime(item.updatedAt) }}</span>
                         </span>
                     </div>
                 </li>
@@ -496,8 +496,6 @@
         /* ============================== 应用 ============================== */
         const app = createApp({
             setup() {
-                const DATA_FILE = Store.CONFIG.SECRETS_FILE;
-
                 const items = ref([]);
                 const loading = ref(true);
                 const loadError = ref('');
@@ -555,7 +553,6 @@
                 }
 
                 /* ---------- 时间 ---------- */
-                const nowTS = () => Date.now();
                 const fmtDateTime = (ts) => {
                     if (!ts) return '—';
                     try {
@@ -574,8 +571,6 @@
                     const ss = String(d.getSeconds()).padStart(2, '0');
                     return `${y}/${m}/${day} ${hh}:${mm}:${ss}`;
                 };
-                const fmtDate = fmtDateTime;
-                const fmtEditTime = fmtDateTime;
 
                 const isEdited = (item) => !!(item && item.updatedAt && item.createdAt && item.updatedAt !== item.createdAt);
 
@@ -648,20 +643,12 @@
                     loading.value = true;
                     loadError.value = '';
                     try {
-                        await Store.init();
-                        const { content } = await Store.getFile(DATA_FILE);
-                        items.value = Array.isArray(content) ? content : [];
+                        items.value = await Api.vault.list();
                     } catch (e) {
                         loadError.value = e.message || '网络错误';
                     } finally {
                         loading.value = false;
                     }
-                }
-                async function writeItems(nextItems) {
-                    /* 用服务端返回的数据回填：updatedAt 由服务端生成，
-                       页面拿旧的自己算会破坏下一次编辑的并发基准 */
-                    const { content } = await Store.updateFile(DATA_FILE, () => nextItems);
-                    items.value = content;
                 }
 
                 /* ---------- 解锁 ---------- */
@@ -726,8 +713,10 @@
                     saving.value = true;
                     try {
                         let ciphertext;
+                        let base = null;
                         if (isEdit) {
-                            const oldItem = items.value.find((i) => i.id === editingId.value);
+                            base = items.value.find((i) => i.id === editingId.value);
+                            if (!base) { editorError.value = '该记录已不存在，可能已在其他设备上被删除'; return; }
                             const contentChanged = rawContent !== unlockPlain.value;
                             if (key.trim()) {
                                 ciphertext = await encryptText(content, key.trim());
@@ -735,24 +724,21 @@
                                 if (!unlockKey.value) { editorError.value = '内容已修改，请填写查看密钥以重新加密'; return; }
                                 ciphertext = await encryptText(content, unlockKey.value);
                             } else {
-                                ciphertext = oldItem.ciphertext;
+                                ciphertext = base.ciphertext;
                             }
                         } else {
                             ciphertext = await encryptText(content, key.trim());
                         }
 
-                        const ts = nowTS();
-                        let next;
                         if (isEdit) {
-                            /* 不在这里写 updatedAt：原值要留给服务端做并发基准，
-                               更新后的新版本由服务端返回（见 writeItems） */
-                            next = items.value.map((i) => i.id === editingId.value ? { ...i, title, ciphertext } : i);
+                            /* base.updatedAt 是页面看到的版本，服务端据此做并发校验 */
+                            const r = await Api.vault.update(editingId.value, { title, ciphertext }, base.updatedAt);
+                            items.value = items.value.map((i) => i.id === editingId.value
+                                ? { ...i, title, ciphertext, updatedAt: r.updatedAt }
+                                : i);
                         } else {
-                            /* 新条目不带 id：由服务端生成，保存后 writeItems 回读带回真实 id */
-                            next = [...items.value, { title, ciphertext, createdAt: ts }];
+                            items.value = [...items.value, await Api.vault.create({ title, ciphertext, createdAt: Date.now() })];
                         }
-
-                        await writeItems(next);
 
                         const wasEditingView = isEdit && unlockTarget.value && unlockTarget.value.id === editingId.value;
                         closeEditor();
@@ -780,8 +766,8 @@
 
                     deleting.value = true;
                     try {
-                        const next = items.value.filter((i) => i.id !== target.id);
-                        await writeItems(next);
+                        await Api.vault.remove(target.id);
+                        items.value = items.value.filter((i) => i.id !== target.id);
                         closeUnlock();
                         showToast(`已删除「${target.title}」`, 'success');
                     } catch (e) {
@@ -801,7 +787,7 @@
                     openUnlock, closeUnlock, doUnlock,
                     openCreate, closeEditor, saveEditor, startEdit,
                     confirmDelete,
-                    load, fmtDate, fmtEditTime, isEdited,
+                    load, fmtDateTime, isEdited,
                     confirmState, confirmYes, confirmNo,
                 };
             },

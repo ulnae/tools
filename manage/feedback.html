@@ -14,7 +14,7 @@
     <script src="https://ulnae.github.io/tools/utils/tailwindcss.js"></script>
     <script src="https://ulnae.github.io/tools/utils/dayjs.min.js"></script>
     <script src="https://ulnae.github.io/tools/utils/vue.global.prod.js"></script>
-    <script src="https://ulnae.github.io/tools/utils/store.js"></script>
+    <script src="https://ulnae.github.io/tools/utils/api.js"></script>
 
     <script>
         tailwind.config = {
@@ -639,11 +639,6 @@
             return String(v == null ? '' : v).trim();
         }
 
-        /* 存储结构：顶层数组 */
-        function normalizeFeedback(content) {
-            return Array.isArray(content) ? content : [];
-        }
-
         function hexToRgba(hex, a) {
             const h = (hex || FALLBACK_COLOR).replace('#', '');
             const r = parseInt(h.substring(0, 2), 16);
@@ -830,8 +825,7 @@
                     setStatus('loading', '加载中...');
 
                     try {
-                        const { content } = await Store.getFile(Store.CONFIG.FEEDBACK_FILE);
-                        feedback.value = normalizeFeedback(content).filter(x => x && x.id);
+                        feedback.value = (await Api.feedback.list()).filter(x => x && x.id);
                         selected.clear();
                         syncSelectedSize();
                         setStatus('ok', `已加载 ${feedback.value.length} 条反馈`);
@@ -850,18 +844,11 @@
                 }
 
                 async function deleteByIds(ids) {
+                    await Api.feedback.remove(ids);
                     const idSet = new Set(ids);
-                    const res = await Store.updateFile(Store.CONFIG.FEEDBACK_FILE, (content) => {
-                        const list = normalizeFeedback(content);
-                        const before = list.length;
-                        const next = list.filter(x => !(x && idSet.has(x.id)));
-                        if (next.length === before) return null;
-                        return next;
-                    });
-
+                    feedback.value = feedback.value.filter(x => !idSet.has(x.id));
                     ids.forEach(id => selected.delete(id));
                     syncSelectedSize();
-                    return !res.skipped;
                 }
 
                 async function deleteOne(id) {
@@ -942,15 +929,6 @@
 
                 onMounted(async () => {
                     document.addEventListener('keydown', onKeydown);
-
-                    try {
-                        await Store.init();
-                    } catch (e) {
-                        console.error(e);
-                        setStatus('err', '初始化失败');
-                        toast('初始化失败，无法读取数据', 'error');
-                        return;
-                    }
 
                     await loadData();
                 });

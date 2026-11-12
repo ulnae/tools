@@ -2,7 +2,7 @@
 -- 执行：wrangler d1 execute tools-data --remote --file=schema.sql
 -- 时间戳统一为毫秒整数
 
--- 标点类型（对应 data/types.json 的数组元素；按 created 顺序展示，无需排序字段）
+-- 标点类型（列表按 created 顺序返回，无需排序字段）
 CREATE TABLE IF NOT EXISTS marker_types (
   id      TEXT PRIMARY KEY,
   name    TEXT NOT NULL,
@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS marker_types (
   created INTEGER
 );
 
--- 标点（对应 data/{typeId}.geojson 的 Feature）
+-- 标点（一行一个点，读取时按 type_id 拼成 GeoJSON FeatureCollection）
 -- title / description 独立成列，可直接 WHERE / ORDER BY；
 -- 类型与创建时间分别由 type_id、created 表示，不重复存。
 CREATE TABLE IF NOT EXISTS marker_points (
@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS marker_points (
 );
 CREATE INDEX IF NOT EXISTS idx_points_type ON marker_points(type_id);
 
--- 意见反馈（对应 data/feedback.json 数组元素）
+-- 意见反馈（公开提交，created_at 由服务端填写）
 CREATE TABLE IF NOT EXISTS feedback (
   id         TEXT PRIMARY KEY,
   type       TEXT,
@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS feedback (
   created_at INTEGER NOT NULL
 );
 
--- 密文笔记：一行一条（对应 data/secrets.json 的数组元素，客户端加密）
+-- 密文笔记：一行一条，内容在客户端加密
 -- 同一条并发编辑用 updated_at 做条件更新，不同条目互不干扰。
 CREATE TABLE IF NOT EXISTS vault (
   id         TEXT PRIMARY KEY,

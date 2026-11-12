@@ -12,7 +12,7 @@
     <script src="https://ulnae.github.io/tools/utils/tailwindcss.js"></script>
     <script src="https://ulnae.github.io/tools/utils/dayjs.min.js"></script>
     <script src="https://ulnae.github.io/tools/utils/vue.global.prod.js"></script>
-    <script src="https://ulnae.github.io/tools/utils/store.js"></script>
+    <script src="https://ulnae.github.io/tools/utils/api.js"></script>
     <style>
         :root {
             color-scheme: light;
@@ -382,11 +382,6 @@
             }
         }
 
-        function normalizeFeedback(content) {
-            if (content && Array.isArray(content)) return content;
-            return [];
-        }
-
         const TOAST_BG = {
             success: 'linear-gradient(135deg,#34C759,#28A745)',
             error: 'linear-gradient(135deg,#FF3B30,#D92D20)',
@@ -408,11 +403,9 @@
                 const source = ref('');
                 const done = ref(false);
                 const submitting = ref(false);
-                const ready = ref(false);
-                const initFailed = ref(false);
 
-                const statusState = ref('loading');
-                const statusText = ref('初始化中...');
+                const statusState = ref('ok');
+                const statusText = ref('已就绪');
 
                 const contentEl = ref(null);
 
@@ -420,7 +413,7 @@
                 let toastSeq = 0;
 
                 const statusDotClass = computed(() => `dot dot-${statusState.value}`);
-                const submitDisabled = computed(() => submitting.value || initFailed.value);
+                const submitDisabled = computed(() => submitting.value);
 
                 function setStatus(state, text) {
                     statusState.value = state;
@@ -449,29 +442,24 @@
                     const text = content.value.trim();
                     const contactVal = contact.value.trim();
 
-                    if (!ready.value) return toast('正在初始化，请稍候…', 'info');
                     if (!text) return toast('请填写反馈内容', 'error');
                     if (text.length < 5) return toast('内容太短了，请至少写 5 个字', 'error');
 
                     submitting.value = true;
 
-                    /* 不带 id：由服务端发号，客户端造 id 只会被丢弃 */
-                    const item = {
-                        type: type.value,
-                        content: text,
-                        contact: contactVal,
-                        source: getSourceFromUrl(),
-                        created_at: Date.now()
-                    };
-
                     try {
-                        /* 反馈是公开提交：直接追加，不需要先读全量列表 */
-                        await Store.appendFeedback(item);
+                        /* id 与提交时间都由服务端生成 */
+                        await Api.feedback.create({
+                            type: type.value,
+                            content: text,
+                            contact: contactVal,
+                            source: getSourceFromUrl()
+                        });
 
                         content.value = '';
                         contact.value = '';
 
-                        setStatus('ok', '已连接');
+                        setStatus('ok', '已就绪');
                         done.value = true;
                         toast('提交成功，感谢你的反馈！', 'success');
                     } catch (e) {
@@ -492,23 +480,11 @@
                     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') submitFeedback();
                 }
 
-                onMounted(async () => {
+                onMounted(() => {
                     document.addEventListener('keydown', onKeydown);
 
                     source.value = getSourceFromUrl();
                     if (source.value) console.log('反馈来源：', source.value);
-
-                    try {
-                        await Store.init();
-                        ready.value = true;
-                        setStatus('ok', '已连接');
-                    } catch (e) {
-                        console.error(e);
-                        setStatus('err', '初始化失败');
-                        toast('初始化失败，暂时无法提交反馈', 'error');
-                        initFailed.value = true;
-                        return;
-                    }
 
                     setTimeout(() => contentEl.value?.focus(), 200);
                 });

@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="https://ulnae.github.io/tools/utils/toastify.min.css" />
     <script src="https://ulnae.github.io/tools/utils/tailwindcss.js"></script>
     <script src="https://ulnae.github.io/tools/utils/vue.global.prod.js"></script>
-    <script src="https://ulnae.github.io/tools/utils/store.js"></script>
+    <script src="https://ulnae.github.io/tools/utils/api.js"></script>
 
     <style>
         :root {
@@ -333,8 +333,7 @@
 
     <script>
         /* ============================================================
-           本页特有配置
-           （数据存储配置在 ./utils/store.js 中，通过 Store.CONFIG 访问）
+           本页配置（数据接口见 ./utils/api.js 的 Api.*）
            ============================================================ */
         const CONFIG = {
             IP_ZOOM: 11,
@@ -358,15 +357,6 @@
             d.textContent = str == null ? '' : String(str);
             return d.innerHTML;
         };
-
-        const markerFilePath = id => `${Store.CONFIG.DATA_DIR}/${id}.geojson`;
-        const emptyFC = () => ({ type: 'FeatureCollection', features: [] });
-
-        const normalizeFC = c =>
-            (c && c.type === 'FeatureCollection' && Array.isArray(c.features)) ? c : emptyFC();
-
-        /* types.json 直接为数组：["{...}", "{...}"] */
-        const normalizeTypes = c => Array.isArray(c) ? c : [];
 
         function normalizeHex(v) {
             v = (v || '').trim();
@@ -516,7 +506,7 @@
                 const ICON_CANCEL = `<svg class="w-[16px] h-[16px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>`;
 
                 /* ---------- 响应式状态 ---------- */
-                const typesList = ref([]);              // types.json 直接为数组
+                const typesList = ref([]);
                 const typeData = reactive({});
                 const activeTypeIds = ref([]);
                 const searchKeyword = ref('');
@@ -569,16 +559,14 @@
 
                 /* ---------- 数据加载 ---------- */
                 async function loadTypes() {
-                    const { content } = await Store.getFile(Store.CONFIG.TYPES_FILE);
-                    typesList.value = normalizeTypes(content);
+                    typesList.value = await Api.markerTypes.list();
                 }
 
                 function loadTypeData(typeId) {
                     if (typeLoadPromises[typeId]) return typeLoadPromises[typeId];
                     return typeLoadPromises[typeId] = (async () => {
                         try {
-                            const { content } = await Store.getFile(markerFilePath(typeId));
-                            const geojson = normalizeFC(content);
+                            const geojson = await Api.markerPoints.list(typeId);
                             geojson.features.forEach(f => {
                                 if (!f.properties) f.properties = {};
                                 f.properties.type = typeId;
@@ -716,43 +704,26 @@
                     nextTick(() => ntNameEl.value?.focus());
                 }
 
-                async function ensureTypeDataFile(typeId) {
-                    const res = await Store.updateFile(markerFilePath(typeId), c => {
-                        if (c && Array.isArray(c.features)) return null;
-                        return emptyFC();
-                    });
-                    typeData[typeId] = { geojson: normalizeFC(res.content) };
-                }
-
                 async function handleAddType() {
                     const name = typeForm.name.trim();
                     const color = normalizeHex(typeForm.colorText) || normalizeHex(typeForm.color);
                     if (!name) return showToast('请输入类型名称', 'error');
                     if (!color) return showToast('颜色格式不正确，应为 #RRGGBB', 'error');
                     if (RESERVED_COLORS.includes(color)) return showToast('该颜色为系统保留色，请更换', 'error');
+                    if (typesList.value.some(t => (t.name || '').toLowerCase() === name.toLowerCase())) {
+                        return showToast('类型名称已存在', 'error');
+                    }
+                    if (typesList.value.some(t => (t.color || '').toLowerCase() === color)) {
+                        return showToast('该颜色已被其他类型使用，请更换', 'error');
+                    }
 
                     savingType.value = true;
 
                     try {
-                        const beforeIds = new Set(typesList.value.map(t => t.id));
-                        /* types.json 直接存数组；新类型不带 id，由服务端发号 */
-                        const res = await Store.updateFile(Store.CONFIG.TYPES_FILE, content => {
-                            const data = normalizeTypes(content);
-                            if (data.some(t => (t.name || '').toLowerCase() === name.toLowerCase())) throw new Error('类型名称已存在');
-                            if (data.some(t => (t.color || '').toLowerCase() === color)) throw new Error('该颜色已被其他类型使用，请更换');
-                            data.push({ name, color });
-                            return data;
-                        });
-
-                        const list = normalizeTypes(res.content);
-                        typesList.value = list;
-
-                        /* 服务端生成的 id 在回读结果里：按「新增前后差异 + 名称」认领 */
-                        const created = list.find(t => !beforeIds.has(t.id) && t.name === name);
-                        if (created) {
-                            await ensureTypeDataFile(created.id);
-                            activeTypeIds.value = [...activeTypeIds.value, created.id];
-                        }
+                        /* 新类型的 id 由服务端生成 */
+                        const created = await Api.markerTypes.create({ name, color });
+                        typesList.value = [...typesList.value, created];
+                        activeTypeIds.value = [...activeTypeIds.value, created.id];
 
                         renderMarkers();
                         showToast(`类型「${name}」已创建`, 'success');
@@ -813,18 +784,10 @@
                     </div>`;
                 }
 
-                async function appendMarkerToType(typeId, feature) {
-                    const res = await Store.updateFile(markerFilePath(typeId), c => {
-                        const fc = normalizeFC(c);
-                        fc.features.push(feature);
-                        return fc;
-                    });
-                    const geojson = normalizeFC(res.content);
-                    geojson.features.forEach(f => {
-                        if (!f.properties) f.properties = {};
-                        f.properties.type = typeId;
-                    });
-                    typeData[typeId] = { geojson };
+                async function appendMarkerToType(typeId, point) {
+                    await Api.markerPoints.create(typeId, point);
+                    /* 回读该类型：服务端生成的 id 直接落到本地缓存 */
+                    await loadTypeData(typeId);
                 }
 
                 function handleMapClick(e) {
@@ -863,10 +826,9 @@
 
                             try {
                                 await appendMarkerToType(typeId, {
-                                    type: 'Feature',
-                                    geometry: { type: 'Point', coordinates: [lng, lat] },
+                                    lng, lat, title, description: desc,
                                     /* 时间统一使用毫秒时间戳 */
-                                    properties: { title, description: desc, type: typeId, created_at: Date.now() }
+                                    createdAt: Date.now()
                                 });
                                 renderMarkers();
                                 addMode.value = false;
@@ -892,14 +854,6 @@
                 /* ---------- 生命周期 ---------- */
                 onMounted(async () => {
                     initMap();
-
-                    try {
-                        await Store.init();
-                    } catch {
-                        setStatus('err', '初始化失败');
-                        showToast('初始化失败，无法读写数据', 'error');
-                        return;
-                    }
 
                     setStatus('loading', '加载中...');
                     const ipPromise = CONFIG.USE_IP_LOCATION ? fetchIpLocation() : Promise.resolve(null);
