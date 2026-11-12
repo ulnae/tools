@@ -1,17 +1,13 @@
 /**
  * api.js — Cloudflare Worker 数据 API 客户端
  *
- * 供 utils/fingerprint.js（访客统计）与二期模块（标点/反馈/vault）共用，
+ * 供标点 / 反馈 / vault 等模块（经由 store.js 动态注入，或页面显式引入）使用，
  * 统一封装：base 故障转移、超时、错误归一。
  *
- * 通常无需在页面里手动引入：fingerprint.js 会自动加载本文件；
- * 二期页面若直接用 CFApi，再显式加一行 <script> 即可。
- *
  * 引入方式（绝对地址，任意目录层级通用）：
- *   <script src="https://ulnae.github.io/tools/utils/tracker-config.js"></script>
  *   <script src="https://ulnae.github.io/tools/utils/api.js"></script>
  *
- * 配置（可选，通过 VISIT_TRACKER_CONFIG 覆盖）：
+ * 配置（可选，通过 CFAPI_CONFIG 覆盖）：
  *   apiBase     Worker 地址，默认指向当前已部署实例
  */
 (function () {
@@ -26,8 +22,8 @@
         baseKey: 'cf_api_base',
         timeout: 8000
     };
-    if (window.VISIT_TRACKER_CONFIG && typeof window.VISIT_TRACKER_CONFIG === 'object') {
-        if (window.VISIT_TRACKER_CONFIG.apiBase) CFG.apiBase = window.VISIT_TRACKER_CONFIG.apiBase;
+    if (window.CFAPI_CONFIG && typeof window.CFAPI_CONFIG === 'object') {
+        if (window.CFAPI_CONFIG.apiBase) CFG.apiBase = window.CFAPI_CONFIG.apiBase;
     }
 
     /* 解析候选地址：内置配置 + 会话内追加（CFApi.addBase），上次成功的排最前 */
@@ -145,32 +141,7 @@
         diagnose,
         health() { return request('/api/health'); },
 
-        /* ---------- 访客统计（读写均公开） ---------- */
-
-        /** 上报一次访问：payload 含 fp/conf/ua/screen/dpr/lang/tz/page/path/title/ref */
-        track(payload) { return request('/api/track', { method: 'POST', body: payload }); },
-
-        /** 全站聚合：{ users, visits, activeWeek, byDay, byPage, byGeo } */
-        stats() { return request('/api/admin/stats'); },
-
-        /** 用户列表（含 visitCount），limit 最大 500 */
-        users(limit = 500, offset = 0) {
-            return request(`/api/admin/users?limit=${limit}&offset=${offset}`);
-        },
-
-        /** 单用户访问明细：{ visits: [...] } */
-        userVisits(id) { return request(`/api/admin/users/${encodeURIComponent(id)}/visits`); },
-
-        /** 删除用户（连同其访问明细） */
-        removeUser(id) { return request(`/api/admin/users/${encodeURIComponent(id)}`, { method: 'DELETE' }); },
-
-        /** 删除单条访问 */
-        removeVisit(visitId) { return request(`/api/admin/visits/${encodeURIComponent(visitId)}`, { method: 'DELETE' }); },
-
-        /** 清空全部统计 */
-        clearAll() { return request('/api/admin/clear', { method: 'POST' }); },
-
-        /* ---------- 标点（二期用，Worker 端已就绪） ---------- */
+        /* ---------- 标点 ---------- */
 
         markerTypes() { return request('/api/marker/types'); },
         /* 新增一律由服务端发号：不要传 id，返回体里带真实 id */
@@ -182,7 +153,7 @@
         updateMarkerPoint(id, patch) { return request(`/api/marker/points/${encodeURIComponent(id)}`, { method: 'PATCH', body: patch }); },
         deleteMarkerPoint(id) { return request(`/api/marker/points/${encodeURIComponent(id)}`, { method: 'DELETE' }); },
 
-        /* ---------- 反馈（二期用） ---------- */
+        /* ---------- 反馈 ---------- */
 
         addFeedback(f) { return request('/api/feedback', { method: 'POST', body: f }); },
         feedbackList() { return request('/api/admin/feedback'); },

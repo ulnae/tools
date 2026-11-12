@@ -61,21 +61,13 @@ Worker 的 `workers.dev` 地址只在这一层的 `_redirects` 里出现一次�
 ### `index.html` —— 链路自检页
 
 访问 `https://ulnae.localhost.cc/` 就是这个页面。它跑在**反代域名自己的源**下，
-所以 `fetch('/api/...')` 是**同源请求**，能单独验证「域名 → Netlify → Worker → D1」这一段，
+所以 `fetch('/api/health')` 是**同源请求**，能单独验证「域名 → Netlify → Worker → D1」这一段，
 不受 GitHub Pages 那边的 CORS 干扰。
 
-两个按钮：
-
-| 按钮 | 做什么 | 怎么读结果 |
-|---|---|---|
-| 测试 `/api/health` | GET，只读 | 返回 `{ok:true, time, colo}` 且耗时 < 1.5s → 绿色，链路通 |
-| 测试 `/api/track` | POST 一条假访客记录 | 成功 → CORS 预检也过了（这条路径最接近真实写入） |
-
-页面下方已经写好两种失败提示，照着看就行：
-- **health 通、track 失败** → 多半是 CORS 预检被 Netlify 拦了，需要升级为 Edge Function 自行处理 `OPTIONS`
-- **两个都失败** → 这个域名或 Netlify 本身也不可达，方案要换
+按钮只有一个：**测试 `/api/health`**（GET，只读）。返回 `{ok:true, time, colo}` 且耗时 < 1.5s → 绿色，链路通。
 
 > 建议在**手机 4G（关掉 WiFi）**下打开测——那才是访客的真实网络环境，家宽走代理可能看不出污染。
+> 需要逐地址诊断时用站点根下的 `ping_test.html`，功能更全。
 
 ---
 
@@ -111,7 +103,7 @@ curl -sD - https://ulnae.localhost.cc/api/health
 # Cache-Status 会写 "Netlify Edge"，两者同时出现说明确实穿过了两层
 
 # CORS 预检（前端写操作能不能过）
-curl -sD - -o /dev/null -X OPTIONS https://ulnae.localhost.cc/api/track \
+curl -sD - -o /dev/null -X OPTIONS https://ulnae.localhost.cc/api/feedback \
   -H "Origin: https://ulnae.github.io" \
   -H "Access-Control-Request-Method: POST" \
   -H "Access-Control-Request-Headers: content-type"
@@ -129,13 +121,10 @@ curl -s -o /dev/null -w "%{http_code}\n" https://ulnae.localhost.cc/whatever  # 
 
 ## 五、几个必须知道的取舍
 
-1. **国家/城市会丢**。Worker 里 `country` / `city` 取自 `request.cf`，而反代模式下请求实际来自
-   Netlify 的边缘节点，`request.cf` 描述的是那一跳，不是访客。所以这两列基本为空，
-   只能靠 `X-Forwarded-For` 拿到（脱敏后的）真实 IP。这是这套方案固有的代价。
-2. **`TRUST_PROXY` 必须为 `true`**（见 `cloudflare/wrangler.toml`）。Worker 靠它从
-   `X-Forwarded-For` 第一位取访客 IP；哪天绕过反代直连 Worker，必须改回 `false`，
-   否则任何人都能伪造来源 IP。
-3. **不要把业务逻辑写进这里**。`_redirects` 只能做路径改写和少量头操作，写不了条件判断。
+1. **反代会「藏住」访客信息**。Worker 里 `request.cf` 的地理/网络字段描述的是
+   Netlify 边缘节点那一跳，不是访客本人。目前业务里没有用得到这些信息的端点，
+   但将来若要按地区做事，记得先想清楚这一层。
+2. **不要把业务逻辑写进这里**。`_redirects` 只能做路径改写和少量头操作，写不了条件判断。
    需要改 CORS、加鉴权、做熔断，都得改 Worker，或者把这里升级成 Edge Function（代码量立刻上来了）。
 4. **别在这层做缓存**。API 响应都是实时的；`Cache-Status: fwd=miss` 才是正常状态，
    如果哪天看到命中，说明有人给 `/api/*` 加了缓存规则，会导致读到旧数据。
@@ -148,7 +137,7 @@ curl -s -o /dev/null -w "%{http_code}\n" https://ulnae.localhost.cc/whatever  # 
 
 如果将来有了能 NS 委派的自有域名，可以直接上 Cloudflare（Workers 自定义域），把这个目录删掉：
 
-1. Worker 绑自定义域，`wrangler.toml` 里把 `TRUST_PROXY` 改回 `"false"`
+1. Worker 绑自定义域
 2. `utils/api.js` 的 `apiBase` 换成新域名
 3. 删掉本目录、Netlify 站点、`localhost.cc` 的 CNAME
 4. 用 `ping_test.html` 重新验证一遍连通性

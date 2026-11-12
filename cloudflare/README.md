@@ -13,9 +13,9 @@
 
 | 文件 | 类型 | 一句话用途 |
 |---|---|---|
-| `wrangler.toml` | 配置 | Worker 名、D1 绑定、CORS 白名单、反代开关、限流 |
-| `src/worker.js` | 源码 | 全部 HTTP 接口（访客统计 / 标点 / 反馈 / 密文 / 管理） |
-| `schema.sql` | 建表脚本 | 从零建出 6 张表 + 5 个索引（即当前线上结构） |
+| `wrangler.toml` | 配置 | Worker 名、D1 绑定、CORS 白名单 |
+| `src/worker.js` | 源码 | 全部 HTTP 接口（标点 / 反馈 / 密文 / 反馈管理） |
+| `schema.sql` | 建表脚本 | 从零建出 4 张表 + 2 个索引（即当前线上结构） |
 | `backup-20261111.sql` | 数据快照 | 某一时刻的整库导出，回滚/查证用，只读存档 |
 | `.wrangler/` | 本地临时目录 | 测试脚本、导出的 JSON 备份、wrangler 本地状态 |
 
@@ -23,12 +23,10 @@
 
 ## 二、`schema.sql` —— 建表脚本
 
-**用途**：在**空库**上建立全部表。共 6 张表 + 5 个索引：
+**用途**：在**空库**上建立全部表。共 4 张表 + 2 个索引：
 
 | 表 | 存什么 | 主键 | 前端对应 |
 |---|---|---|---|
-| `users` | 访客档案（指纹、UA、屏幕、时区、脱敏 IP、地区） | `id`（UUID），`fp`（指纹）唯一 | `utils/fingerprint.js` |
-| `visits` | 访问明细（谁、何时、哪个页面、来源） | `id` | 同上 |
 | `marker_types` | 标点类型（名称、颜色） | `id` | `marker.html` / `manage/marker.html` |
 | `marker_points` | 标点坐标 + 标题 + 描述 | `id` | 同上 |
 | `feedback` | 意见反馈（类型、内容、联系方式、来源页） | `id` | `feedback.html` / `manage/feedback.html` |
@@ -78,25 +76,18 @@ wrangler d1 execute tools-recover --remote --file=backup-20261111.sql
 
 ---
 
-## 四、当前线上状态（2026-11-11 17:26 核对）
+## 四、当前线上状态（2026-11-12 核对）
 
 ```
 表                    行数   说明
-users                   0    访客档案
-visits                  0    访问明细
 marker_types            5    美食 / 风景 / 钓点 / 避雷 / 游玩
 marker_points          36    标点
 feedback                1    反馈
 vault                   4    密文条目（VPN / 454645645 / Token / 电影网址）
 ```
 
-6 张表与 `schema.sql` 完全一致，无多余的历史表。
-
-**注意**：`users` / `visits` 现在是 0，而当天早些时候是 3 / 28。
-全站唯一能把这两张表清空的代码路径是 `POST /api/admin/clear`，
-而它自「去掉管理端鉴权」起对公网完全开放（`manage/stats.html` 的「清空全部」按钮走的就是它）。
-如果不是手动点的，那就是这条无鉴权的接口被扫到了——建议后续给它加个来源校验，
-或者干脆把按钮改成需要输入确认文本。
+4 张表与 `schema.sql` 完全一致，无多余的历史表。
+（访问统计功能已于 2026-11-12 整体下线，`users` / `visits` 表已删除；历史快照见 `backup-20261111.sql`。）
 
 ---
 
@@ -139,8 +130,6 @@ wrangler d1 execute tools-data --local --file=schema.sql
    「新库能建、老库对不上」
 3. **保持库表与 schema.sql 一致**：库里出现 `schema.sql` 之外的表时，多半是历史遗留，
    确认无用就 `DROP`，别让它一直躺在 `sqlite_master` 里误导后来的人
-4. **给管理写接口加护栏**：`/api/admin/clear`、`POST /api/admin/feedback/delete`、
-   `DELETE /api/admin/users/:id` 目前无任何校验。最小成本的收口是校验 `Origin`
-   是否为 `https://ulnae.github.io`，能挡掉跨站调用和爬虫，不影响自己的页面
-5. **写 `wrangler.toml` 的坑**：`TRUST_PROXY = "true"` 只在走 Netlify 反代时正确；
-   哪天改回直连 `workers.dev` 或绑自定义域，必须改回 `false`，否则访客 IP 会被 `X-Forwarded-For` 伪造
+4. **给管理写接口加护栏**：`POST /api/admin/feedback/delete` 无任何校验。
+   最小成本的收口是校验 `Origin` 是否为 `https://ulnae.github.io`，
+   能挡掉跨站调用和爬虫，不影响自己的页面

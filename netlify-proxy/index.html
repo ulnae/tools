@@ -23,7 +23,6 @@
 请在<b>手机 4G（关 WiFi）</b>下打开本页测试——那才是访客的真实网络环境。</p>
 
 <button onclick="testHealth()">测试 /api/health</button>
-<button onclick="testTrack()">测试 /api/track（写一条测试数据）</button>
 <div id="out">点击按钮开始…</div>
 
 <script>
@@ -46,30 +45,6 @@
         }
     }
 
-    async function testTrack() {
-        out.innerHTML = '';
-        var t0 = performance.now();
-        try {
-            var r = await fetch('/api/track', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    fp: 'netlify-proxy-test-' + Math.random().toString(36).slice(2, 10),
-                    page: 'netlify-proxy-test', conf: 0.5,
-                    ua: navigator.userAgent, lang: navigator.language, tz: ''
-                })
-            });
-            var j = await r.json();
-            var ms = Math.round(performance.now() - t0);
-            line('HTTP ' + r.status + '  耗时 ' + ms + 'ms', r.ok ? 'ok' : 'bad');
-            line('响应: ' + JSON.stringify(j));
-            line(r.ok ? '✔ 上报成功（CORS 预检也通过了）——测试数据可在 manage/stats.html 删除'
-                      : '✘ 上报失败', r.ok ? 'ok' : 'bad');
-        } catch (e) {
-            line('✘ 失败: ' + (e && e.message), 'bad');
-            line('（health 通但 track 失败 → 多半是 CORS 预检被 Netlify 拦了，需升级为 Edge Function）');
-        }
-    }
 </script>
 </body>
 </html>
