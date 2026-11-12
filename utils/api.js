@@ -6,7 +6,7 @@
  *
  * 字段名与数据库列名、Worker JSON 完全一致，本层不做任何重命名：
  *   创建时间一律为 created，更新时间一律为 updated（毫秒时间戳）。
- * 新增记录的 id 一律由服务端生成（客户端不传 id）。
+ * id 与 created / updated 全部由服务端生成：本层不传、也无法指定。
  *
  *   await Api.markerTypes.list()                      // [{ id, name, color, created }]
  *   await Api.markerTypes.create({ name, color })     // 返回新建的行
@@ -14,8 +14,8 @@
  *   await Api.markerTypes.remove(id)                  // 连带删除该类型下的标点
  *
  *   await Api.markerPoints.list(typeId)               // FeatureCollection，properties 含 created / updated
- *   await Api.markerPoints.create(typeId, { lng, lat, title, description, created })
- *   await Api.markerPoints.update(id, { lng, lat, title, description })
+ *   await Api.markerPoints.create(typeId, { lng, lat, title, description })
+ *   await Api.markerPoints.update(id, { typeId?, lng, lat, title, description })   // typeId 用于换类型
  *   await Api.markerPoints.remove(id)
  *
  *   await Api.feedback.list()                         // [{ id, type, content, contact, source, created }]
@@ -23,7 +23,7 @@
  *   await Api.feedback.remove([id, ...])
  *
  *   await Api.vault.list()                            // [{ id, title, ciphertext, created, updated }]
- *   await Api.vault.create({ title, ciphertext })     // 返回新建的行
+ *   await Api.vault.create({ title, ciphertext })     // 返回新建的行（含 created / updated）
  *   await Api.vault.update(id, { title, ciphertext }, baseUpdated)   // 版本不符抛 409
  *   await Api.vault.remove(id)
  */
@@ -88,7 +88,7 @@
             const fc = await request('GET', `/api/marker/points?type_id=${id(typeId)}`);
             return { type: 'FeatureCollection', features: (fc && fc.features) || [] };
         },
-        /* 新增可传单个点或数组；created 不传则由服务端取当前时间 */
+        /* 新增可传单个点或数组；id 与 created / updated 由服务端填写 */
         create(typeId, point) {
             const list = Array.isArray(point) ? point : [point];
             return request('POST', '/api/marker/points', list.map(p => ({
@@ -96,16 +96,18 @@
                 lng: Number(p.lng),
                 lat: Number(p.lat),
                 title: p.title || '',
-                description: p.description || '',
-                created: p.created
+                description: p.description || ''
             })));
         },
-        update(pointId, { lng, lat, title, description }) {
-            return request('PATCH', `/api/marker/points/${id(pointId)}`, {
+        /* 传 typeId 即换类型：改归属而不是「新建 + 删旧」，created 不变，updated 由服务端刷新 */
+        update(pointId, { typeId, lng, lat, title, description }) {
+            const body = {
                 coordinates: [Number(lng), Number(lat)],
                 title: title || '',
                 description: description || ''
-            });
+            };
+            if (typeId) body.typeId = typeId;
+            return request('PATCH', `/api/marker/points/${id(pointId)}`, body);
         },
         remove(pointId) {
             return request('DELETE', `/api/marker/points/${id(pointId)}`);

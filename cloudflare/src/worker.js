@@ -15,11 +15,11 @@
  *     DELETE /api/marker/types/:id           删除类型（连同其下标点）
  *     GET    /api/marker/points?type_id=     某类型标点（返回 FeatureCollection）
  *     POST   /api/marker/points              新增标点（Feature / FeatureCollection / 数组 / 扁平对象，id 由服务端生成）
- *     PATCH  /api/marker/points/:id          更新标点 { coordinates, title, description }
+ *     PATCH  /api/marker/points/:id          更新标点 { typeId?, coordinates, title, description }
  *     DELETE /api/marker/points/:id          删除标点
  *     POST   /api/feedback                   提交反馈 { type, content, contact, source }
  *     GET    /api/vault                      列出密文条目
- *     POST   /api/vault                      新增一条密文 { title, ciphertext, created? }（id 由服务端生成）
+ *     POST   /api/vault                      新增一条密文 { title, ciphertext }（id 与时间由服务端生成）
  *     PATCH  /api/vault/:id                  更新一条（baseUpdated 不匹配返回 409）
  *     DELETE /api/vault/:id                  删除一条
  *   管理（无鉴权，页面直接调用）：
@@ -93,7 +93,7 @@ async function route(request, env, ctx) {
 
 /* 接受 FeatureCollection / 单个 Feature / 数组，统一转为行。
    也接受扁平的 { typeId, lng, lat, title, description }（utils/api.js 走这条）。
-   id 一律由调用方之外的 POST 逻辑生成（忽略客户端传入的 id）；created 未给则用服务端时间。 */
+   id 与 created / updated 一律由服务端生成：客户端传了也直接丢掉，不参与入库。 */
 function toFeatures(body) {
     if (!body) return [];
     const flat = !body.features && body.type !== 'Feature' && !Array.isArray(body) ? [body] : null;
@@ -106,8 +106,7 @@ function toFeatures(body) {
             lng: Number(coord[0]),
             lat: Number(coord[1]),
             title: String(f.title != null ? f.title : (props.title || '')).slice(0, 200),
-            description: String(f.description != null ? f.description : (props.description || '')).slice(0, 2000),
-            created: Number(f.created != null ? f.created : props.created) || 0
+            description: String(f.description != null ? f.description : (props.description || '')).slice(0, 2000)
         };
     }).filter(f => f.type_id && isFinite(f.lng) && isFinite(f.lat));
 }
@@ -193,7 +192,7 @@ async function marker(request, env, { url, path, method, cors }) {
             const ids = feats.map(() => crypto.randomUUID());
             await db.batch(feats.map((f, i) => db.prepare(
                 'INSERT INTO marker_points (id, type_id, lng, lat, title, description, created, updated) VALUES (?,?,?,?,?,?,?,?)'
-            ).bind(ids[i], f.type_id, f.lng, f.lat, f.title, f.description, f.created || now, now)));
+            ).bind(ids[i], f.type_id, f.lng, f.lat, f.title, f.description, now, now)));
             return json({ ok: true, count: feats.length, ids }, 200, cors);
         }
         if (method === 'PATCH' && id) {
@@ -204,6 +203,13 @@ async function marker(request, env, { url, path, method, cors }) {
             const title = b.title !== undefined ? b.title : p.title;
             const desc = b.description !== undefined ? b.description : p.description;
             const sets = [], args = [];
+            /* 换类型只改归属，created 保持不变；目标类型必须存在，避免留下孤儿标点 */
+            if (b.typeId !== undefined) {
+                const nextType = String(b.typeId);
+                const exists = await db.prepare('SELECT 1 FROM marker_types WHERE id = ?').bind(nextType).first();
+                if (!exists) return fail('目标类型不存在', 400, cors);
+                sets.push('type_id = ?'); args.push(nextType);
+            }
             if (Array.isArray(b.coordinates) && isFinite(Number(b.coordinates[0]))) {
                 sets.push('lng = ?', 'lat = ?');
                 args.push(Number(b.coordinates[0]), Number(b.coordinates[1]));
@@ -211,6 +217,7 @@ async function marker(request, env, { url, path, method, cors }) {
             if (title !== undefined) { sets.push('title = ?'); args.push(String(title).slice(0, 200)); }
             if (desc !== undefined) { sets.push('description = ?'); args.push(String(desc).slice(0, 2000)); }
             if (!sets.length) return fail('无可更新字段', 400, cors);
+            /* updated 始终是服务端当前时间，客户端无法指定 */
             sets.push('updated = ?'); args.push(Date.now(), id);
             const r = await db.prepare(`UPDATE marker_points SET ${sets.join(', ')} WHERE id = ?`).bind(...args).run();
             /* 目标行已被别处删除时不算失败：调用方的意图（该点不存在）已达成 */
@@ -247,7 +254,7 @@ async function addFeedback(request, env, cors) {
 
 /**
  * GET    /api/vault          列出全部条目（密文，客户端解密）
- * POST   /api/vault          新增一条 { title?, ciphertext, created? }
+ * POST   /api/vault          新增一条 { title?, ciphertext }（created / updated 由服务端填写）
  * PATCH  /api/vault/:id      更新一条 { title?, ciphertext?, baseUpdated }
  *                            baseUpdated 与服务端不一致时返回 409（并发保护）
  * DELETE /api/vault/:id      删除一条
@@ -274,7 +281,7 @@ async function vault(request, env, { path, method, cors }) {
             id: newId,
             title: String(b.title || '').slice(0, 200),
             ciphertext: b.ciphertext,
-            created: Number(b.created) || now,
+            created: now,
             updated: now
         };
         await db.prepare(

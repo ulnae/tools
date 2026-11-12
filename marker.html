@@ -825,11 +825,7 @@
                             btn.disabled = true;
 
                             try {
-                                await appendMarkerToType(typeId, {
-                                    lng, lat, title, description: desc,
-                                    /* 时间统一使用毫秒时间戳 */
-                                    created: Date.now()
-                                });
+                                await appendMarkerToType(typeId, { lng, lat, title, description: desc });
                                 renderMarkers();
                                 addMode.value = false;
                                 map.getContainer().style.cursor = '';

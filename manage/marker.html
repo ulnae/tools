@@ -1171,20 +1171,11 @@
                     const oldTypeId = editingOldTypeId.value;
 
                     try {
-                        if (typeId === oldTypeId) {
-                            await Api.markerPoints.update(pointId, { lng, lat, title, description: desc });
-                            ingestGeojson(typeId, await Api.markerPoints.list(typeId));
-                        } else {
-                            /* 换类型：服务端不支持改 type_id，新建一条再删旧条 */
-                            await Api.markerPoints.create(typeId, {
-                                lng, lat, title, description: desc,
-                                created: (original.properties && original.properties.created) || Date.now()
-                            });
-                            await Api.markerPoints.remove(pointId);
-                            ingestGeojson(typeId, await Api.markerPoints.list(typeId));
-                            if (loadedTypes[oldTypeId]) {
-                                ingestGeojson(oldTypeId, await Api.markerPoints.list(oldTypeId));
-                            }
+                        /* 换类型也走 PATCH：只改归属，created 保持不变 */
+                        await Api.markerPoints.update(pointId, { typeId, lng, lat, title, description: desc });
+                        ingestGeojson(typeId, await Api.markerPoints.list(typeId));
+                        if (typeId !== oldTypeId && loadedTypes[oldTypeId]) {
+                            ingestGeojson(oldTypeId, await Api.markerPoints.list(oldTypeId));
                         }
 
                         closeMarkerModal();

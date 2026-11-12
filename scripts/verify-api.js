@@ -17,6 +17,9 @@ vm.runInContext(read('api.js'), ctx);
 
 const Api = window.Api;
 const assert = (name, ok, extra = '') => console.log((ok ? 'PASS ' : 'FAIL ') + name + (extra ? '  ' + extra : ''));
+const API = 'https://ulnae.localhost.cc';
+/* 时间由服务端填写，客户端只能期望「接近当前时间」 */
+const nearNow = ts => Math.abs(Date.now() - Number(ts)) < 60000;
 
 (async () => {
     /* ---------- 类型 ---------- */
@@ -29,9 +32,7 @@ const assert = (name, ok, extra = '') => console.log((ok ? 'PASS ' : 'FAIL ') + 
     assert('读取标点列表', Array.isArray(before.features), `${before.features.length} 个`);
 
     const title = 'API_TEST_' + Date.now();
-    await Api.markerPoints.create(typeId, {
-        lng: 116.4, lat: 39.9, title, description: '临时验证', created: Date.now()
-    });
+    await Api.markerPoints.create(typeId, { lng: 116.4, lat: 39.9, title, description: '临时验证' });
 
     const afterAdd = await Api.markerPoints.list(typeId);
     const mine = afterAdd.features.find(f => f.properties.title === title);
@@ -39,6 +40,7 @@ const assert = (name, ok, extra = '') => console.log((ok ? 'PASS ' : 'FAIL ') + 
     assert('标点字段为 created / updated',
         !!mine && mine.properties.created > 0 && mine.properties.updated > 0,
         mine && mine.properties.created + '/' + mine.properties.updated);
+    assert('标点 created 由服务端填写', !!mine && nearNow(mine.properties.created));
 
     await Api.markerPoints.update(mine.id, { lng: 116.41, lat: 39.91, title: title + '_改', description: '已改' });
     const afterEdit = await Api.markerPoints.list(typeId);
@@ -51,6 +53,47 @@ const assert = (name, ok, extra = '') => console.log((ok ? 'PASS ' : 'FAIL ') + 
     const afterDel = await Api.markerPoints.list(typeId);
     assert('删除标点后条数复原', afterDel.features.length === before.features.length,
         `${afterDel.features.length} vs ${before.features.length}`);
+
+    /* ---------- 伪造时间：直接打接口，客户端传的 created / updated 不应入库 ---------- */
+    const forgedTitle = 'API_TEST_FORGE_' + Date.now();
+    const forged = await fetch(API + '/api/marker/points', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify([{ typeId, lng: 116.45, lat: 39.95, title: forgedTitle, created: 1 }])
+    }).then(r => r.json());
+    const forgedRow = (await Api.markerPoints.list(typeId)).features.find(f => f.id === forged.ids[0]);
+    assert('伪造的 created 被忽略', !!forgedRow && forgedRow.properties.created > 1 && nearNow(forgedRow.properties.created),
+        forgedRow && forgedRow.properties.created);
+
+    const forgedUpdated = await fetch(API + '/api/marker/points/' + forged.ids[0], {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: forgedTitle + '_改', updated: 1, created: 1 })
+    }).then(r => r.ok);
+    const forgedAfter = (await Api.markerPoints.list(typeId)).features.find(f => f.id === forged.ids[0]);
+    assert('伪造的 created / updated 改不动',
+        forgedUpdated && forgedAfter.properties.created === forgedRow.properties.created && nearNow(forgedAfter.properties.updated));
+    await Api.markerPoints.remove(forged.ids[0]);
+
+    /* ---------- 换类型：PATCH typeId，created 不变、updated 刷新 ---------- */
+    const ntA = await Api.markerTypes.create({ name: 'API_TEST_A_' + Date.now(), color: '#112233' });
+    const ntB = await Api.markerTypes.create({ name: 'API_TEST_B_' + Date.now(), color: '#445566' });
+    await Api.markerPoints.create(ntA.id, { lng: 121, lat: 31, title: 'MOVE_TEST' });
+    const moved = (await Api.markerPoints.list(ntA.id)).features[0];
+    const createdBefore = moved.properties.created;
+    const updatedBefore = moved.properties.updated;
+
+    await new Promise(r => setTimeout(r, 20));
+    await Api.markerPoints.update(moved.id, { typeId: ntB.id, lng: 121, lat: 31, title: 'MOVE_TEST' });
+    const inB = (await Api.markerPoints.list(ntB.id)).features.find(f => f.id === moved.id);
+    assert('换类型后出现在新类型下', !!inB);
+    assert('换类型不改 created', !!inB && inB.properties.created === createdBefore,
+        inB && `${inB.properties.created} vs ${createdBefore}`);
+    assert('换类型刷新 updated', !!inB && inB.properties.updated > updatedBefore);
+    assert('原类型下已无该点', !(await Api.markerPoints.list(ntA.id)).features.some(f => f.id === moved.id));
+
+    await Api.markerTypes.remove(ntA.id);
+    await Api.markerTypes.remove(ntB.id);
 
     /* ---------- 类型：增 → 写入子标点 → 删（连带标点） ---------- */
     const nt = await Api.markerTypes.create({ name: 'API_TEST_TYPE_' + Date.now(), color: '#123456' });
@@ -66,7 +109,9 @@ const assert = (name, ok, extra = '') => console.log((ok ? 'PASS ' : 'FAIL ') + 
     /* ---------- 反馈：增 → 读 → 删 ---------- */
     const fb = await Api.feedback.create({ type: '测试', content: 'API_TEST 临时反馈 ' + Date.now(), source: 'node-test' });
     const fbList = await Api.feedback.list();
-    assert('反馈写入并可读回', fbList.some(x => x.id === fb.id), fb.id);
+    const fbRow = fbList.find(x => x.id === fb.id);
+    assert('反馈写入并可读回', !!fbRow, fb.id);
+    assert('反馈 created 由服务端填写', !!fbRow && nearNow(fbRow.created), fbRow && fbRow.created);
     await Api.feedback.remove([fb.id]);
     assert('反馈删除生效', !(await Api.feedback.list()).some(x => x.id === fb.id));
 
@@ -75,7 +120,7 @@ const assert = (name, ok, extra = '') => console.log((ok ? 'PASS ' : 'FAIL ') + 
     assert('读取 vault 列表', Array.isArray(v0), `${v0.length} 条`);
 
     const created = await Api.vault.create({ title: 'API_TEST', ciphertext: 'xxx' });
-    assert('vault 返回 created / updated', !!created.created && !!created.updated,
+    assert('vault 返回 created / updated', !!created.created && !!created.updated && nearNow(created.created),
         created.created + '/' + created.updated);
 
     let conflict = false;
