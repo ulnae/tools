@@ -63,13 +63,14 @@ GH_TOKEN=github_pat_xxx node scripts/push-via-api.js
 node scripts/verify-api.js
 ```
 
-**15 项检查**：
+**17 项检查**：
 
 | 检查 | 说明 |
 |---|---|
 | 读取类型列表 | 类型数量与名称 |
 | 读取标点列表 | 返回标准 FeatureCollection |
 | 新增标点并拿到服务端 id | 页面不传 id，id 必须由服务端生成并在回读结果里出现 |
+| 标点字段为 created / updated | properties 里就是 created / updated，没有 created_at 之类的别名 |
 | 更新标点生效 | 坐标与标题都按 PATCH 落库 |
 | 删除标点后条数复原 | 删除路径生效且不误伤 |
 | 新增类型拿到服务端 id | 类型同样由服务端发号 |
@@ -78,9 +79,10 @@ node scripts/verify-api.js
 | 类型已从列表移除 | 删除后列表同步 |
 | 反馈写入并可读回 | 走公开提交端点 |
 | 反馈删除生效 | 批量删除接口 |
-| 读取 vault 列表 | 行级存储按 createdAt 返回 |
+| 读取 vault 列表 | 行级存储按 created 升序返回 |
+| vault 返回 created / updated | 新增后直接拿到时间字段，无需再查一次 |
 | 过期版本号写入被拒绝（409） | 乐观锁生效，并发覆盖会被挡下 |
-| vault 更新生效 | 正确版本号可以写，且返回新的 updatedAt |
+| vault 更新生效 | 正确版本号可以写，且返回新的 updated |
 | vault 删除生效 | 单条删除 |
 
 **副作用**：会往线上写数据，但会自己清干净——造的标点、反馈、vault 条目都会删掉，

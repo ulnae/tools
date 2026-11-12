@@ -828,7 +828,7 @@
                                 await appendMarkerToType(typeId, {
                                     lng, lat, title, description: desc,
                                     /* 时间统一使用毫秒时间戳 */
-                                    createdAt: Date.now()
+                                    created: Date.now()
                                 });
                                 renderMarkers();
                                 addMode.value = false;

@@ -1,6 +1,6 @@
 -- tools-api D1 建表脚本
 -- 执行：wrangler d1 execute tools-data --remote --file=schema.sql
--- 时间戳统一为毫秒整数
+-- 时间戳统一为毫秒整数；时间列统一命名 created / updated（与接口、页面字段完全一致）
 
 -- 标点类型（列表按 created 顺序返回，无需排序字段）
 CREATE TABLE IF NOT EXISTS marker_types (
@@ -25,23 +25,23 @@ CREATE TABLE IF NOT EXISTS marker_points (
 );
 CREATE INDEX IF NOT EXISTS idx_points_type ON marker_points(type_id);
 
--- 意见反馈（公开提交，created_at 由服务端填写）
+-- 意见反馈（公开提交，created 由服务端填写）
 CREATE TABLE IF NOT EXISTS feedback (
-  id         TEXT PRIMARY KEY,
-  type       TEXT,
-  content    TEXT,
-  contact    TEXT,
-  source     TEXT,
-  created_at INTEGER NOT NULL
+  id      TEXT PRIMARY KEY,
+  type    TEXT,
+  content TEXT,
+  contact TEXT,
+  source  TEXT,
+  created INTEGER NOT NULL
 );
 
 -- 密文笔记：一行一条，内容在客户端加密
--- 同一条并发编辑用 updated_at 做条件更新，不同条目互不干扰。
+-- 同一条并发编辑用 updated 做条件更新，不同条目互不干扰。
 CREATE TABLE IF NOT EXISTS vault (
   id         TEXT PRIMARY KEY,
   title      TEXT NOT NULL DEFAULT '',
   ciphertext TEXT NOT NULL,
-  created_at INTEGER NOT NULL,
-  updated_at INTEGER NOT NULL
+  created    INTEGER NOT NULL,
+  updated    INTEGER NOT NULL
 );
-CREATE INDEX IF NOT EXISTS idx_vault_updated ON vault(updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_vault_updated ON vault(updated DESC);

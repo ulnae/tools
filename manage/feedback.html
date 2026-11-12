@@ -513,7 +513,7 @@
                                     <span v-else class="text-faint2 text-[12px]">—</span>
                                 </td>
                                 <td class="px-3 py-2.5 text-muted tabular-nums whitespace-nowrap text-[12px]">
-                                    {{ formatDateTime(item.created_at) || '—' }}
+                                    {{ formatDateTime(item.created) || '—' }}
                                 </td>
                                 <td class="px-3 py-2.5 whitespace-nowrap text-right">
                                     <button class="btn-mini btn-view" @click="openDetail(item.id)">查看</button>
@@ -560,7 +560,7 @@
                             <span class="w-1.5 h-1.5 rounded-full flex-none" :style="{ background: detailColor }"></span>
                             {{ detail.type || '未分类' }}
                         </span>
-                        <span class="text-[12px] text-muted tabular-nums">{{ formatDateTime(detail.created_at) || '—' }}</span>
+                        <span class="text-[12px] text-muted tabular-nums">{{ formatDateTime(detail.created) || '—' }}</span>
                     </div>
 
                     <div class="mt-4 rounded-2xl bg-fill2 p-4">
@@ -625,7 +625,7 @@
             return div.innerHTML;
         };
 
-        /* created_at 一律为毫秒时间戳 */        const formatDateTime = ts => (typeof ts === 'number' && ts > 0)
+        /* created 一律为毫秒时间戳 */        const formatDateTime = ts => (typeof ts === 'number' && ts > 0)
             ? dayjs(ts).format('YYYY/MM/DD HH:mm')
             : '';
 
@@ -720,7 +720,7 @@
                             }
                             return true;
                         })
-                        .sort((a, b) => (b.created_at || 0) - (a.created_at || 0));
+                        .sort((a, b) => (b.created || 0) - (a.created || 0));
                 });
 
                 const totalPages = computed(() =>

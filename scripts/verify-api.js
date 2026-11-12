@@ -30,12 +30,15 @@ const assert = (name, ok, extra = '') => console.log((ok ? 'PASS ' : 'FAIL ') + 
 
     const title = 'API_TEST_' + Date.now();
     await Api.markerPoints.create(typeId, {
-        lng: 116.4, lat: 39.9, title, description: '临时验证', createdAt: Date.now()
+        lng: 116.4, lat: 39.9, title, description: '临时验证', created: Date.now()
     });
 
     const afterAdd = await Api.markerPoints.list(typeId);
     const mine = afterAdd.features.find(f => f.properties.title === title);
     assert('新增标点并拿到服务端 id', !!mine && !!mine.id, mine && mine.id);
+    assert('标点字段为 created / updated',
+        !!mine && mine.properties.created > 0 && mine.properties.updated > 0,
+        mine && mine.properties.created + '/' + mine.properties.updated);
 
     await Api.markerPoints.update(mine.id, { lng: 116.41, lat: 39.91, title: title + '_改', description: '已改' });
     const afterEdit = await Api.markerPoints.list(typeId);
@@ -71,7 +74,9 @@ const assert = (name, ok, extra = '') => console.log((ok ? 'PASS ' : 'FAIL ') + 
     const v0 = await Api.vault.list();
     assert('读取 vault 列表', Array.isArray(v0), `${v0.length} 条`);
 
-    const created = await Api.vault.create({ title: 'API_TEST', ciphertext: 'xxx', createdAt: Date.now() });
+    const created = await Api.vault.create({ title: 'API_TEST', ciphertext: 'xxx' });
+    assert('vault 返回 created / updated', !!created.created && !!created.updated,
+        created.created + '/' + created.updated);
 
     let conflict = false;
     try {
@@ -81,9 +86,9 @@ const assert = (name, ok, extra = '') => console.log((ok ? 'PASS ' : 'FAIL ') + 
     }
     assert('过期版本号写入被拒绝（409）', conflict);
 
-    const updated = await Api.vault.update(created.id, { title: 'API_TEST', ciphertext: 'yyy' }, created.updatedAt);
+    const updated = await Api.vault.update(created.id, { title: 'API_TEST', ciphertext: 'yyy' }, created.updated);
     const row = (await Api.vault.list()).find(x => x.id === created.id);
-    assert('vault 更新生效', row && row.ciphertext === 'yyy' && row.updatedAt === updated.updatedAt);
+    assert('vault 更新生效', row && row.ciphertext === 'yyy' && row.updated === updated.updated);
 
     await Api.vault.remove(created.id);
     assert('vault 删除生效', !(await Api.vault.list()).some(x => x.id === created.id));

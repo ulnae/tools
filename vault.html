@@ -289,11 +289,11 @@
                     <div class="flex items-center gap-x-3 gap-y-1 flex-wrap text-xs text-fg-2 leading-snug">
                         <span class="inline-flex items-center gap-1 min-w-0" title="创建时间">
                             <icon name="calendar" :size="12" class="text-fg-3 shrink-0"></icon>
-                            <span class="truncate">{{ fmtDateTime(item.createdAt) }}</span>
+                            <span class="truncate">{{ fmtDateTime(item.created) }}</span>
                         </span>
                         <span v-if="isEdited(item)" class="inline-flex items-center gap-1 min-w-0" title="修改时间">
                             <icon name="clock" :size="12" class="text-fg-3 shrink-0"></icon>
-                            <span class="truncate">{{ fmtDateTime(item.updatedAt) }}</span>
+                            <span class="truncate">{{ fmtDateTime(item.updated) }}</span>
                         </span>
                     </div>
                 </li>
@@ -572,10 +572,10 @@
                     return `${y}/${m}/${day} ${hh}:${mm}:${ss}`;
                 };
 
-                const isEdited = (item) => !!(item && item.updatedAt && item.createdAt && item.updatedAt !== item.createdAt);
+                const isEdited = (item) => !!(item && item.updated && item.created && item.updated !== item.created);
 
                 const sortedItems = computed(() =>
-                    [...items.value].sort((a, b) => (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0))
+                    [...items.value].sort((a, b) => (Number(b.created) || 0) - (Number(a.created) || 0))
                 );
 
                 const filteredItems = computed(() => {
@@ -731,13 +731,11 @@
                         }
 
                         if (isEdit) {
-                            /* base.updatedAt 是页面看到的版本，服务端据此做并发校验 */
-                            const r = await Api.vault.update(editingId.value, { title, ciphertext }, base.updatedAt);
-                            items.value = items.value.map((i) => i.id === editingId.value
-                                ? { ...i, title, ciphertext, updatedAt: r.updatedAt }
-                                : i);
+                            /* base.updated 是页面看到的版本，服务端据此做并发校验 */
+                            const r = await Api.vault.update(editingId.value, { title, ciphertext }, base.updated);
+                            items.value = items.value.map((i) => i.id === editingId.value ? r : i);
                         } else {
-                            items.value = [...items.value, await Api.vault.create({ title, ciphertext, createdAt: Date.now() })];
+                            items.value = [...items.value, await Api.vault.create({ title, ciphertext })];
                         }
 
                         const wasEditingView = isEdit && unlockTarget.value && unlockTarget.value.id === editingId.value;
